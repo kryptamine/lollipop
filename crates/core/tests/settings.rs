@@ -103,10 +103,10 @@ fn a_damaged_file_gives_the_defaults() {
 fn the_view_is_told_about_every_widget() {
     assert_eq!(
         serde_json::to_value(Settings::default().widget_switches()).unwrap(),
-        json!({ "markerStrip": true })
+        json!({ "markerStrip": true, "timingHints": true })
     );
     assert_eq!(
         serde_json::to_value(all_widgets_off().widget_switches()).unwrap(),
-        json!({ "markerStrip": false })
+        json!({ "markerStrip": false, "timingHints": false })
     );
 }

@@ -319,6 +319,9 @@ These were not tested and can reopen a decision.
 - **Champion names:** a Cell is found with the client in another language and for a
   renamed champion such as Wukong. `rawChampionName` was seen once, for Master Yi.
 - **Timing hints:** the 45 s lead in a real game, and a non-champion drake kill.
+  Also which name `KillerName` carries for a player: the recording sanitized them, so
+  it is joined to `riotId`, `riotIdGameName` and `summonerName`. If none match, every
+  drake kill reads as having no team and the pit's hints stop.
 - **Relaunch:** after `GameEnd` with the Tauri updater.
 - **`ELITE_MONSTER_KILL`:** the event fields, known from memory only. Moving the
   spawn later needs a threshold that is not set.

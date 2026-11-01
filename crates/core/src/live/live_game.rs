@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use super::markers::Markers;
 use super::snapshot::Snapshot;
+use super::timing_hint::TimingHint;
 use crate::game_inputs::GameInputs;
 
 /// One poll of a running match: stats that move, and inputs that hold all game.
@@ -10,4 +11,5 @@ pub struct LiveGame {
     pub snapshot: Snapshot,
     pub inputs: Arc<GameInputs>,
     pub markers: Markers,
+    pub hints: Vec<TimingHint>,
 }

@@ -15,8 +15,14 @@ export type Markers = {
   level: MarkerState | null;
 };
 
+export type TimingHintState = {
+  objective: string;
+  countdown: string;
+};
+
 export type WidgetSwitches = {
   markerStrip: boolean;
+  timingHints: boolean;
 };
 
 const stopWith = (unlisten: Promise<UnlistenFn>): (() => void) => {
@@ -41,6 +47,13 @@ export const onSnapshot = (handler: (snapshot: Snapshot) => void): (() => void) 
 export const onMarkers = (handler: (markers: Markers) => void): (() => void) =>
   stopWith(
     listen<Markers>('markers', ({ payload }) => {
+      handler(payload);
+    }),
+  );
+
+export const onTimingHints = (handler: (hints: TimingHintState[]) => void): (() => void) =>
+  stopWith(
+    listen<TimingHintState[]>('timing-hints', ({ payload }) => {
       handler(payload);
     }),
   );
