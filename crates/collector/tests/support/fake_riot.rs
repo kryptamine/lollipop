@@ -7,21 +7,9 @@ use serde_json::{json, Value};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
+use super::failure::Failure;
 use super::game::Game;
-
-#[derive(Clone)]
-pub struct Request {
-    pub path: String,
-    pub at_ms: u64,
-    pub token: Option<String>,
-    pub user_agent: Option<String>,
-}
-
-#[derive(Clone, Copy)]
-pub struct Failure {
-    pub status: u16,
-    pub retry_after_s: Option<u64>,
-}
+use super::request::Request;
 
 #[derive(Default)]
 struct State {

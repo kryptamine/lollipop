@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use lollipop_core::game_inputs::Patch;
 
+use crate::kept_participant::KeptParticipant;
 use crate::match_payload::MatchPayload;
+use crate::minute_values::MinuteValues;
 use crate::store::PendingMatch;
 use crate::timeline_payload::{Event, TimelinePayload};
 
@@ -16,22 +18,6 @@ pub(crate) struct KeptMatch {
     pub(crate) participants: Vec<KeptParticipant>,
     pub(crate) minute_values: Vec<MinuteValues>,
     pub(crate) first_kills: BTreeMap<String, u64>,
-}
-
-pub(crate) struct KeptParticipant {
-    pub(crate) id: u32,
-    pub(crate) champion: String,
-    pub(crate) role: String,
-}
-
-/// One timeline frame of one participant. Frames run late by up to a second, so the
-/// frame's own time is kept for aligning them to the minute.
-pub(crate) struct MinuteValues {
-    pub(crate) participant: u32,
-    pub(crate) at_ms: u64,
-    pub(crate) cs: u32,
-    pub(crate) total_gold: u32,
-    pub(crate) level: u32,
 }
 
 impl KeptMatch {

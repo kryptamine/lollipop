@@ -12,7 +12,7 @@ mod support;
 
 use lollipop_collector::{CollectError, SeedTier};
 
-use support::fake_riot::Failure;
+use support::failure::Failure;
 use support::game::Game;
 use support::scenario::Scenario;
 

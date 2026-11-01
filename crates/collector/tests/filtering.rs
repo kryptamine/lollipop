@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use lollipop_collector::SeedTier;
 
-use support::fake_riot::Failure;
+use support::failure::Failure;
 use support::game::Game;
 use support::scenario::Scenario;
 
