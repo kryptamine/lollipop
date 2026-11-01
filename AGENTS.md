@@ -54,6 +54,14 @@ carries far more than Lollipop needs, and every unread field claims a dependency
 nothing exercises. Add a field in the change that reads it, and delete it with
 its last reader. The same holds for methods, constants and event payloads.
 
+## File rule (mandatory)
+
+**One Rust file holds one concept: a type with its impls, or one piece of
+behaviour.** Split by meaning, and keep the public path stable with `pub use` in
+the parent. A trait may share a file with its one production implementation, and
+private structs mapping a single JSON document may share one file. No linter
+checks this.
+
 ## Test rule (mandatory)
 
 **Tests are integration tests through an external boundary, with no unit tests.**
