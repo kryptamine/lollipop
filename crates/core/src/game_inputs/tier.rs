@@ -29,6 +29,20 @@ impl Tier {
         }
     }
 
+    /// How the Benchmark table names the Cell this tier falls in: Master and above are one.
+    pub(crate) const fn table_label(self) -> &'static str {
+        match self {
+            Self::Iron => "IRON",
+            Self::Bronze => "BRONZE",
+            Self::Silver => "SILVER",
+            Self::Gold => "GOLD",
+            Self::Platinum => "PLATINUM",
+            Self::Emerald => "EMERALD",
+            Self::Diamond => "DIAMOND",
+            Self::Master | Self::Grandmaster | Self::Challenger => "MASTER+",
+        }
+    }
+
     #[must_use]
     pub const fn label(self) -> &'static str {
         match self {

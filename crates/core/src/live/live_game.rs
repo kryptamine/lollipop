@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::markers::Markers;
 use super::snapshot::Snapshot;
 use crate::game_inputs::GameInputs;
 
@@ -8,4 +9,5 @@ use crate::game_inputs::GameInputs;
 pub struct LiveGame {
     pub snapshot: Snapshot,
     pub inputs: Arc<GameInputs>,
+    pub markers: Markers,
 }

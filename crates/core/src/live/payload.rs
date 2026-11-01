@@ -4,6 +4,8 @@ use serde::Deserialize;
 
 use super::gold_earned::ItemCounts;
 
+const RAW_CHAMPION_PREFIX: &str = "game_character_displayname_";
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct AllGameData {
@@ -27,6 +29,7 @@ pub(super) struct Player {
     riot_id: Option<String>,
     summoner_name: Option<String>,
     pub(super) champion_name: Option<String>,
+    raw_champion_name: Option<String>,
     pub(super) position: Option<String>,
     pub(super) level: u32,
     items: Vec<Item>,
@@ -94,6 +97,16 @@ impl AllGameData {
 }
 
 impl Player {
+    /// The name a Benchmark Cell goes by. `rawChampionName` carries Match-V5's id and,
+    /// unlike `championName`, should not follow the client's language.
+    pub(super) fn cell_champion(&self) -> Option<&str> {
+        let raw = self
+            .raw_champion_name
+            .as_deref()
+            .and_then(|raw| raw.strip_prefix(RAW_CHAMPION_PREFIX));
+        raw.or(self.champion_name.as_deref())
+    }
+
     pub(super) fn item_counts(&self) -> ItemCounts {
         let mut counts = ItemCounts::new();
         for item in &self.items {

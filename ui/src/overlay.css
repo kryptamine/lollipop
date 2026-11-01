@@ -30,3 +30,19 @@ body {
 .metric-label {
   color: #9aa6b2;
 }
+
+.marker {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+}
+
+.marker-above::before {
+  color: #3ddc84;
+  content: '▲';
+}
+
+.marker-below::before {
+  color: #ff5c5c;
+  content: '▼';
+}

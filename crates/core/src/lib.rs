@@ -1,3 +1,4 @@
+pub mod benchmarks;
 pub mod game_inputs;
 pub mod live;
 pub mod overlay;
