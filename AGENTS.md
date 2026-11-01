@@ -131,6 +131,8 @@ packaging itself is the work.
 
 ## Working here
 
+- Search the repository through the `fff` MCP (`.mcp.json`), for file names and
+  contents alike. It needs `fff-mcp` on `PATH`.
 - Non-trivial work starts from an issue, with scope settled there. Small fixes
   go straight to a pull request: a typo, an obvious bug, a dependency bump.
 - Tests land with the behaviour they cover.

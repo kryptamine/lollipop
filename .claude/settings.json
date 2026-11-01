@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": ["fff"],
+  "permissions": {
+    "allow": ["mcp__fff"]
+  }
+}
