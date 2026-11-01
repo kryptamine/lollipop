@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use lollipop_core::delivery::{keep_table_current, ManifestKey, ReleaseChannel, TableFile};
+use lollipop_core::delivery::{keep_table_current, ManifestKey, TableChannel, TableFile};
 use lollipop_core::live::LiveGame;
 use tempfile::TempDir;
 use tokio::sync::mpsc;
 
 use super::benchmark_file::{cell, flat_minutes, table_of};
+use super::fake_bucket::{manifest_key, FakeBucket};
 use super::fake_lcu::FakeLcu;
-use super::fake_release::{manifest_key, FakeRelease};
 use super::game_clock::GameClock;
 use super::marker_game::{CHAMPION, ROLE, TIER};
 use super::polling::start_playing_on;
@@ -20,9 +20,9 @@ pub fn table_with_cs(cs: f64) -> String {
 }
 
 /// The real poll loop and the real download loop, sharing one table file in a directory
-/// that does not exist yet, against a fake League and a fake Release.
+/// that does not exist yet, against a fake League and a fake bucket.
 pub struct DeliveryBench {
-    pub release: FakeRelease,
+    pub bucket: FakeBucket,
     pub game: StagedGame,
     pub lcu: FakeLcu,
     pub table: Arc<TableFile>,
@@ -35,7 +35,7 @@ impl DeliveryBench {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("data").join("benchmark-table.json");
         Self {
-            release: FakeRelease::start().await,
+            bucket: FakeBucket::start().await,
             game: StagedGame::at(stage).await,
             lcu: FakeLcu::start().await,
             table: Arc::new(TableFile::new(path)),
@@ -63,14 +63,14 @@ impl DeliveryBench {
     }
 
     pub fn start_downloads(&self) {
-        self.start_downloads_on(self.release.channel());
+        self.start_downloads_on(self.bucket.channel());
     }
 
-    pub fn start_downloads_on(&self, channel: ReleaseChannel) {
+    pub fn start_downloads_on(&self, channel: TableChannel) {
         self.start_downloads_with(channel, manifest_key());
     }
 
-    pub fn start_downloads_with(&self, channel: ReleaseChannel, key: ManifestKey) {
+    pub fn start_downloads_with(&self, channel: TableChannel, key: ManifestKey) {
         let table = Arc::clone(&self.table);
         tokio::spawn(async move { keep_table_current(&table, &channel, &key).await });
     }

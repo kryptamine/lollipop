@@ -48,6 +48,12 @@ The app only follows manifests signed by the key compiled into it.
 The collector cannot tell whether its key is the compiled-in one: a mismatch publishes
 fine and every app keeps its old table. The first deploy with signing needs step 4 too.
 
+## Check the table bucket by hand
+
+```sh
+curl -si https://pub-e9b7200aa7d442d79809d68c2fc9912e.r2.dev/v1/manifest.json
+```
+
 ## Check a backup by hand
 
 ```sh

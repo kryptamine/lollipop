@@ -10,6 +10,7 @@ pub struct PublishConfig {
     pub table: Option<PathBuf>,
     pub max_patch: Option<Patch>,
     pub repo: String,
+    pub bucket: String,
     pub work_dir: PathBuf,
     pub signing_key: PathBuf,
 }

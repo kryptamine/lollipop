@@ -1,17 +1,19 @@
-//! Puts a built table on the GitHub Release the app reads, behind the publish gate.
+//! Puts a built table in the public bucket the app reads, behind the publish gate.
 
+mod bucket_assets;
 mod current_table;
 mod gh_error;
-mod gh_release;
+mod gh_issues;
 mod manifest;
 mod manifest_signer;
 mod publish_config;
 mod publish_error;
 mod publish_gate;
 mod published;
-mod release_assets;
+mod rclone_error;
 mod rollback;
 mod rollback_config;
+mod table_bucket;
 mod table_summary;
 
 use std::fmt::Display;
@@ -22,12 +24,13 @@ use lollipop_core::game_inputs::Patch;
 use crate::schedule_check::check_schedule;
 use crate::store::Store;
 use crate::table::{build_table, Reworks, TableConfig, TableError};
+use bucket_assets::table_name;
 use current_table::CurrentTable;
-use gh_release::GhRelease;
+use gh_issues::GhIssues;
 use manifest::Manifest;
 use manifest_signer::ManifestSigner;
 use publish_gate::refusal;
-use release_assets::{table_name, ReleaseAssets};
+use table_bucket::TableBucket;
 use table_summary::TableSummary;
 
 pub use gh_error::GhError;
@@ -35,33 +38,35 @@ pub use manifest_signer::manifest_public_key;
 pub use publish_config::PublishConfig;
 pub use publish_error::PublishError;
 pub use published::Published;
+pub use rclone_error::RcloneError;
 pub use rollback::rollback;
 pub use rollback_config::RollbackConfig;
 
 const BUILT_TABLE: &str = "benchmark-table.json";
 
 /// # Errors
-/// On a failed build, a refused publish, an unreadable signing key, or any `gh` failure,
-/// even after the manifest moved.
+/// On a failed build, a refused publish, an unreadable signing key, or any `rclone` or `gh`
+/// failure, even after the manifest moved.
 /// Whatever stops it also opens an issue.
 pub fn publish(config: &PublishConfig) -> Result<Published, PublishError> {
-    let release = GhRelease::new(&config.repo);
-    attempt(config, &release).map_err(|error| {
-        match release.open_issue(error.issue_title(), &error.to_string()) {
+    let issues = GhIssues::new(&config.repo);
+    attempt(config, &issues).map_err(|error| {
+        match issues.open(error.issue_title(), &error.to_string()) {
             Ok(()) => error,
             Err(notice) => PublishError::NoticeFailed(Box::new(error), notice),
         }
     })
 }
 
-fn attempt(config: &PublishConfig, release: &GhRelease) -> Result<Published, PublishError> {
+fn attempt(config: &PublishConfig, issues: &GhIssues) -> Result<Published, PublishError> {
     std::fs::create_dir_all(&config.work_dir)
         .map_err(|error| PublishError::Write(config.work_dir.clone(), error))?;
     let signer = ManifestSigner::read(&config.signing_key)?;
     let reworks = Reworks::read(&config.reworks)?;
-    let assets = release.assets()?;
-    let current = CurrentTable::fetch(release, assets.as_ref(), &config.work_dir)?;
-    let table = built_table(config, release, current.as_ref())?;
+    let bucket = TableBucket::new(&config.bucket);
+    let assets = bucket.assets()?;
+    let current = CurrentTable::fetch(&bucket, &assets, &config.work_dir)?;
+    let table = built_table(config, issues, current.as_ref())?;
     let summary = TableSummary::read(&table).map_err(PublishError::Refused)?;
     if let Some(reason) = current
         .as_ref()
@@ -70,45 +75,40 @@ fn attempt(config: &PublishConfig, release: &GhRelease) -> Result<Published, Pub
         return Err(PublishError::Refused(reason));
     }
 
-    let version = assets.as_ref().map_or(1, ReleaseAssets::next_version);
+    let version = assets.next_version();
     let manifest = Manifest::of(version, &table)?;
     if let Some(current) = current.filter(|current| current.manifest.same_table(&manifest)) {
         if !current.manifest.signed_by(&signer) {
             current
                 .manifest
-                .upload(release, &signer, &config.work_dir)?;
+                .upload(&bucket, &signer, &config.work_dir)?;
         }
         return Ok(Published::Unchanged(current.manifest.version));
     }
-    if assets.is_none() {
-        release.create()?;
-    }
-    upload_table(release, &table, &config.work_dir, version)?;
-    manifest.upload(release, &signer, &config.work_dir)?;
-    if let Some(assets) = assets {
-        for outdated in assets.outdated_after_adding_one() {
-            release.delete_asset(&table_name(*outdated))?;
-        }
+    upload_table(&bucket, &table, &config.work_dir, version)?;
+    manifest.upload(&bucket, &signer, &config.work_dir)?;
+    for outdated in assets.outdated_after_adding_one() {
+        bucket.delete(&table_name(*outdated))?;
     }
     Ok(Published::New(version))
 }
 
 // The table goes up before a manifest can name it.
 fn upload_table(
-    release: &GhRelease,
+    bucket: &TableBucket,
     table: &Path,
     work_dir: &Path,
     version: u32,
 ) -> Result<(), PublishError> {
     let named = work_dir.join(table_name(version));
     std::fs::copy(table, &named).map_err(|error| PublishError::Write(named.clone(), error))?;
-    release.upload(&named)?;
+    bucket.upload_table(&named, &table_name(version))?;
     Ok(())
 }
 
 fn built_table(
     config: &PublishConfig,
-    release: &GhRelease,
+    issues: &GhIssues,
     current: Option<&CurrentTable>,
 ) -> Result<PathBuf, PublishError> {
     if let Some(table) = &config.table {
@@ -123,7 +123,7 @@ fn built_table(
         max_patch: config.max_patch.or(still_in_force(inherited, config)?),
     };
     print_report(&build_table(&table)?);
-    report_schedule(config, release)?;
+    report_schedule(config, issues)?;
     Ok(output)
 }
 
@@ -136,11 +136,11 @@ fn still_in_force(
     Ok(inherited.filter(|max_patch| window.last().is_some_and(|newest| newest <= max_patch)))
 }
 
-fn report_schedule(config: &PublishConfig, release: &GhRelease) -> Result<(), PublishError> {
+fn report_schedule(config: &PublishConfig, issues: &GhIssues) -> Result<(), PublishError> {
     let check = check_schedule(&config.database)?;
     print_report(&check);
     for kill in check.early_kills() {
-        release.open_issue_once(&kill.issue_title(), &kill.issue_body())?;
+        issues.open_once(&kill.issue_title(), &kill.issue_body())?;
     }
     Ok(())
 }

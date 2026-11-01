@@ -1,8 +1,6 @@
 #!/bin/sh
-# Stands in for gh, with the Release as a directory. A `fail-<word>-<word>` file makes
-# that command fail. Upload with --clobber deletes first, as the real one does.
+# Stands in for gh, with issues in a file. A `fail-<word>-<word>` file makes that command fail.
 state="$FAKE_GH_STATE"
-assets="$state/assets"
 command="$1 $2"
 shift 2
 if [ -e "$state/fail-$(printf '%s' "$command" | tr ' ' '-')" ]; then
@@ -11,39 +9,6 @@ if [ -e "$state/fail-$(printf '%s' "$command" | tr ' ' '-')" ]; then
 fi
 
 case "$command" in
-"release view")
-  if [ ! -d "$assets" ]; then
-    echo "release not found" >&2
-    exit 1
-  fi
-  ls "$assets"
-  ;;
-"release create")
-  echo "$1" >"$state/tag"
-  mkdir "$assets"
-  ;;
-"release download")
-  while [ "$#" -gt 0 ]; do
-    case "$1" in
-    --pattern) name="$2" ;;
-    --output) output="$2" ;;
-    esac
-    shift
-  done
-  cp "$assets/$name" "$output"
-  ;;
-"release upload")
-  name=$(basename "$2")
-  rm -f "$assets/$name"
-  if [ -e "$state/lose-upload-$name" ]; then
-    echo "upload of $name failed" >&2
-    exit 1
-  fi
-  cp "$2" "$assets/$name"
-  ;;
-"release delete-asset")
-  rm "$assets/$2"
-  ;;
 "issue list")
   while [ "$#" -gt 0 ]; do
     case "$1" in

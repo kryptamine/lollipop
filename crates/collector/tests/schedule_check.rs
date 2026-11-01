@@ -14,9 +14,9 @@ use std::process::Output;
 
 use lollipop_collector::SeedTier;
 
+use support::bucket_bench::BucketBench;
 use support::build::run_build;
 use support::game::{Game, Kill};
-use support::release_bench::ReleaseBench;
 use support::scenario::Scenario;
 use tempfile::TempDir;
 
@@ -41,7 +41,7 @@ fn stdout(output: &Output) -> String {
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
-fn titles(bench: &ReleaseBench) -> Vec<String> {
+fn titles(bench: &BucketBench) -> Vec<String> {
     let issues = bench.issues();
     let titles = issues.iter().map(|issue| issue.split(": ").next().unwrap());
     titles.map(str::to_string).collect()
@@ -50,7 +50,7 @@ fn titles(bench: &ReleaseBench) -> Vec<String> {
 #[tokio::test]
 async fn a_baron_killed_before_its_spawn_opens_an_issue() {
     let scenario = collected(&[Game::killing("EUW1_1", &[EARLY_BARON])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     let output = bench.publish_built(&scenario.database(), &[]);
 
@@ -67,7 +67,7 @@ async fn a_baron_killed_before_its_spawn_opens_an_issue() {
 #[tokio::test]
 async fn a_normal_timeline_opens_no_issue() {
     let scenario = collected(&[Game::killing("EUW1_1", &AT_THE_SPAWN)]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     let output = bench.publish_built(&scenario.database(), &[]);
 
@@ -82,7 +82,7 @@ async fn a_normal_timeline_opens_no_issue() {
 async fn every_objective_has_its_own_spawn() {
     let kills = AT_THE_SPAWN.map(|(at, monster, sub_type)| (at - 1, monster, sub_type));
     let scenario = collected(&[Game::killing("EUW1_1", &kills)]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     bench.publish_built(&scenario.database(), &[]);
 
@@ -100,7 +100,7 @@ async fn every_objective_has_its_own_spawn() {
 async fn an_empty_sub_type_reads_as_none() {
     let baron = (1_180_000, "BARON_NASHOR", Some(""));
     let scenario = collected(&[Game::killing("EUW1_1", &[baron])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     bench.publish_built(&scenario.database(), &[]);
 
@@ -119,7 +119,7 @@ async fn the_earliest_kill_of_any_game_on_the_patch_counts() {
         Game::killing("EUW1_3", &[(1_300_000, "BARON_NASHOR", None)]),
     ])
     .await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     bench.publish_built(&scenario.database(), &[]);
 
@@ -133,7 +133,7 @@ async fn each_patch_gets_its_own_issue() {
         ..Game::killing("EUW1_1", &[EARLY_BARON])
     };
     let scenario = collected(&[older, Game::killing("EUW1_2", &[EARLY_BARON])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     bench.publish_built(&scenario.database(), &[]);
 
@@ -150,7 +150,7 @@ async fn each_patch_gets_its_own_issue() {
 #[tokio::test]
 async fn a_later_build_does_not_repeat_the_issue() {
     let scenario = collected(&[Game::killing("EUW1_1", &[EARLY_BARON])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     bench.publish_built(&scenario.database(), &[]);
     let again = bench.publish_built(&scenario.database(), &[]);
@@ -163,7 +163,7 @@ async fn a_later_build_does_not_repeat_the_issue() {
 #[tokio::test]
 async fn a_closed_issue_is_not_opened_again() {
     let scenario = collected(&[Game::killing("EUW1_1", &[EARLY_BARON])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
     bench.publish_built(&scenario.database(), &[]);
     bench.close_issues();
 
@@ -181,13 +181,13 @@ async fn what_the_schedule_does_not_cover_is_reported_with_no_issue() {
         ..Game::killing("EUW1_1", &[EARLY_BARON])
     };
     let scenario = collected(&[next_season]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
     let output = bench.publish_built(&scenario.database(), &[]);
     assert!(stdout(&output).contains("not compared: BARON_NASHOR on 17.1"));
     assert_eq!(bench.issues(), Vec::<String>::new());
 
     let scenario = collected(&[Game::killing("EUW1_1", &[(60_000, "ATAKHAN", None)])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
     let output = bench.publish_built(&scenario.database(), &[]);
     assert!(stdout(&output).contains("not compared: ATAKHAN on 16.21"));
     assert_eq!(bench.issues(), Vec::<String>::new());
@@ -197,7 +197,7 @@ async fn what_the_schedule_does_not_cover_is_reported_with_no_issue() {
 #[tokio::test]
 async fn a_notice_that_cannot_open_fails_the_publish() {
     let scenario = collected(&[Game::killing("EUW1_1", &[EARLY_BARON])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
     bench.break_gh("issue-list");
 
     let output = bench.publish_built(&scenario.database(), &[]);
@@ -211,7 +211,7 @@ async fn a_notice_that_cannot_open_fails_the_publish() {
 #[tokio::test]
 async fn build_table_prints_the_check_and_opens_nothing() {
     let scenario = collected(&[Game::killing("EUW1_1", &[EARLY_BARON])]).await;
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
     let dir = TempDir::new().unwrap();
 
     let build = run_build(&scenario.database(), &bench.reworks(), dir.path(), &[]);

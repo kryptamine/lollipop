@@ -1,4 +1,5 @@
-//! Publishing through the built binary, against a fake `gh` holding the Release.
+//! Publishing through the built binary, against a fake `rclone` holding the bucket and a
+//! fake `gh` holding the issues.
 #![allow(
     clippy::unwrap_used,
     clippy::future_not_send,
@@ -18,8 +19,8 @@ use lollipop_core::game_inputs::{Role, Tier};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
+use support::bucket_bench::{cell, table_of, BucketBench, SIGNING_PUBLIC_KEY};
 use support::played::Played;
-use support::release_bench::{cell, table_of, ReleaseBench, SIGNING_PUBLIC_KEY};
 use support::table_bench::TableBench;
 
 const WINDOW: [&str; 2] = ["16.20", "16.21"];
@@ -38,7 +39,7 @@ fn assert_published(output: &Output) {
 
 // The app checks these exact bytes against the key compiled into it, and a manifest that
 // fails the check strands every install on its old table.
-fn assert_manifest_signs_table(bench: &ReleaseBench, version: u32) {
+fn assert_manifest_signs_table(bench: &BucketBench, version: u32) {
     let body = std::fs::read(bench.asset_path(&format!("benchmark-table-{version}.json"))).unwrap();
     let sha256 = format!("{:x}", Sha256::digest(body));
     let manifest = bench.asset("manifest.json");
@@ -55,14 +56,14 @@ fn assert_manifest_signs_table(bench: &ReleaseBench, version: u32) {
         .unwrap();
 }
 
-fn bench_on_version_1(cells: usize) -> ReleaseBench {
-    let mut bench = ReleaseBench::new();
+fn bench_on_version_1(cells: usize) -> BucketBench {
+    let mut bench = BucketBench::new();
     assert_published(&bench.publish_table(&table_of(cells, &WINDOW)));
     bench
 }
 
 /// Publishes, and checks the old table stays live with an issue opened about it.
-fn assert_refused(bench: &mut ReleaseBench, table: &Value) {
+fn assert_refused(bench: &mut BucketBench, table: &Value) {
     let live = bench.manifest_version();
     let assets = bench.asset_names();
     let output = bench.publish_table(table);
@@ -80,11 +81,10 @@ fn assert_refused(bench: &mut ReleaseBench, table: &Value) {
 // The app builds the path from this: `v1/manifest.json` next to the table, whose sha256
 // it checks before a swap. A wrong hash would make it throw away every download.
 #[test]
-fn a_first_publish_creates_the_release_with_a_table_and_its_manifest() {
-    let mut bench = ReleaseBench::new();
+fn a_first_publish_puts_a_table_and_its_manifest_in_the_bucket() {
+    let mut bench = BucketBench::new();
     assert_published(&bench.publish_table(&table_of(3, &WINDOW)));
 
-    assert_eq!(bench.tag(), "v1");
     assert_eq!(
         bench.asset_names(),
         ["benchmark-table-1.json", "manifest.json"]
@@ -98,7 +98,7 @@ fn a_first_publish_creates_the_release_with_a_table_and_its_manifest() {
 fn a_built_table_is_published_and_its_drift_report_printed() {
     let mut matches = TableBench::new();
     matches.add(100, &Played::new("Ahri", "GOLD"));
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
 
     let output = bench.publish_built(&matches.database(), &[]);
 
@@ -168,7 +168,7 @@ fn table_with_max_patch(cells: usize, max_patch: &str) -> Value {
 // A season patch resets the economy, so the first table on its data is thin by design.
 #[test]
 fn data_past_a_max_patch_may_drop_any_number_of_cells() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     assert_published(&bench.publish_table(&table_with_max_patch(10, "16.24")));
     assert_published(&bench.publish_table(&table_of(1, &["16.24", "17.1"])));
     assert_eq!(bench.manifest_version(), 2);
@@ -181,7 +181,7 @@ fn data_past_a_max_patch_may_drop_any_number_of_cells() {
 // Only new data lifts it: otherwise setting `max_patch` would disable the gate at once.
 #[test]
 fn a_max_patch_with_no_data_past_it_keeps_the_gate() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     assert_published(&bench.publish_table(&table_with_max_patch(10, "16.24")));
     assert_refused(&mut bench, &table_of(1, &["16.23", "16.24"]));
 }
@@ -199,7 +199,7 @@ fn matches_on(patch: (u32, u32)) -> TableBench {
 // The weekly build passes no flag, and `max_patch` guards a season patch not yet here.
 #[test]
 fn a_build_keeps_the_max_patch_until_data_passes_it() {
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
     let on_old_data = matches_on((16, 24));
     assert_published(&bench.publish_built(&on_old_data.database(), &["--max-patch", "16.24"]));
     let mut more = matches_on((16, 24));
@@ -243,7 +243,7 @@ fn a_file_the_app_cannot_read_leaves_the_old_table() {
 // A first publish has no old table to protect, but must not ship a broken file either.
 #[test]
 fn a_file_that_does_not_read_is_refused_on_a_first_publish() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     assert!(!bench.publish_file("{ not json").status.success());
     assert!(bench.asset_names().is_empty());
     assert_eq!(bench.issues().len(), 1);
@@ -274,7 +274,7 @@ fn an_empty_database_opens_an_issue() {
 #[test]
 fn a_failed_upload_opens_an_issue_and_leaves_the_manifest() {
     let mut bench = bench_on_version_1(3);
-    bench.lose_upload("benchmark-table-2.json");
+    bench.fail_upload("benchmark-table-2.json");
     let output = bench.publish_table(&table_of(4, &WINDOW));
     assert!(!output.status.success());
     assert_eq!(bench.manifest_version(), 1);
@@ -292,12 +292,11 @@ fn a_notice_that_fails_is_reported_with_its_cause() {
     assert!(stderr(&output).contains("did not open"));
 }
 
-// An outage looks like "no release" only by its message: taking it for a first publish
-// would skip the gate.
+// An empty listing is a first publish, so an outage taken for one would skip the gate.
 #[test]
-fn an_outage_reading_the_release_publishes_nothing() {
+fn an_outage_reading_the_bucket_publishes_nothing() {
     let mut bench = bench_on_version_1(3);
-    bench.break_gh("release-view");
+    bench.break_rclone("lsf");
     let output = bench.publish_table(&table_of(1, &WINDOW));
     assert!(!output.status.success());
     bench.heal();
@@ -306,18 +305,12 @@ fn an_outage_reading_the_release_publishes_nothing() {
     assert_eq!(bench.issues().len(), 1);
 }
 
-// `--clobber` deletes before it uploads. A run that dies there must not make the next one
-// a gateless first publish.
+// A manifest removed by hand beside kept tables must not make the next run a gateless first
+// publish.
 #[test]
-fn a_manifest_lost_in_upload_stops_publishing_until_a_rollback() {
+fn a_manifest_lost_beside_kept_tables_stops_publishing_until_a_rollback() {
     let mut bench = bench_on_version_1(5);
-    bench.lose_upload("manifest.json");
-    assert!(!bench
-        .publish_table(&table_of(5, &["16.21", "16.22"]))
-        .status
-        .success());
-    bench.heal();
-    assert!(!bench.asset_names().contains(&"manifest.json".to_string()));
+    bench.delete_asset("manifest.json");
 
     let refused = bench.publish_table(&table_of(1, &WINDOW));
     assert!(!refused.status.success());
@@ -354,7 +347,7 @@ fn a_manifest_that_does_not_read_or_names_a_lost_table_refuses() {
     assert_eq!(bench.issues().len(), 2);
 }
 
-fn publish_versions(bench: &mut ReleaseBench, count: usize) {
+fn publish_versions(bench: &mut BucketBench, count: usize) {
     for version in 0..count {
         assert_published(&bench.publish_table(&table_of(10 + version, &WINDOW)));
     }
@@ -362,7 +355,7 @@ fn publish_versions(bench: &mut ReleaseBench, count: usize) {
 
 #[test]
 fn only_the_last_4_tables_are_kept() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     publish_versions(&mut bench, 6);
     assert_eq!(
         bench.asset_names(),
@@ -391,7 +384,7 @@ fn an_identical_table_takes_no_slot() {
 #[test]
 fn a_rebuild_of_the_same_matches_takes_no_slot() {
     let matches = matches_on((16, 21));
-    let bench = ReleaseBench::new();
+    let bench = BucketBench::new();
     assert_published(&bench.publish_built(&matches.database(), &[]));
 
     let output = bench.publish_built(&matches.database(), &[]);
@@ -403,7 +396,7 @@ fn a_rebuild_of_the_same_matches_takes_no_slot() {
 
 #[test]
 fn a_rollback_points_the_manifest_at_an_older_table_with_its_hash() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     publish_versions(&mut bench, 3);
     let before = bench.asset_names();
 
@@ -417,7 +410,7 @@ fn a_rollback_points_the_manifest_at_an_older_table_with_its_hash() {
 // reused version number would hand the app a different file under a name it has seen.
 #[test]
 fn a_publish_after_a_rollback_compares_to_the_live_table_and_takes_a_new_version() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     assert_published(&bench.publish_table(&table_of(5, &WINDOW)));
     assert_published(&bench.publish_table(&table_of(10, &WINDOW)));
     assert!(bench.rollback(1).status.success());
@@ -429,7 +422,7 @@ fn a_publish_after_a_rollback_compares_to_the_live_table_and_takes_a_new_version
 
 #[test]
 fn a_rollback_to_a_table_not_kept_leaves_the_manifest() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     publish_versions(&mut bench, 6);
     let output = bench.rollback(1);
     assert!(!output.status.success());
@@ -440,7 +433,7 @@ fn a_rollback_to_a_table_not_kept_leaves_the_manifest() {
 
 #[test]
 fn a_rollback_to_a_table_that_does_not_read_leaves_the_manifest() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     publish_versions(&mut bench, 2);
     bench.overwrite_asset("benchmark-table-1.json", "{ not json");
     assert!(!bench.rollback(1).status.success());
@@ -470,7 +463,7 @@ fn a_signing_key_that_does_not_read_opens_an_issue_and_leaves_the_old_table() {
 
 #[test]
 fn a_rollback_with_a_signing_key_that_does_not_read_leaves_the_manifest() {
-    let mut bench = ReleaseBench::new();
+    let mut bench = BucketBench::new();
     publish_versions(&mut bench, 2);
     bench.set_signing_key("not a key");
 
@@ -499,7 +492,7 @@ fn a_manifest_from_before_signing_is_read_and_a_rollback_signs_it() {
 // What goes into the app is derived from the file on the host, so the two cannot disagree.
 #[test]
 fn the_public_key_of_the_signing_key_is_printed() {
-    let output = ReleaseBench::new().manifest_public_key();
+    let output = BucketBench::new().manifest_public_key();
 
     assert_published(&output);
     assert_eq!(stdout(&output).trim(), SIGNING_PUBLIC_KEY);
@@ -526,13 +519,42 @@ fn an_identical_table_still_signs_a_manifest_this_key_did_not_sign() {
     }
 }
 
-// Each upload can lose the manifest, as `--clobber` deletes first: see the test on that loss.
+// A weekly upload of nothing new would only be a chance for it to fail.
 #[test]
 fn an_identical_table_leaves_a_signed_manifest_alone() {
     let mut bench = bench_on_version_1(5);
-    bench.break_gh("release-upload");
+    bench.fail_upload("manifest.json");
 
     assert_published(&bench.publish_table(&table_of(5, &WINDOW)));
 
     assert_manifest_signs_table(&bench, 1);
+}
+
+// A rollback has to reach the apps soon, while a table's file never changes under its name.
+#[test]
+fn the_manifest_is_cached_briefly_and_a_table_for_long() {
+    let bench = bench_on_version_1(3);
+
+    assert_eq!(
+        bench.cache_header("manifest.json").trim(),
+        "Cache-Control: public, max-age=60"
+    );
+    assert_eq!(
+        bench.cache_header("benchmark-table-1.json").trim(),
+        "Cache-Control: public, max-age=31536000, immutable"
+    );
+}
+
+// rclone exits 0 for an object it cannot find, and the gate must not then compare the new
+// table to the file a previous run left behind.
+#[test]
+fn a_live_table_that_does_not_arrive_refuses_rather_than_reading_a_leftover() {
+    let mut bench = bench_on_version_1(5);
+    assert_published(&bench.publish_table(&table_of(5, &["16.21", "16.22"])));
+    bench.lose_download("benchmark-table-2.json");
+
+    let output = bench.publish_table(&table_of(9, &["16.21", "16.22"]));
+
+    assert!(!output.status.success());
+    assert_eq!(bench.manifest_version(), 2);
 }

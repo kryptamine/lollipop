@@ -7,23 +7,30 @@ use serde_json::{json, Value};
 use tempfile::TempDir;
 
 // RFC 8032, test 1: the public key is known without asking the code under test.
+const BUCKET: &str = "test-bucket";
 const SIGNING_SEED: &str = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
 pub const SIGNING_PUBLIC_KEY: &str =
     "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
 
-/// The built binary against a fake `gh` first on its `PATH`, with the Release in a directory.
-pub struct ReleaseBench {
+/// The built binary against a fake `gh` and `rclone` first on its `PATH`, with the bucket in
+/// a directory.
+pub struct BucketBench {
     dir: TempDir,
     next_file: u32,
 }
 
-impl ReleaseBench {
+impl BucketBench {
     pub fn new() -> Self {
         let dir = TempDir::new().unwrap();
         std::fs::create_dir(dir.path().join("bin")).unwrap();
-        let gh = dir.path().join("bin/gh");
-        std::fs::write(&gh, include_str!("fake_gh.sh")).unwrap();
-        std::fs::set_permissions(&gh, std::fs::Permissions::from_mode(0o755)).unwrap();
+        for (name, script) in [
+            ("gh", include_str!("fake_gh.sh")),
+            ("rclone", include_str!("fake_rclone.sh")),
+        ] {
+            let path = dir.path().join("bin").join(name);
+            std::fs::write(&path, script).unwrap();
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
         let bench = Self { dir, next_file: 0 };
         bench.set_reworks("[]");
         bench.set_signing_key(SIGNING_SEED);
@@ -51,16 +58,33 @@ impl ReleaseBench {
         std::fs::write(self.dir.path().join(format!("fail-{command}")), "").unwrap();
     }
 
-    /// An upload of this asset fails after the old copy is gone, as `--clobber` can.
-    pub fn lose_upload(&self, asset: &str) {
-        std::fs::write(self.dir.path().join(format!("lose-upload-{asset}")), "").unwrap();
+    pub fn break_rclone(&self, command: &str) {
+        std::fs::write(self.dir.path().join(format!("fail-rclone-{command}")), "").unwrap();
+    }
+
+    pub fn fail_upload(&self, asset: &str) {
+        std::fs::write(self.dir.path().join(format!("fail-upload-{asset}")), "").unwrap();
+    }
+
+    /// This object is listed, but its download writes nothing and still exits 0.
+    pub fn lose_download(&self, asset: &str) {
+        std::fs::write(self.dir.path().join(format!("lose-download-{asset}")), "").unwrap();
+    }
+
+    pub fn delete_asset(&self, asset: &str) {
+        std::fs::remove_file(self.asset_path(asset)).unwrap();
+    }
+
+    /// The cache header the last upload of this asset carried.
+    pub fn cache_header(&self, asset: &str) -> String {
+        std::fs::read_to_string(self.dir.path().join(format!("header-{asset}"))).unwrap()
     }
 
     pub fn heal(&self) {
         for entry in std::fs::read_dir(self.dir.path()).unwrap() {
             let path = entry.unwrap().path();
             let name = path.file_name().unwrap().to_string_lossy().into_owned();
-            if name.starts_with("fail-") || name.starts_with("lose-upload-") {
+            if name.starts_with("fail-") || name.starts_with("lose-download-") {
                 std::fs::remove_file(path).unwrap();
             }
         }
@@ -108,6 +132,7 @@ impl ReleaseBench {
             .args(args)
             .arg("--work-dir")
             .arg(self.dir.path().join("work"))
+            .args(["--bucket", BUCKET])
             .arg("--signing-key-file")
             .arg(self.signing_key())
             .env("PATH", path)
@@ -125,13 +150,13 @@ impl ReleaseBench {
             .unwrap()
     }
 
-    pub fn tag(&self) -> String {
-        let tag = std::fs::read_to_string(self.dir.path().join("tag")).unwrap();
-        tag.trim().to_string()
+    // The schema's prefix is pinned here: it is the path the app reads.
+    fn assets_dir(&self) -> PathBuf {
+        self.dir.path().join("remote").join(BUCKET).join("v1")
     }
 
     pub fn asset_names(&self) -> Vec<String> {
-        let Ok(assets) = std::fs::read_dir(self.dir.path().join("assets")) else {
+        let Ok(assets) = std::fs::read_dir(self.assets_dir()) else {
             return Vec::new();
         };
         let mut names: Vec<String> = assets
@@ -142,7 +167,7 @@ impl ReleaseBench {
     }
 
     pub fn asset_path(&self, name: &str) -> PathBuf {
-        self.dir.path().join("assets").join(name)
+        self.assets_dir().join(name)
     }
 
     pub fn asset(&self, name: &str) -> Value {

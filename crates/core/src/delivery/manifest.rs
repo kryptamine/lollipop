@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use super::manifest_key::ManifestKey;
 use super::signed_message::signed_message;
 
-pub(super) const MANIFEST_ASSET: &str = "manifest.json";
+pub(super) const MANIFEST_OBJECT: &str = "manifest.json";
 
 /// The truth about which table is live. Any version it names is followed, older included.
 #[derive(Debug, Deserialize)]
@@ -23,7 +23,7 @@ impl Manifest {
             .then_some(manifest)
     }
 
-    pub(super) fn table_asset(&self) -> String {
+    pub(super) fn table_object(&self) -> String {
         format!("benchmark-table-{}.json", self.version)
     }
 
