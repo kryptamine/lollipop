@@ -19,3 +19,8 @@ if grep -rl 'unsafe_code' crates --include='*.rs' | grep -v '^crates/app/src/pla
   echo "unsafe_code may only be allowed in crates/app/src/platform" >&2
   exit 1
 fi
+
+if grep -rnE 'clippy::(unwrap_used|expect_used|panic)' crates/*/src; then
+  echo "production code returns or logs a failure, and never excuses a panic" >&2
+  exit 1
+fi

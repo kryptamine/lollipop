@@ -18,17 +18,18 @@ impl Overlay {
     }
 
     #[cfg(target_os = "macos")]
-    pub(crate) fn set_frontmost(&self, bundle_id: Option<String>) {
-        self.update(move |visibility| visibility.set_frontmost(bundle_id.as_deref()));
+    pub(crate) fn set_frontmost(&self, bundle_id: Option<String>) -> tauri::Result<()> {
+        self.update(move |visibility| visibility.set_frontmost(bundle_id.as_deref()))
     }
 
-    pub(crate) fn set_match_running(&self, running: bool) {
-        self.update(move |visibility| visibility.set_match_running(running));
+    pub(crate) fn set_match_running(&self, running: bool) -> tauri::Result<()> {
+        self.update(move |visibility| visibility.set_match_running(running))
     }
 
-    fn update(&self, change: impl FnOnce(&mut Visibility) + Send + 'static) {
+    fn update(&self, change: impl FnOnce(&mut Visibility) + Send + 'static) -> tauri::Result<()> {
         let this = self.clone();
-        let _ = self.window.run_on_main_thread(move || {
+        self.window.run_on_main_thread(move || {
+            // Two booleans cannot be left half-written, so a poisoned lock is still good.
             let mut visibility = this
                 .visibility
                 .lock()
@@ -37,8 +38,10 @@ impl Overlay {
             change(&mut visibility);
             if visibility.shown() != was_shown {
                 #[cfg(target_os = "macos")]
-                let _ = crate::platform::set_shown(&this.window, visibility.shown());
+                if let Err(error) = crate::platform::set_shown(&this.window, visibility.shown()) {
+                    log::error!("could not change the overlay's alpha: {error}");
+                }
             }
-        });
+        })
     }
 }

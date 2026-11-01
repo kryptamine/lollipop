@@ -1,10 +1,10 @@
 //! Polls Riot's Live Client Data API for the active player's own stats.
 
+mod client;
 mod clock;
 mod payload;
-mod poll;
 mod snapshot;
 
+pub use client::{LiveClient, LIVE_CLIENT_URL};
 pub use clock::{Clock, SystemClock};
-pub use poll::{poll, LIVE_CLIENT_URL};
 pub use snapshot::Snapshot;

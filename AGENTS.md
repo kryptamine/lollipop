@@ -62,6 +62,21 @@ the parent. A trait may share a file with its one production implementation, and
 private structs mapping a single JSON document may share one file. No linter
 checks this.
 
+## Error rule (mandatory)
+
+**Production code never panics on a failure.** No `unwrap`, `expect` or `panic!`,
+and no `allow` for them: `scripts/check-boundaries.sh` fails on one. A fallible call
+returns its error with `?` to whoever can act on it. Where nothing can receive it, as
+in an AppKit callback, it goes to `log::error!`. `let _ =` never discards a `Result`.
+Tests may `unwrap`: a panic is how a test fails.
+
+## Unsafe rule (mandatory)
+
+**`unsafe` lives only in `platform`, and only around the call that needs it.** One
+operation to a block, with a `// SAFETY:` comment saying why it holds. Clippy checks
+both, and `scripts/check-boundaries.sh` checks the module. Prefer a safe API where
+one exists.
+
 ## Test rule (mandatory)
 
 **Tests are integration tests through an external boundary, with no unit tests.**

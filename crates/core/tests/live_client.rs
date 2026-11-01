@@ -33,7 +33,7 @@ async fn replays_a_recorded_game_on_game_time() {
     let server_game = Arc::clone(&game);
     let url = serve(Box::new(move || server_game.payload_at(server_clock.now()))).await;
 
-    let mut updates = start_polling(url, clock);
+    let mut updates = start_polling(&url, clock);
     // The recording opens on the loading screen, before GameStart.
     assert_eq!(updates.recv().await.unwrap().1, None);
 

@@ -10,8 +10,10 @@ workspace = true
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+log = "0.4"
 lollipop-core = { path = "../core" }
 tauri = { version = "2", features = ["macos-private-api"] }
+tauri-plugin-log = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 block2 = "0.6"
