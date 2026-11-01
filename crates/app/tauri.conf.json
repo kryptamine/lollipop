@@ -4,10 +4,12 @@
   "version": "0.1.0",
   "identifier": "dev.lollipop.overlay",
   "build": {
-    "frontendDist": "../ui"
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../../dist"
   },
   "app": {
-    "withGlobalTauri": true,
     "macOSPrivateApi": true,
     "windows": [
       {
@@ -29,12 +31,17 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost",
+      "devCsp": "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost ws://localhost:1420"
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["app"],
-    "icon": ["icons/icon.png"]
+    "targets": [
+      "app"
+    ],
+    "icon": [
+      "icons/icon.png"
+    ]
   }
 }

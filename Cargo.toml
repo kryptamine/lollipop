@@ -1,0 +1,19 @@
+[workspace]
+members = ["crates/app", "crates/collector", "crates/core"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+# Complexity thresholds live in clippy.toml.
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+allow_attributes_without_reason = "deny"
+cognitive_complexity = "deny"
+dbg_macro = "deny"
+todo = "deny"
