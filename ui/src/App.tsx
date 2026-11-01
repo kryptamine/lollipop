@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'preact/hooks';
 
 import { MarkerStrip } from './MarkerStrip';
-import { onSnapshot, type Snapshot } from './bridge';
+import { onSnapshot, onWidgetSwitches, type Snapshot, type WidgetSwitches } from './bridge';
 
 export const App = () => {
   const [snapshot, setSnapshot] = useState<Snapshot>();
+  const [switches, setSwitches] = useState<WidgetSwitches>();
 
   useEffect(() => onSnapshot(setSnapshot), []);
+  useEffect(() => onWidgetSwitches(setSwitches), []);
 
-  return snapshot && <MarkerStrip snapshot={snapshot} />;
+  return snapshot && switches?.markerStrip && <MarkerStrip snapshot={snapshot} />;
 };

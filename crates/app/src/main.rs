@@ -1,13 +1,19 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod launch_at_login;
+mod menu_bar;
 mod overlay;
 #[cfg(target_os = "macos")]
 mod platform;
+mod settings_store;
 
-use lollipop_core::live::{poll, Snapshot, SystemClock, LIVE_CLIENT_URL};
+use lollipop_core::live::{poll, status_line, Snapshot, SystemClock, LIVE_CLIENT_URL};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
 use overlay::Overlay;
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use settings_store::SettingsStore;
+use tauri::menu::MenuItem;
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Wry};
+use tauri_plugin_autostart::MacosLauncher;
 
 // Debug builds can point at scripts/mock-live-client.mjs and stand in another app
 // for the game; release builds ignore the environment.
@@ -24,13 +30,25 @@ fn overlay_window(app: &AppHandle) -> WebviewWindow {
         .expect("overlay window is declared in tauri.conf.json")
 }
 
-async fn publish_live_client(app: AppHandle, overlay: Overlay) {
+async fn publish_live_client(
+    app: AppHandle,
+    overlay: Overlay,
+    store: SettingsStore,
+    status: MenuItem<Wry>,
+) {
+    let mut was_running = false;
     let on_update = move |update: Option<Snapshot>| {
         let running = update.is_some();
+        // Before the snapshot: the view draws no Widget until it knows its switch.
+        store.publish_switches();
         if let Some(snapshot) = update {
             let _ = app.emit("snapshot", &snapshot);
         }
         overlay.set_match_running(running);
+        if running != was_running {
+            let _ = status.set_text(status_line(running));
+            was_running = running;
+        }
     };
     let url = dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL);
     poll(&url, &SystemClock, on_update).await;
@@ -48,6 +66,11 @@ fn main() {
     let builder = builder.activate_ignoring_other_apps(false);
 
     builder
+        // LaunchAgent, as the AppleScript launcher would ask for Automation access.
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .setup(|app| {
             let window = overlay_window(app.handle());
             let game_bundle_id = dev_setting("LOLLIPOP_GAME_BUNDLE", GAME_BUNDLE_ID);
@@ -62,7 +85,17 @@ fn main() {
             cover_primary_display(&window)?;
             // Clicks must always reach the game, never the overlay.
             window.set_ignore_cursor_events(true)?;
-            tauri::async_runtime::spawn(publish_live_client(app.handle().clone(), overlay));
+            let store = SettingsStore::open(app.handle())?;
+            // A login item removed outside the app comes back: the settings file decides.
+            let launch_on_login = store.read(|settings| settings.launch_at_login);
+            let _ = launch_at_login::apply(app.handle(), launch_on_login);
+            let status = menu_bar::install(app.handle(), store.clone())?;
+            tauri::async_runtime::spawn(publish_live_client(
+                app.handle().clone(),
+                overlay,
+                store,
+                status,
+            ));
             Ok(())
         })
         .run(tauri::generate_context!())

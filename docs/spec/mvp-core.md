@@ -159,8 +159,8 @@ no hotkey.
 - **Quit.**
 
 A change applies at once, including during a game. Markers keep being computed
-while the strip is off. Settings are kept in a local file. With every Widget off
-the app keeps running with no warning.
+while the strip is off. Settings are kept in a local file, `settings.json` in the
+app's config directory. With every Widget off the app keeps running with no warning.
 
 ## Benchmark table
 
