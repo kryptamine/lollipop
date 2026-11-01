@@ -20,3 +20,7 @@ _Avoid_: Arrow, indicator, delta
 **Timing hint**:
 A pop-up shown shortly before a scheduled game event, such as an objective spawn or a cannon wave.
 _Avoid_: Timer, alert, notification
+
+**Widget**:
+A self-contained element of the overlay, such as the strip of Markers or the Timing hint banner.
+_Avoid_: Panel, module
