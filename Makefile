@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-mock build format lint test check afk
+.PHONY: help install dev dev-mock build format lint test check
 
 MOCK_URL := http://127.0.0.1:2998/
 
@@ -33,6 +33,3 @@ test: ## Run the tests
 
 check: lint test ## Run the linters and the tests, required before a push
 	pnpm build
-
-afk: ## Work through the ready-for-agent issues, merging each, asking when a human is needed
-	scripts/afk.sh
