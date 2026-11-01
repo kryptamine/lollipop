@@ -7,7 +7,7 @@ The reasons are in [ADR 0010](../docs/adr/0010-ansible-configures-the-vps.md).
 ## What it needs
 
 - On this machine: Docker and `uv`.
-- A Debian 12 VPS reachable over SSH, as root or a user with sudo.
+- An Ubuntu 26.04 VPS reachable over SSH, as root or a user with sudo.
 - `deploy/inventory.yml`, copied from `inventory.example.yml` and filled in. Git ignores
   it, because it holds every secret.
 
