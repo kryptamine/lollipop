@@ -1,1 +1,9 @@
-allow = ["Bash(cargo *)", "Bash(pnpm *)", "Bash(node *)", "Bash(shellcheck *)"]
+allow = [
+  "Bash(cargo *)",
+  "Bash(pnpm *)",
+  "Bash(node *)",
+  "Bash(shellcheck *)",
+  "Bash(echo *)",
+  "Bash(sips -g *)",
+  "Read(~/.cargo/registry/**)",
+]
