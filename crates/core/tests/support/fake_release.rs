@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use lollipop_core::delivery::{ReleaseChannel, ReleaseToken};
+use ed25519_dalek::{Signer, SigningKey};
+use lollipop_core::delivery::{ManifestKey, ReleaseChannel, ReleaseToken};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -9,6 +10,7 @@ use tokio::net::{TcpListener, TcpStream};
 
 pub const TOKEN: &str = "test-token";
 const REPO: &str = "owner/private-repo";
+const SIGNING_SEED: [u8; 32] = [7; 32];
 const MANIFEST_ID: u32 = 1;
 // An asset id of a table is this plus its version.
 const TABLE_IDS: u32 = 1000;
@@ -73,9 +75,9 @@ impl FakeRelease {
 
     /// The manifest names `table`, whatever the asset of that version actually holds.
     pub fn point_manifest_at(&self, version: u32, table: &str) {
-        let sha256 = format!("{:x}", Sha256::digest(table));
-        let manifest = json!({ "version": version, "sha256": sha256 }).to_string();
-        self.state.lock().unwrap().manifest = Some(manifest);
+        let sha256 = sha256_of(table);
+        let signature = sign_with_this_release(&message(1, version, &sha256));
+        self.write_manifest(&manifest_body(version, &sha256, &signature));
     }
 
     pub fn publish_cut_short(&self, version: u32, table: &str) {
@@ -237,4 +239,32 @@ fn storage_reply(request: &str, state: &mut State) -> Reply {
         },
         None => Reply::with_status("404 Not Found"),
     }
+}
+
+/// The app's half of the key this Release signs with.
+pub fn manifest_key() -> ManifestKey {
+    let public = SigningKey::from_bytes(&SIGNING_SEED).verifying_key();
+    ManifestKey::from_hex(&hex::encode(public.as_bytes())).unwrap()
+}
+
+pub fn sha256_of(table: &str) -> String {
+    format!("{:x}", Sha256::digest(table))
+}
+
+// Written out, not taken from the app, so that the format cannot drift unnoticed.
+pub fn message(schema: u32, version: u32, sha256: &str) -> String {
+    format!("lollipop-manifest\nv{schema}\n{version}\n{sha256}")
+}
+
+pub fn sign(seed: &[u8; 32], message: &str) -> String {
+    let signature = SigningKey::from_bytes(seed).sign(message.as_bytes());
+    hex::encode(signature.to_bytes())
+}
+
+pub fn sign_with_this_release(message: &str) -> String {
+    sign(&SIGNING_SEED, message)
+}
+
+pub fn manifest_body(version: u32, sha256: &str, signature: &str) -> String {
+    json!({ "version": version, "sha256": sha256, "signature": signature }).to_string()
 }

@@ -32,6 +32,22 @@ systemctl list-timers 'lollipop*'
 It loads the newest backup, starts empty if the bucket holds none, and keeps the
 collector down if the storage cannot be read.
 
+## Change the manifest signing key
+
+The app only follows manifests signed by the key compiled into it.
+
+1. Generate a key with `openssl rand -hex 32` and set `manifest_signing_key` in
+   `deploy/inventory.yml`.
+2. Run `make deploy`.
+3. Print the public half with `lollipop-collector manifest-public-key` on the VPS, and
+   set it as `COMPILED_IN` in `crates/core/src/delivery/manifest_key.rs`.
+4. Run `systemctl start lollipop-publish.service`, which signs the live manifest even
+   when the table has not changed, and rebuild the app. An install on the old key keeps
+   its table until it is rebuilt.
+
+The collector cannot tell whether its key is the compiled-in one: a mismatch publishes
+fine and every app keeps its old table. The first deploy with signing needs step 4 too.
+
 ## Check a backup by hand
 
 ```sh

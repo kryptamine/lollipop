@@ -4,6 +4,7 @@ mod current_table;
 mod gh_error;
 mod gh_release;
 mod manifest;
+mod manifest_signer;
 mod publish_config;
 mod publish_error;
 mod publish_gate;
@@ -24,11 +25,13 @@ use crate::table::{build_table, Reworks, TableConfig, TableError};
 use current_table::CurrentTable;
 use gh_release::GhRelease;
 use manifest::Manifest;
+use manifest_signer::ManifestSigner;
 use publish_gate::refusal;
 use release_assets::{table_name, ReleaseAssets};
 use table_summary::TableSummary;
 
 pub use gh_error::GhError;
+pub use manifest_signer::manifest_public_key;
 pub use publish_config::PublishConfig;
 pub use publish_error::PublishError;
 pub use published::Published;
@@ -38,7 +41,8 @@ pub use rollback_config::RollbackConfig;
 const BUILT_TABLE: &str = "benchmark-table.json";
 
 /// # Errors
-/// On a failed build, a refused publish, or any `gh` failure, even after the manifest moved.
+/// On a failed build, a refused publish, an unreadable signing key, or any `gh` failure,
+/// even after the manifest moved.
 /// Whatever stops it also opens an issue.
 pub fn publish(config: &PublishConfig) -> Result<Published, PublishError> {
     let release = GhRelease::new(&config.repo);
@@ -53,6 +57,7 @@ pub fn publish(config: &PublishConfig) -> Result<Published, PublishError> {
 fn attempt(config: &PublishConfig, release: &GhRelease) -> Result<Published, PublishError> {
     std::fs::create_dir_all(&config.work_dir)
         .map_err(|error| PublishError::Write(config.work_dir.clone(), error))?;
+    let signer = ManifestSigner::read(&config.signing_key)?;
     let reworks = Reworks::read(&config.reworks)?;
     let assets = release.assets()?;
     let current = CurrentTable::fetch(release, assets.as_ref(), &config.work_dir)?;
@@ -68,13 +73,18 @@ fn attempt(config: &PublishConfig, release: &GhRelease) -> Result<Published, Pub
     let version = assets.as_ref().map_or(1, ReleaseAssets::next_version);
     let manifest = Manifest::of(version, &table)?;
     if let Some(current) = current.filter(|current| current.manifest.same_table(&manifest)) {
+        if !current.manifest.signed_by(&signer) {
+            current
+                .manifest
+                .upload(release, &signer, &config.work_dir)?;
+        }
         return Ok(Published::Unchanged(current.manifest.version));
     }
     if assets.is_none() {
         release.create()?;
     }
     upload_table(release, &table, &config.work_dir, version)?;
-    manifest.upload(release, &config.work_dir)?;
+    manifest.upload(release, &signer, &config.work_dir)?;
     if let Some(assets) = assets {
         for outdated in assets.outdated_after_adding_one() {
             release.delete_asset(&table_name(*outdated))?;

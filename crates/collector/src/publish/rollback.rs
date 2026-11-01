@@ -1,5 +1,6 @@
 use super::gh_release::GhRelease;
 use super::manifest::Manifest;
+use super::manifest_signer::ManifestSigner;
 use super::publish_error::PublishError;
 use super::release_assets::table_name;
 use super::rollback_config::RollbackConfig;
@@ -11,6 +12,7 @@ use super::table_summary::TableSummary;
 pub fn rollback(config: &RollbackConfig) -> Result<(), PublishError> {
     std::fs::create_dir_all(&config.work_dir)
         .map_err(|error| PublishError::Write(config.work_dir.clone(), error))?;
+    let signer = ManifestSigner::read(&config.signing_key)?;
     let release = GhRelease::new(&config.repo);
     let kept = release
         .assets()?
@@ -22,5 +24,5 @@ pub fn rollback(config: &RollbackConfig) -> Result<(), PublishError> {
     let table = config.work_dir.join(&name);
     release.download(&name, &table)?;
     TableSummary::read(&table).map_err(PublishError::Refused)?;
-    Manifest::of(config.version, &table)?.upload(&release, &config.work_dir)
+    Manifest::of(config.version, &table)?.upload(&release, &signer, &config.work_dir)
 }

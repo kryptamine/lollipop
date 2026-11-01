@@ -6,6 +6,11 @@ use std::process::{Command, Output};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 
+// RFC 8032, test 1: the public key is known without asking the code under test.
+const SIGNING_SEED: &str = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
+pub const SIGNING_PUBLIC_KEY: &str =
+    "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
+
 /// The built binary against a fake `gh` first on its `PATH`, with the Release in a directory.
 pub struct ReleaseBench {
     dir: TempDir,
@@ -21,11 +26,20 @@ impl ReleaseBench {
         std::fs::set_permissions(&gh, std::fs::Permissions::from_mode(0o755)).unwrap();
         let bench = Self { dir, next_file: 0 };
         bench.set_reworks("[]");
+        bench.set_signing_key(SIGNING_SEED);
         bench
     }
 
     pub fn set_reworks(&self, body: &str) {
         std::fs::write(self.reworks(), body).unwrap();
+    }
+
+    pub fn set_signing_key(&self, body: &str) {
+        std::fs::write(self.signing_key(), body).unwrap();
+    }
+
+    fn signing_key(&self) -> PathBuf {
+        self.dir.path().join("manifest-key")
     }
 
     pub fn reworks(&self) -> PathBuf {
@@ -94,8 +108,19 @@ impl ReleaseBench {
             .args(args)
             .arg("--work-dir")
             .arg(self.dir.path().join("work"))
+            .arg("--signing-key-file")
+            .arg(self.signing_key())
             .env("PATH", path)
             .env("FAKE_GH_STATE", self.dir.path())
+            .output()
+            .unwrap()
+    }
+
+    pub fn manifest_public_key(&self) -> Output {
+        Command::new(env!("CARGO_BIN_EXE_lollipop-collector"))
+            .arg("manifest-public-key")
+            .arg("--signing-key-file")
+            .arg(self.signing_key())
             .output()
             .unwrap()
     }

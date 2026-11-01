@@ -2,13 +2,14 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 use lollipop_collector::{
-    build_table, check_schedule, collect, publish, rollback, Config, PublishConfig, RollbackConfig,
-    SeedTier, SystemClock, TableConfig,
+    build_table, check_schedule, collect, manifest_public_key, publish, rollback, Config,
+    PublishConfig, RollbackConfig, SeedTier, SystemClock, TableConfig,
 };
 use lollipop_core::game_inputs::Patch;
 
 const REPO: &str = "kryptamine/lollipop";
 const WORK_DIR: &str = "/var/lib/lollipop/publish";
+const SIGNING_KEY: &str = "/etc/lollipop/manifest-key";
 
 #[derive(Parser)]
 #[command(version)]
@@ -29,6 +30,8 @@ enum Command {
     Publish(PublishArgs),
     /// Points the manifest at a kept table.
     Rollback(RollbackArgs),
+    /// Prints the public key the app compiles in for a signing key.
+    ManifestPublicKey(ManifestPublicKeyArgs),
 }
 
 #[derive(Args)]
@@ -77,6 +80,8 @@ struct PublishArgs {
     repo: String,
     #[arg(long, default_value = WORK_DIR)]
     work_dir: PathBuf,
+    #[arg(long, default_value = SIGNING_KEY)]
+    signing_key_file: PathBuf,
 }
 
 #[derive(Args)]
@@ -88,6 +93,14 @@ struct RollbackArgs {
     repo: String,
     #[arg(long, default_value = WORK_DIR)]
     work_dir: PathBuf,
+    #[arg(long, default_value = SIGNING_KEY)]
+    signing_key_file: PathBuf,
+}
+
+#[derive(Args)]
+struct ManifestPublicKeyArgs {
+    #[arg(long, default_value = SIGNING_KEY)]
+    signing_key_file: PathBuf,
 }
 
 fn parse_patch(value: &str) -> Result<Patch, String> {
@@ -138,6 +151,7 @@ fn run_publish(args: PublishArgs) -> Result<(), String> {
         max_patch: args.max_patch,
         repo: args.repo,
         work_dir: args.work_dir,
+        signing_key: args.signing_key_file,
     };
     let published = publish(&config).map_err(|error| error.to_string())?;
     println!("{published}");
@@ -149,8 +163,16 @@ fn run_rollback(args: RollbackArgs) -> Result<(), String> {
         version: args.version,
         repo: args.repo,
         work_dir: args.work_dir,
+        signing_key: args.signing_key_file,
     };
     rollback(&config).map_err(|error| error.to_string())
+}
+
+#[allow(clippy::print_stdout, reason = "the key is this command's output")]
+fn run_manifest_public_key(args: &ManifestPublicKeyArgs) -> Result<(), String> {
+    let key = manifest_public_key(&args.signing_key_file).map_err(|error| error.to_string())?;
+    println!("{key}");
+    Ok(())
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -160,5 +182,6 @@ async fn main() -> Result<(), String> {
         Command::BuildTable(args) => run_build_table(args),
         Command::Publish(args) => run_publish(args),
         Command::Rollback(args) => run_rollback(args),
+        Command::ManifestPublicKey(args) => run_manifest_public_key(&args),
     }
 }

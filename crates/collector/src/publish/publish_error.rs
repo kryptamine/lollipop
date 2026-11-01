@@ -13,6 +13,7 @@ pub enum PublishError {
     NotKept(u32),
     Release(GhError),
     Write(PathBuf, std::io::Error),
+    SigningKey(PathBuf, String),
     NoticeFailed(Box<Self>, GhError),
 }
 
@@ -39,6 +40,9 @@ impl fmt::Display for PublishError {
             Self::Release(error) => write!(formatter, "{error}"),
             Self::Write(path, error) => {
                 write!(formatter, "cannot write {}: {error}", path.display())
+            }
+            Self::SigningKey(path, reason) => {
+                write!(formatter, "cannot use {}: {reason}", path.display())
             }
             Self::NoticeFailed(cause, notice) => {
                 write!(
