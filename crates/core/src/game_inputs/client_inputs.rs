@@ -1,3 +1,4 @@
+use super::client_reading::ClientReading;
 use super::connection::Connection;
 use super::gameflow_session;
 use super::patch::Patch;
@@ -9,13 +10,6 @@ use super::tier_reading::TierReading;
 pub enum ClientInputs {
     Unavailable,
     Read(ClientReading),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ClientReading {
-    pub queue: Option<u32>,
-    pub patch: Option<Patch>,
-    pub tier: TierReading,
 }
 
 impl ClientInputs {

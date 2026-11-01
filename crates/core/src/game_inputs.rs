@@ -2,6 +2,7 @@
 
 mod champ_select;
 mod client_inputs;
+mod client_reading;
 mod connection;
 mod gameflow_session;
 mod lockfile;
@@ -16,7 +17,8 @@ use std::path::Path;
 use connection::Connection;
 use lockfile::Lockfile;
 
-pub use client_inputs::{ClientInputs, ClientReading};
+pub use client_inputs::ClientInputs;
+pub use client_reading::ClientReading;
 pub use lockfile::LOCKFILE_PATH;
 pub use patch::Patch;
 pub use role::Role;
