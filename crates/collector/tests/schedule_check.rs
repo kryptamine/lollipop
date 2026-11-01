@@ -95,6 +95,21 @@ async fn every_objective_has_its_own_spawn() {
     assert_eq!(opened, expected);
 }
 
+// Riot's client serves an empty sub type where Match-V5 leaves the field out.
+#[tokio::test]
+async fn an_empty_sub_type_reads_as_none() {
+    let baron = (1_180_000, "BARON_NASHOR", Some(""));
+    let scenario = collected(&[Game::killing("EUW1_1", &[baron])]).await;
+    let bench = ReleaseBench::new();
+
+    bench.publish_built(&scenario.database(), &[]);
+
+    assert_eq!(
+        titles(&bench),
+        ["Baron killed before its scheduled spawn on patch 16.21"]
+    );
+}
+
 // One game in thousands is enough to show a timer moved.
 #[tokio::test]
 async fn the_earliest_kill_of_any_game_on_the_patch_counts() {

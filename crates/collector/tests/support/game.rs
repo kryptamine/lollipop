@@ -153,6 +153,9 @@ fn elite(timestamp: u32, monster_type: &str, sub_type: Option<&str>) -> Value {
         "type": "ELITE_MONSTER_KILL",
         "timestamp": timestamp,
         "killerId": 7,
+        "killerTeamId": 200,
+        "bounty": 0,
+        "position": { "x": 5007, "y": 10471 },
         "monsterType": monster_type,
     });
     if let Some(sub_type) = sub_type {
