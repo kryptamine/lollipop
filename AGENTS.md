@@ -9,7 +9,7 @@ Data API and shows the active player's CS, Gold earned and level.
 - `crates/app` (`lollipop`): the Tauri shell. `platform` is the only module
   allowed `unsafe`.
 - `crates/collector` (`lollipop-collector`): the Benchmark CLI, which collects
-  ranked matches into SQLite.
+  ranked matches into SQLite and builds the Benchmark table file from them.
 - `ui/`: the Preact view. It draws state it is given, and only `ui/src/bridge.ts`
   may import Tauri.
 

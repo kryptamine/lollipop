@@ -1,7 +1,7 @@
 use clap::ValueEnum;
 
 /// The eight tiers of a Cell, with Master and above merged.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ValueEnum)]
 pub enum SeedTier {
     Iron,
     Bronze,
@@ -15,6 +15,21 @@ pub enum SeedTier {
 }
 
 impl SeedTier {
+    pub(crate) const ALL: [Self; 8] = [
+        Self::Iron,
+        Self::Bronze,
+        Self::Silver,
+        Self::Gold,
+        Self::Platinum,
+        Self::Emerald,
+        Self::Diamond,
+        Self::MasterPlus,
+    ];
+
+    pub(crate) fn from_label(label: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|tier| tier.label() == label)
+    }
+
     pub(crate) const fn with_neighbours(self) -> &'static [Self] {
         match self {
             Self::Iron => &[Self::Iron, Self::Bronze],

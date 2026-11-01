@@ -179,11 +179,17 @@ Built offline and shipped as one versioned file
 
 - **Cell:** champion, role and tier. Eight tiers with Master and above merged,
   regions pooled. Matchup, map side and stored percentiles are not included.
-- **Contents per minute:** median CS, median `totalGold`, mean level and n.
+- **File:** JSON with `schema_version`, `patch_window` and `cells`, written by
+  `lollipop-collector build-table`.
+- **Contents per minute:** median CS, median `totalGold`, mean level and n. Timeline
+  frames are aligned to the minute by linear interpolation, and a game counts only
+  towards the minutes it reached.
 - **Thin Cells:** the source (Cell or adjacent tiers) is chosen once per Cell at
-  minute 20, so a Benchmark does not jump when its source changes. There is no
-  all-tier step.
-- **Thresholds:** minimum n=100, target n=300.
+  minute 20, so a Benchmark does not jump when its source changes. Adjacent tiers
+  are pooled with the Cell's own games, and a Cell with no source has no entry. There
+  is no all-tier step.
+- **Thresholds:** minimum n=100, target n=300. Choosing a source reads the minimum,
+  and the target is what collection aims for.
 - **Optional field:** `max_patch`. A game patch above it makes the table stale.
 
 ### Stale table
@@ -230,11 +236,13 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   a `max_patch` reset and rework entries, or if the file does not read.
 - **Failure notice:** a failed build or refused publish opens an issue through
   `gh`.
-- **Reworks:** a file in this repository, one entry per champion and first valid
-  patch, added and built before the patch ships. Older data for that champion is
-  dropped, and its Marker returns at n≥100.
-- **Drift report:** each build prints champions whose median shifted sharply. It
-  never excludes anyone.
+- **Reworks:** `crates/collector/reworks.json`, one entry per champion and first
+  valid patch, added and built before the patch ships. Older data for that champion
+  is dropped, and its Marker returns at n≥100. A file that does not read fails the
+  build.
+- **Drift report:** each build prints champions whose median shifted sharply between
+  the two patches: by more than the Neutral zone in CS or gold at minute 20, in a Cell
+  with n≥100 on both. It never excludes anyone.
 - **Rollback:** the manifest is the truth and the app follows it, even to an
   older version. The last 4 tables are kept.
 
@@ -318,6 +326,7 @@ role, on one region.
 - Minimum n=100 and target n=300.
 - Neutral zones and the 30 s hold. The hold has never been measured.
 - The 20% publish gate.
+- The drift report's bar, set to the Neutral zone with no measurement behind it.
 - The 15 minute duration filter.
 
 ## Out of scope

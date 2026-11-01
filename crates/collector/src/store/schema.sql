@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS participants (
   role TEXT NOT NULL,
   PRIMARY KEY (match, participant)
 ) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS participants_by_champion ON participants (champion, role);
 
 CREATE TABLE IF NOT EXISTS minute_values (
   match INTEGER NOT NULL REFERENCES matches (id) ON DELETE CASCADE,
