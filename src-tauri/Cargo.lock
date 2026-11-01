@@ -1787,6 +1787,7 @@ checksum = "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c"
 name = "lollipop"
 version = "0.1.0"
 dependencies = [
+ "objc2",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
