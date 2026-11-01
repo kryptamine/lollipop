@@ -25,40 +25,48 @@ impl RecordedGame {
     }
 
     pub fn first_game_time(&self) -> f64 {
-        self.states[0]["gameTime"].as_f64().unwrap()
+        game_time(&self.states[0])
+    }
+
+    /// `None` once the connection drops, about 1 s after `GameEnd`.
+    pub fn payload_at(&self, time: f64) -> Option<String> {
+        if time > game_time(self.states.last()?) + 1.0 {
+            return None;
+        }
+        let state = self.state_at(time)?;
+        Some(payload(state, &self.events_until(time)).to_string())
     }
 
     /// The recorder logs changes only, so the state at a time is the last one before it.
-    /// `None` once the connection drops, about 1 s after `GameEnd`.
-    pub fn payload_at(&self, game_time: f64) -> Option<String> {
-        let last = self.states.last()?;
-        if game_time > last["gameTime"].as_f64()? + 1.0 {
-            return None;
-        }
-        let state = self
-            .states
-            .iter()
-            .rev()
-            .find(|state| state["gameTime"].as_f64().unwrap() <= game_time)?;
-        let events: Vec<&Value> = self
-            .events
-            .iter()
-            .filter(|event| event["gameTime"].as_f64().unwrap() <= game_time)
-            .map(|event| &event["event"])
-            .collect();
-        let payload = json!({
-            "activePlayer": { "riotId": "self", "level": state["level"], "currentGold": state["gold"] },
-            "allPlayers": [{
-                "riotId": "self",
-                "championName": state["champion"],
-                "position": state["position"],
-                "level": state["level"],
-                "items": state["items"],
-                "scores": { "creepScore": state["cs"] },
-            }],
-            "events": { "Events": events },
-            "gameData": { "gameTime": state["gameTime"], "gameMode": state["gameMode"] },
-        });
-        Some(payload.to_string())
+    fn state_at(&self, time: f64) -> Option<&Value> {
+        self.states.iter().rev().find(|s| game_time(s) <= time)
     }
+
+    fn events_until(&self, time: f64) -> Vec<&Value> {
+        self.events
+            .iter()
+            .filter(|event| game_time(event) <= time)
+            .map(|event| &event["event"])
+            .collect()
+    }
+}
+
+fn game_time(record: &Value) -> f64 {
+    record["gameTime"].as_f64().unwrap()
+}
+
+fn payload(state: &Value, events: &[&Value]) -> Value {
+    json!({
+        "activePlayer": { "riotId": "self", "level": state["level"], "currentGold": state["gold"] },
+        "allPlayers": [{
+            "riotId": "self",
+            "championName": state["champion"],
+            "position": state["position"],
+            "level": state["level"],
+            "items": state["items"],
+            "scores": { "creepScore": state["cs"] },
+        }],
+        "events": { "Events": events },
+        "gameData": { "gameTime": state["gameTime"], "gameMode": state["gameMode"] },
+    })
 }

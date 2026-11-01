@@ -4,10 +4,12 @@ mod overlay;
 #[cfg(target_os = "macos")]
 mod platform;
 
+use std::error::Error;
+
 use lollipop_core::live::{LiveClient, Snapshot, SystemClock, LIVE_CLIENT_URL};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
 use overlay::Overlay;
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use tauri::{App, AppHandle, Emitter, Manager, WebviewWindow};
 
 // Debug builds can point at scripts/mock-live-client.mjs and stand in another app
 // for the game; release builds ignore the environment.
@@ -44,41 +46,43 @@ fn cover_primary_display(window: &WebviewWindow) -> tauri::Result<()> {
     Ok(())
 }
 
+#[cfg(target_os = "macos")]
+fn keep_focus_away(app: &mut App, window: &WebviewWindow, overlay: &Overlay) -> tauri::Result<()> {
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    platform::order_in_hidden(window)?;
+    let overlay = overlay.clone();
+    platform::watch_frontmost(move |bundle_id| {
+        if let Err(error) = overlay.set_frontmost(bundle_id) {
+            log::error!("could not apply the frontmost app: {error}");
+        }
+    });
+    Ok(())
+}
+
+fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
+    let window = app
+        .get_webview_window("overlay")
+        .ok_or(tauri::Error::WindowNotFound)?;
+    let game_bundle_id = dev_setting("LOLLIPOP_GAME_BUNDLE", GAME_BUNDLE_ID);
+    let overlay = Overlay::new(window.clone(), &game_bundle_id);
+    #[cfg(target_os = "macos")]
+    keep_focus_away(app, &window, &overlay)?;
+    cover_primary_display(&window)?;
+    // Clicks must always reach the game, never the overlay.
+    window.set_ignore_cursor_events(true)?;
+    let client = LiveClient::new(&dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL))?;
+    let publish = publish_live_client(client, app.handle().clone(), overlay);
+    tauri::async_runtime::spawn(publish);
+    Ok(())
+}
+
 #[allow(clippy::exit, reason = "generate_context! expands to process::exit")]
 fn main() -> tauri::Result<()> {
-    let builder = tauri::Builder::default().plugin(
-        tauri_plugin_log::Builder::default()
-            .level(log::LevelFilter::Info)
-            .build(),
-    );
+    let log = tauri_plugin_log::Builder::default().level(log::LevelFilter::Info);
+    let builder = tauri::Builder::default().plugin(log.build());
     // Without this, launching takes focus from League: see ADR 0006.
     #[cfg(target_os = "macos")]
     let builder = builder.activate_ignoring_other_apps(false);
 
-    builder
-        .setup(|app| {
-            let window = app
-                .get_webview_window("overlay")
-                .ok_or(tauri::Error::WindowNotFound)?;
-            let game_bundle_id = dev_setting("LOLLIPOP_GAME_BUNDLE", GAME_BUNDLE_ID);
-            let overlay = Overlay::new(window.clone(), &game_bundle_id);
-            #[cfg(target_os = "macos")]
-            {
-                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-                platform::order_in_hidden(&window)?;
-                let on_activation = overlay.clone();
-                platform::watch_frontmost(move |bundle_id| {
-                    if let Err(error) = on_activation.set_frontmost(bundle_id) {
-                        log::error!("could not apply the frontmost app: {error}");
-                    }
-                });
-            }
-            cover_primary_display(&window)?;
-            // Clicks must always reach the game, never the overlay.
-            window.set_ignore_cursor_events(true)?;
-            let client = LiveClient::new(&dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL))?;
-            tauri::async_runtime::spawn(publish_live_client(client, app.handle().clone(), overlay));
-            Ok(())
-        })
-        .run(tauri::generate_context!())
+    builder.setup(setup).run(tauri::generate_context!())
 }

@@ -77,6 +77,13 @@ than clone, move rather than copy, and parse strings as borrows of the response 
 A `clone` of an `Arc` or a Tauri handle is fine; a `clone` of data needs a reason.
 Clippy catches the redundant ones, and the rest is on review.
 
+## Complexity rule (mandatory)
+
+**A function does one thing and stays short: at most 25 lines and a cognitive
+complexity of 10.** `clippy.toml` and `eslint/base.js` hold the same limits. Split a
+long function into small named ones along what it does, and never raise a limit or
+excuse a function from it to get a change through.
+
 ## Unsafe rule (mandatory)
 
 **`unsafe` lives only in `platform`, and only around the call that needs it.** One
