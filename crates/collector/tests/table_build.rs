@@ -16,9 +16,12 @@ use lollipop_collector::SeedTier;
 use serde_json::json;
 use tempfile::TempDir;
 
+use support::build::run_build;
+use support::frame::Frame;
 use support::game::Game;
+use support::played::Played;
 use support::scenario::Scenario;
-use support::table_bench::{run_build, Frame, Played, TableBench};
+use support::table_bench::TableBench;
 
 const AHRI: Played = Played::new("Ahri", "GOLD");
 

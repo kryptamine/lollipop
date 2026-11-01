@@ -8,6 +8,7 @@ mod cell_samples;
 mod drift_comparison;
 mod drift_report;
 mod minute_samples;
+mod patch_medians;
 mod played_game;
 mod reworks;
 mod table_config;

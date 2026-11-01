@@ -1,13 +1,9 @@
+use super::patch_medians::PatchMedians;
+
 // A shift past the Neutral zone changes which Marker a player would see.
 const ZONE_SHARE: f64 = 0.08;
 const CS_ZONE_FLOOR: f64 = 8.0;
 const GOLD_ZONE_FLOOR: f64 = 150.0;
-
-#[derive(Clone, Copy)]
-pub(super) struct PatchMedians {
-    pub(super) cs: f64,
-    pub(super) total_gold: f64,
-}
 
 /// One Cell's medians on the two patches of a Patch window.
 pub(super) struct CellDrift {

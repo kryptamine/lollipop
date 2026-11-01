@@ -5,9 +5,10 @@ use lollipop_core::game_inputs::Patch;
 use super::aligned_minute::align_to_minutes;
 use super::average::{mean, median};
 use super::benchmark_file::{CellEntry, MinuteEntry};
-use super::cell_drift::{CellDrift, PatchMedians};
+use super::cell_drift::CellDrift;
 use super::drift_comparison::DriftComparison;
 use super::minute_samples::MinuteSamples;
+use super::patch_medians::PatchMedians;
 use crate::minute_values::MinuteValues;
 use crate::seed_tier::SeedTier;
 
