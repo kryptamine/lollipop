@@ -43,6 +43,8 @@ fn body(poll: &HintPoll) -> String {
             player(json!({ "riotIdGameName": "Named", "team": "CHAOS" })),
             player(json!({ "summonerName": "OldName", "team": "CHAOS" })),
             player(json!({ "riotId": "Teamless#EUW" })),
+            player(json!({ "riotId": "Twin#EUW", "riotIdGameName": "Twin", "team": "ORDER" })),
+            player(json!({ "riotId": "Twin#KR", "riotIdGameName": "Twin", "team": "CHAOS" })),
         ],
         "events": { "Events": events },
         "gameData": { "gameTime": poll.game_time },

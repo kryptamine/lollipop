@@ -110,13 +110,15 @@ impl AllGameData {
 
     pub(super) fn killer_team(&self, kill: &Event) -> Option<Team> {
         let killer = kill.killer_name.as_deref()?;
-        self.all_players
-            .iter()
-            .find(|p| p.goes_by(killer))
-            .map_or_else(
-                || Team::of_minion(killer),
-                |player| player.team.as_deref().and_then(Team::of_player),
-            )
+        let mut named = self.all_players.iter().filter(|p| p.goes_by(killer));
+        let Some(player) = named.next() else {
+            return Team::of_minion(killer);
+        };
+        // A game name is not unique: picking one of two players could miscount the Elder rule.
+        if named.next().is_some() {
+            return None;
+        }
+        player.team.as_deref().and_then(Team::of_player)
     }
 }
 

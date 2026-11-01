@@ -301,6 +301,8 @@ async fn a_dragon_kill_with_no_team_stops_drake_and_elder_hints() {
         dragon_kill(QUIET, "Air", "SRU_RiftHerald"),
         dragon_kill(QUIET, "Air", "Teamless#EUW"),
         dragon_kill(QUIET, "Air", "Minion_T300L0S39N0240"),
+        // Two players on opposite teams share this game name.
+        dragon_kill(QUIET, "Air", "Twin"),
     ];
     for kill in no_team {
         let after_kill = banner_at(&lcu, QUIET + 280.0, vec![kill.clone()]).await;
