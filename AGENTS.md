@@ -71,6 +71,32 @@ an edge case with a short synthetic scenario through the same harness. ADR 0001
 adds two levels above this: the built app through WebdriverIO, and a manual
 checklist in a real match before each release.
 
+## View rules (mandatory)
+
+- **One component to a file**, named after it. A component another one renders
+  gets a file of its own beside it.
+- **A component takes its props apart in its signature**, one level into an object
+  prop whose fields it reads. An object prop stays whole where it is optional, a
+  union still to narrow, or handed on whole.
+- **A handler of more than one statement is named**, a `handle…` const in the
+  component's body.
+- **A parameter of more than one field takes a named type**, and a union is of
+  named types.
+- **A function the linter finds too complex is split along what it does**, never
+  by hiding a branch.
+
+## Lint rules (mandatory)
+
+- **`pnpm lint` is every check on the view**, reported in one run, and a push runs
+  it: `pnpm install` points git at `.githooks/`.
+- **ESLint's rules are a file to a concern under `eslint/`**, and
+  `eslint.config.js` only lists them in order: a later block replaces a rule an
+  earlier one set for the same file.
+- **Dead code is `knip.jsonc`'s**: an export, a file or a dependency nothing reaches
+  fails `pnpm lint`, and an ignore there says why.
+- **A review finding a linter could have caught becomes a rule.** Where a maintained
+  plugin checks it, turn the rule on in the same change and fix every place it flags.
+
 ## Comment rule (mandatory)
 
 **A comment is at most three lines**, in every language in the repository, and
