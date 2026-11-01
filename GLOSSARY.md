@@ -29,6 +29,10 @@ _Avoid_: Arrow, indicator, delta
 The distance from a Benchmark within which a metric shows no Marker colour.
 _Avoid_: Threshold, tolerance
 
+**Objective schedule**:
+The times at which objectives spawn and respawn, which Timing hints count down to.
+_Avoid_: Timers, spawn table
+
 **Patch window**:
 The patches whose matches a Benchmark table is built from.
 
