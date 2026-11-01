@@ -8,11 +8,6 @@ use super::minute_entry::MinuteEntry;
 use crate::game_inputs::{Role, Tier};
 
 pub(crate) const SCHEMA_VERSION: u32 = 1;
-pub(crate) const MANIFEST_ASSET: &str = "manifest.json";
-
-pub(crate) fn table_asset(version: u32) -> String {
-    format!("benchmark-table-{version}.json")
-}
 
 #[derive(Debug, Deserialize)]
 pub struct BenchmarkTable {

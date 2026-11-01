@@ -7,6 +7,6 @@ mod champion_key;
 mod minute_entry;
 
 pub use benchmark_table::BenchmarkTable;
-pub(crate) use benchmark_table::{table_asset, MANIFEST_ASSET, SCHEMA_VERSION};
+pub(crate) use benchmark_table::SCHEMA_VERSION;
 pub use benchmarks_at::BenchmarksAt;
 pub use cell_benchmarks::CellBenchmarks;

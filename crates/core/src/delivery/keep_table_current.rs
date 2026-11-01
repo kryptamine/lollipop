@@ -1,7 +1,7 @@
-use super::manifest::Manifest;
+use super::manifest::{Manifest, MANIFEST_ASSET};
 use super::release_channel::ReleaseChannel;
 use super::table_file::TableFile;
-use crate::benchmarks::{table_asset, BenchmarkTable, MANIFEST_ASSET};
+use crate::benchmarks::BenchmarkTable;
 
 /// Never returns. Checks now and at each request, and only stages a table: the poll loop
 /// swaps it in, as only it knows no game is running. A failed check waits for the next.
@@ -19,9 +19,7 @@ async fn check(table: &TableFile, channel: &ReleaseChannel) -> Option<()> {
     if !table.needs_download(&manifest) {
         return Some(());
     }
-    let body = channel
-        .download(&assets, &table_asset(manifest.version))
-        .await?;
+    let body = channel.download(&assets, &manifest.table_asset()).await?;
     if !manifest.names(&body) || BenchmarkTable::parse(&body).is_none() {
         return None;
     }
