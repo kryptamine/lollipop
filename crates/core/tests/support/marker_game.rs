@@ -140,7 +140,7 @@ impl MarkerBench {
         before_serving: impl Fn(usize) + Send + 'static,
     ) -> Vec<Markers> {
         let seat = self.seat;
-        let count = beats.len();
+        let in_order = beats.clone();
         let served = Mutex::new(beats.into_iter().enumerate());
         let url = serve(Box::new(move || {
             let (index, beat) = served.lock().unwrap().next()?;
@@ -153,9 +153,12 @@ impl MarkerBench {
         .await;
         let clock = GameClock::starting_at(0.0);
         let mut updates = start_playing(url, &self.lcu.lockfile(), &self.table(), clock);
-        let mut received = Vec::with_capacity(count);
-        for _ in 0..count {
+        let mut received = Vec::with_capacity(in_order.len());
+        for beat in in_order {
             let (_, update) = updates.recv().await.unwrap();
+            // Without this, "no Markers" would also pass when the whole game went missing,
+            // and the spec keeps the values on screen when there is nothing to compare.
+            assert_eq!(update.is_some(), matches!(beat, Beat::Running(_)));
             received.push(update.map_or_else(Markers::default, |game| game.markers));
         }
         received
