@@ -5,11 +5,10 @@ use super::release_assets::table_name;
 use super::rollback_config::RollbackConfig;
 use super::table_summary::TableSummary;
 
-/// Points the manifest at a kept table. The owner runs this by hand, so a failure opens
-/// no issue, and the gate does not apply: a kept table has passed it once.
+/// Points the manifest at a kept table, past the gate: a kept table has passed it once.
 ///
 /// # Errors
-/// When the table is not kept or does not read, or `gh` fails. The manifest then stays.
+/// When the table is not kept or does not read, or `gh` fails. Run by hand, so no issue opens.
 pub fn rollback(config: &RollbackConfig) -> Result<(), PublishError> {
     std::fs::create_dir_all(&config.work_dir)
         .map_err(|error| PublishError::Write(config.work_dir.clone(), error))?;

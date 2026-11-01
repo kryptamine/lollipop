@@ -38,8 +38,7 @@ const BUILT_TABLE: &str = "benchmark-table.json";
 /// Builds and publishes a table. Whatever stops it also opens an issue.
 ///
 /// # Errors
-/// On a failed build, a refused publish or a failed upload. The manifest then still
-/// names the old table, unless the upload of the manifest itself failed.
+/// On a failed build, a refused publish, or any `gh` failure, even after the manifest moved.
 pub fn publish(config: &PublishConfig) -> Result<Published, PublishError> {
     let release = GhRelease::new(&config.repo);
     attempt(config, &release).map_err(|error| {
