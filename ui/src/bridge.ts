@@ -7,6 +7,14 @@ export type Snapshot = {
   goldEarned: number | null;
 };
 
+export type MarkerState = 'above' | 'below' | 'neutral';
+
+export type Markers = {
+  cs: MarkerState | null;
+  gold: MarkerState | null;
+  level: MarkerState | null;
+};
+
 export type WidgetSwitches = {
   markerStrip: boolean;
 };
@@ -26,6 +34,13 @@ const stopWith = (unlisten: Promise<UnlistenFn>): (() => void) => {
 export const onSnapshot = (handler: (snapshot: Snapshot) => void): (() => void) =>
   stopWith(
     listen<Snapshot>('snapshot', ({ payload }) => {
+      handler(payload);
+    }),
+  );
+
+export const onMarkers = (handler: (markers: Markers) => void): (() => void) =>
+  stopWith(
+    listen<Markers>('markers', ({ payload }) => {
       handler(payload);
     }),
   );

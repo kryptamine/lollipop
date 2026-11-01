@@ -7,7 +7,7 @@ mod overlay;
 mod platform;
 mod settings_store;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use lollipop_core::game_inputs::LOCKFILE_PATH;
 use lollipop_core::live::{poll, status_line, LiveGame, SystemClock, LIVE_CLIENT_URL};
@@ -38,6 +38,7 @@ async fn publish_live_client(
     overlay: Overlay,
     store: SettingsStore,
     status: MenuItem<Wry>,
+    benchmark_table: PathBuf,
 ) {
     let mut shown_status = status_line(None);
     let on_update = move |update: Option<LiveGame>| {
@@ -45,6 +46,7 @@ async fn publish_live_client(
         // Before the snapshot: the view draws no Widget until it knows its switch.
         store.publish_switches();
         if let Some(game) = &update {
+            let _ = app.emit("markers", game.markers);
             let _ = app.emit("snapshot", &game.snapshot);
         }
         overlay.set_match_running(running);
@@ -56,7 +58,18 @@ async fn publish_live_client(
     };
     let url = dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL);
     let lockfile = dev_setting("LOLLIPOP_LOCKFILE", LOCKFILE_PATH);
-    poll(&url, Path::new(&lockfile), &SystemClock, on_update).await;
+    let table = dev_setting(
+        "LOLLIPOP_BENCHMARK_TABLE",
+        &benchmark_table.to_string_lossy(),
+    );
+    poll(
+        &url,
+        Path::new(&lockfile),
+        Path::new(&table),
+        &SystemClock,
+        on_update,
+    )
+    .await;
 }
 
 #[allow(
@@ -95,11 +108,13 @@ fn main() {
             let launch_on_login = store.read(|settings| settings.launch_at_login);
             let _ = launch_at_login::apply(app.handle(), launch_on_login);
             let status = menu_bar::install(app.handle(), store.clone())?;
+            let benchmark_table = app.path().app_data_dir()?.join("benchmark-table.json");
             tauri::async_runtime::spawn(publish_live_client(
                 app.handle().clone(),
                 overlay,
                 store,
                 status,
+                benchmark_table,
             ));
             Ok(())
         })

@@ -13,6 +13,8 @@ mod support;
 use std::path::Path;
 
 use lollipop_collector::SeedTier;
+use lollipop_core::benchmarks::{BenchmarkTable, BenchmarksAt};
+use lollipop_core::game_inputs::{Role, Tier};
 use serde_json::json;
 use tempfile::TempDir;
 
@@ -24,6 +26,34 @@ use support::scenario::Scenario;
 use support::table_bench::TableBench;
 
 const AHRI: Played = Played::new("Ahri", "GOLD");
+
+// The two ends of the file: a shape only one side moved to would silently cost every Marker.
+#[test]
+fn the_app_reads_a_built_table() {
+    let mut bench = TableBench::new();
+    bench.add(100, &AHRI);
+    bench.add(100, &Played::new("MasterYi", "MASTER+"));
+    assert!(bench.build(&[]).output.status.success());
+
+    let ahri = BenchmarkTable::read(&bench.output())
+        .unwrap()
+        .into_cell("Ahri", Role::Top, Tier::Gold)
+        .unwrap();
+    assert_eq!(
+        ahri.at(90.0),
+        Some(BenchmarksAt {
+            cs: 10.5,
+            gold: 600.0,
+            level: 10.0,
+        })
+    );
+    let master_plus = BenchmarkTable::read(&bench.output()).unwrap().into_cell(
+        "Master Yi",
+        Role::Top,
+        Tier::Challenger,
+    );
+    assert!(master_plus.is_some());
+}
 
 // Frames run late, and the lag grows. Taking the nearest frame as the minute would put
 // every Benchmark ahead of a live game read on the exact minute.

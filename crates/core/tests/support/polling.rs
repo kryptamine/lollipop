@@ -7,6 +7,8 @@ use tokio::sync::mpsc;
 use super::game_clock::GameClock;
 use super::server::serve;
 
+const NO_TABLE: &str = "/nonexistent/benchmark-table.json";
+
 /// Runs the poll loop on `clock` and returns updates, stamped with game time, as they arrive.
 pub fn start_polling(
     url: String,
@@ -16,10 +18,16 @@ pub fn start_polling(
     let no_client = PathBuf::from("/nonexistent/lockfile");
     tokio::spawn(async move {
         let stamp = clock.clone();
-        poll(&url, &no_client, &clock, move |update| {
-            let snapshot = update.map(|game| game.snapshot);
-            let _ = updates.send((stamp.now(), snapshot));
-        })
+        poll(
+            &url,
+            &no_client,
+            Path::new(NO_TABLE),
+            &clock,
+            move |update| {
+                let snapshot = update.map(|game| game.snapshot);
+                let _ = updates.send((stamp.now(), snapshot));
+            },
+        )
         .await;
     });
     received
@@ -42,8 +50,34 @@ pub fn start_watching(url: String, lockfile: &Path) -> mpsc::UnboundedReceiver<O
     let lockfile = lockfile.to_path_buf();
     tokio::spawn(async move {
         let clock = GameClock::starting_at(0.0);
-        poll(&url, &lockfile, &clock, move |update| {
-            let _ = updates.send(update);
+        poll(
+            &url,
+            &lockfile,
+            Path::new(NO_TABLE),
+            &clock,
+            move |update| {
+                let _ = updates.send(update);
+            },
+        )
+        .await;
+    });
+    received
+}
+
+/// Polls with a League client and a Benchmark table on disk, stamping updates with game time.
+pub fn start_playing(
+    url: String,
+    lockfile: &Path,
+    benchmark_table: &Path,
+    clock: GameClock,
+) -> mpsc::UnboundedReceiver<(f64, Option<LiveGame>)> {
+    let (updates, received) = mpsc::unbounded_channel();
+    let lockfile = lockfile.to_path_buf();
+    let benchmark_table = benchmark_table.to_path_buf();
+    tokio::spawn(async move {
+        let stamp = clock.clone();
+        poll(&url, &lockfile, &benchmark_table, &clock, move |update| {
+            let _ = updates.send((stamp.now(), update));
         })
         .await;
     });

@@ -94,7 +94,8 @@ Markers need all of the following, read at game start:
   Markers and no notice.
 - **Champion, role and tier:** automatic only, never set by hand or guessed.
 - **A table that serves the patch:** see [Stale table](#stale-table).
-- **A Cell:** the player's Cell, else adjacent tiers (±1), else no Marker.
+- **A Cell:** the player's Cell, else adjacent tiers (±1), else no Marker. The build
+  pools the adjacent tiers into the Cell's entry, so the app reads only that entry.
 
 ## Timing hints
 
@@ -253,7 +254,8 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   the table. The path carries the schema version.
 - **Checks:** at launch and after every game. Downloads run in the background and
   swap atomically, and the previous file stays until the new one succeeds.
-- **During a game:** never swap, even when Markers are hidden.
+- **During a game:** never swap, even when Markers are hidden. The app reads the table
+  once, at game start, from `benchmark-table.json` in its data directory.
 - **No table and no network:** no Markers, everything else works.
 
 | | Private phase | Public phase |
@@ -314,6 +316,8 @@ These were not tested and can reopen a decision.
   `/lol-champ-select/v1/session` still answers at game start: the probe read it only
   in phase `ChampSelect`. If it does not, an empty `position` gives an unknown role.
   The unranked `tier` values are from memory, as the probe sanitized rank values.
+- **Champion names:** a Cell is found with the client in another language and for a
+  renamed champion such as Wukong. `rawChampionName` was seen once, for Master Yi.
 - **Timing hints:** the 45 s lead in a real game, and a non-champion drake kill.
 - **Relaunch:** after `GameEnd` with the Tauri updater.
 - **`ELITE_MONSTER_KILL`:** the event fields, known from memory only. Moving the

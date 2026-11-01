@@ -10,7 +10,7 @@ pub enum Role {
 impl Role {
     /// Live Client Data writes `JUNGLE` where the League client writes `jungle`.
     /// `None` covers the empty and `NONE` values of a game with no assigned role.
-    pub(super) fn parse(position: &str) -> Option<Self> {
+    pub(crate) fn parse(position: &str) -> Option<Self> {
         match position.to_ascii_uppercase().as_str() {
             "TOP" => Some(Self::Top),
             "JUNGLE" => Some(Self::Jungle),

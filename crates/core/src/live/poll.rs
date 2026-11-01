@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::clock::Clock;
+use super::game_markers::GameMarkers;
 use super::gold_earned::GoldEarned;
 use super::inputs_of_game::InputsOfGame;
 use super::live_game::LiveGame;
@@ -19,6 +20,7 @@ const POLL_INTERVAL: Duration = Duration::from_secs(1);
 pub async fn poll(
     url: &str,
     lockfile: &Path,
+    benchmark_table: &Path,
     clock: &impl Clock,
     mut on_update: impl FnMut(Option<LiveGame>) + Send,
 ) {
@@ -37,8 +39,10 @@ pub async fn poll(
     let mut game = CurrentGame {
         http: &http,
         lockfile,
+        benchmark_table,
         gold_earned: GoldEarned::default(),
         inputs: InputsOfGame::default(),
+        markers: GameMarkers::default(),
     };
     loop {
         let update = match fetch(&http, url).await {
@@ -58,8 +62,10 @@ async fn fetch(client: &reqwest::Client, url: &str) -> Option<AllGameData> {
 struct CurrentGame<'a> {
     http: &'a reqwest::Client,
     lockfile: &'a Path,
+    benchmark_table: &'a Path,
     gold_earned: GoldEarned,
     inputs: InputsOfGame,
+    markers: GameMarkers,
 }
 
 impl CurrentGame<'_> {
@@ -80,7 +86,12 @@ impl CurrentGame<'_> {
                 player.item_counts(),
             ),
         };
-        Some(LiveGame { snapshot, inputs })
+        let markers = self.markers.at(data.game_time(), &snapshot);
+        Some(LiveGame {
+            snapshot,
+            inputs,
+            markers,
+        })
     }
 
     async fn inputs_at(&mut self, game_time: f64, player: &Player) -> Arc<GameInputs> {
@@ -94,6 +105,7 @@ impl CurrentGame<'_> {
             player.position.as_deref(),
         )
         .await;
+        self.markers = GameMarkers::start(self.benchmark_table, &inputs, player.cell_champion());
         self.inputs.hold(game_time, inputs)
     }
 }
