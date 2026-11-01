@@ -1,15 +1,16 @@
 // Fake Live Client Data API and League client for developing without a running game.
-// Usage: make dev-mock
+// Usage: make dev-mock, or MOCK_PATCH=16.24 make dev-mock to show a Stale table.
 import { writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 
 const PORT = 2998;
 const [lockfile, benchmarkTable] = process.argv.slice(2);
 const startedAt = Date.now();
+const patch = process.env.MOCK_PATCH ?? "16.21";
 
 const leagueClient = new Map([
   ["/lol-gameflow/v1/session", { gameData: { queue: { id: 420 } } }],
-  ["/lol-patch/v1/game-version", "16.21.8342754+branch.releases-16-21.code.public"],
+  ["/lol-patch/v1/game-version", `${patch}.8342754+branch.code.public`],
   ["/lol-ranked/v1/current-ranked-stats", { queues: [{ queueType: "RANKED_SOLO_5x5", tier: "GOLD" }] }],
 ]);
 
@@ -30,8 +31,8 @@ function mockTable() {
 }
 
 function liveClientData() {
-  // Starts at 0:30 game time, early enough for Gold earned to count.
-  const gameTime = 30 + (Date.now() - startedAt) / 1000;
+  // Starts at 0:00 game time, so the notices of the first 10 s show.
+  const gameTime = (Date.now() - startedAt) / 1000;
   const minutes = gameTime / 60;
   return {
     activePlayer: { riotId: "Me#DEV", currentGold: 500 + gameTime * 3 },

@@ -7,7 +7,7 @@ use crate::game_inputs::{ClientInputs, GameInputs};
 
 // Draft, ranked solo, blind, ranked flex and Practice Tool. Swiftplay and anything
 // unknown fall outside.
-const HINT_QUEUES: [u32; 5] = [400, 420, 430, 440, 3140];
+pub(super) const HINT_QUEUES: [u32; 5] = [400, 420, 430, 440, 3140];
 
 /// One game's Timing hints. The schedule is picked once, as the game starts.
 #[derive(Default)]

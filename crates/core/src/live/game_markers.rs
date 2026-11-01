@@ -1,8 +1,7 @@
-use std::path::Path;
-
 use super::compared_game::ComparedGame;
 use super::markers::Markers;
 use super::snapshot::Snapshot;
+use crate::benchmarks::BenchmarkTable;
 use crate::game_inputs::GameInputs;
 
 /// One game's Markers. The table is read once, as the game starts, and only the player's
@@ -13,7 +12,11 @@ pub(super) struct GameMarkers {
 }
 
 impl GameMarkers {
-    pub(super) fn start(table: &Path, inputs: &GameInputs, champion: Option<&str>) -> Self {
+    pub(super) fn start(
+        table: Option<BenchmarkTable>,
+        inputs: &GameInputs,
+        champion: Option<&str>,
+    ) -> Self {
         Self {
             compared: ComparedGame::start(table, inputs, champion),
         }

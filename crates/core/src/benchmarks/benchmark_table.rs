@@ -5,13 +5,15 @@ use serde::Deserialize;
 use super::cell_benchmarks::CellBenchmarks;
 use super::champion_key::champion_key;
 use super::minute_entry::MinuteEntry;
-use crate::game_inputs::{Role, Tier};
+use crate::game_inputs::{Patch, Role, Tier};
 
 pub(crate) const SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Deserialize)]
 pub struct BenchmarkTable {
     schema_version: u32,
+    max_patch: Option<Patch>,
+    patch_window: Vec<Patch>,
     cells: Vec<CellEntry>,
 }
 
@@ -33,6 +35,20 @@ impl BenchmarkTable {
     pub(crate) fn parse(body: &[u8]) -> Option<Self> {
         let table: Self = serde_json::from_slice(body).ok()?;
         (table.schema_version == SCHEMA_VERSION).then_some(table)
+    }
+
+    /// False makes this a Stale table for the game on `patch`.
+    #[must_use]
+    pub fn serves(&self, patch: Patch) -> bool {
+        if self.max_patch.is_some_and(|max| patch > max) {
+            return false;
+        }
+        self.patch_window.contains(&patch)
+            || self
+                .patch_window
+                .iter()
+                .max()
+                .is_some_and(|newest| newest.is_followed_by(patch))
     }
 
     /// The build already pooled a thin Cell's adjacent tiers into its entry, so no entry

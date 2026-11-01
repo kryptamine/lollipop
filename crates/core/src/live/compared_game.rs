@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use super::held_marker::HeldMarker;
 use super::marker::Marker;
 use super::markers::Markers;
@@ -9,7 +7,7 @@ use crate::game_inputs::{ClientInputs, GameInputs, Role, TierReading};
 
 // Draft, ranked solo, blind and ranked flex. Swiftplay, Practice Tool and anything
 // unknown fall outside, and that is no fault worth a notice.
-const MARKER_QUEUES: [u32; 4] = [400, 420, 430, 440];
+pub(super) const MARKER_QUEUES: [u32; 4] = [400, 420, 430, 440];
 
 // The API floors CS to 10, so the true value is on average 5 above it.
 const CS_OFFSET: f64 = 5.0;
@@ -27,19 +25,25 @@ pub(super) struct ComparedGame {
 }
 
 impl ComparedGame {
-    pub(super) fn start(table: &Path, inputs: &GameInputs, champion: Option<&str>) -> Option<Self> {
+    pub(super) fn start(
+        table: Option<BenchmarkTable>,
+        inputs: &GameInputs,
+        champion: Option<&str>,
+    ) -> Option<Self> {
         let ClientInputs::Read(client) = &inputs.client else {
             return None;
         };
         let TierReading::Ranked(tier) = client.tier else {
             return None;
         };
-        client.patch?;
+        let patch = client.patch?;
         if !MARKER_QUEUES.contains(&client.queue?) {
             return None;
         }
         let role = inputs.role?;
-        let cell = BenchmarkTable::read(table)?.into_cell(champion?, role, tier)?;
+        let cell = table
+            .filter(|table| table.serves(patch))?
+            .into_cell(champion?, role, tier)?;
         Some(Self {
             cell,
             has_cs_marker: role != Role::Support,

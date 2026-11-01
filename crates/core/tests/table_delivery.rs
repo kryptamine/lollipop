@@ -510,7 +510,10 @@ async fn with_no_table_and_no_network_only_the_markers_are_missing() {
     assert_eq!(game.markers, Markers::default());
     assert_eq!(game.snapshot.cs, 95);
     assert_eq!(game.snapshot.level, 10);
-    assert_eq!(status_line(Some(&game.inputs)), "Master Yi · Mid · Gold");
+    assert_eq!(
+        status_line(Some(&game)),
+        "Master Yi · Mid · Gold · No Benchmarks yet"
+    );
     assert!(!game.hints.is_empty());
     assert_eq!(bench.live(), None);
 }

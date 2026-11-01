@@ -50,11 +50,12 @@ async fn publish_live_client(
         store.publish_switches();
         if let Some(game) = &update {
             let _ = app.emit("markers", game.markers);
+            let _ = app.emit("notices", game.shown_notices());
             let _ = app.emit("timing-hints", &game.hints);
             let _ = app.emit("snapshot", &game.snapshot);
         }
         overlay.set_match_running(running);
-        let next_status = status_line(update.as_ref().map(|game| game.inputs.as_ref()));
+        let next_status = status_line(update.as_ref());
         if next_status != shown_status {
             let _ = status.set_text(&next_status);
             shown_status = next_status;

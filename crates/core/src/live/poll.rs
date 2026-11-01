@@ -5,11 +5,14 @@ use std::time::Duration;
 use super::clock::Clock;
 use super::game_hints::GameHints;
 use super::game_markers::GameMarkers;
+use super::game_notices::notices_of;
 use super::gold_earned::GoldEarned;
 use super::inputs_of_game::InputsOfGame;
 use super::live_game::LiveGame;
+use super::notice::Notice;
 use super::payload::{AllGameData, Player};
 use super::snapshot::Snapshot;
+use crate::benchmarks::BenchmarkTable;
 use crate::delivery::TableFile;
 use crate::game_inputs::GameInputs;
 
@@ -46,6 +49,7 @@ pub async fn poll(
         inputs: InputsOfGame::default(),
         markers: GameMarkers::default(),
         hints: GameHints::default(),
+        notices: Arc::from([]),
     };
     loop {
         let data = fetch(&http, url).await;
@@ -75,6 +79,7 @@ struct CurrentGame<'a> {
     inputs: InputsOfGame,
     markers: GameMarkers,
     hints: GameHints,
+    notices: Arc<[Notice]>,
 }
 
 impl CurrentGame<'_> {
@@ -107,6 +112,8 @@ impl CurrentGame<'_> {
             inputs,
             markers,
             hints: self.hints.at(data),
+            notices: Arc::clone(&self.notices),
+            game_time: data.game_time(),
         })
     }
 
@@ -123,8 +130,9 @@ impl CurrentGame<'_> {
             player.position.as_deref(),
         )
         .await;
-        self.markers =
-            GameMarkers::start(self.benchmark_table.path(), &inputs, player.cell_champion());
+        let table = BenchmarkTable::read(self.benchmark_table.path());
+        self.notices = notices_of(&inputs, table.as_ref()).into();
+        self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)
     }

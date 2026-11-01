@@ -20,6 +20,8 @@ export type TimingHintState = {
   countdown: string;
 };
 
+export type Notices = string[];
+
 export type WidgetSwitches = {
   markerStrip: boolean;
   timingHints: boolean;
@@ -54,6 +56,13 @@ export const onMarkers = (handler: (markers: Markers) => void): (() => void) =>
 export const onTimingHints = (handler: (hints: TimingHintState[]) => void): (() => void) =>
   stopWith(
     listen<TimingHintState[]>('timing-hints', ({ payload }) => {
+      handler(payload);
+    }),
+  );
+
+export const onNotices = (handler: (notices: Notices) => void): (() => void) =>
+  stopWith(
+    listen<Notices>('notices', ({ payload }) => {
       handler(payload);
     }),
   );

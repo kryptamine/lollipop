@@ -142,19 +142,25 @@ as of patch 16.21:
 
 A notice is a muted line in the strip for the first 10 s of a game. Each
 condition shows its own line. With the strip switched off, notices are not shown
-and the menu's status line carries the reason. Wording and look need a prototype.
+and the menu's status line carries the reason. The strip's panel grows downward for
+them, and its metrics do not move.
 
-| Condition | Effect |
-| --- | --- |
-| Stale table, such as "Benchmarks out of date (patch 16.22)" | No Markers |
-| Unknown patch | No Markers, no hints |
-| Unknown role | No Markers |
-| Unknown tier, including an unranked player | No Markers |
-| New Season with no schedule | No hints |
-| Thin Cell | No Marker, no notice |
+| Condition | Line | Effect |
+| --- | --- | --- |
+| Stale table, naming the game's patch | `Benchmarks out of date (patch 16.22)` | No Markers |
+| No table, or one that does not read | `No Benchmarks yet` | No Markers |
+| Unknown patch | `Patch unknown` | No Markers, no hints |
+| Unknown role | `Role unknown` | No Markers |
+| Unknown tier | `Tier unknown` | No Markers |
+| Unranked player | `Unranked` | No Markers |
+| New Season with no schedule | `No schedule for Season 17` | No hints |
+| Thin Cell | None | No Marker |
+| Unavailable LCU | `League client unavailable`, alone | No Markers, no hints |
 
 An unavailable LCU means no queue, patch or tier, so it removes both Markers and
-hints. If only the tier cannot be read, hints keep working.
+hints. If only the tier cannot be read, hints keep working. It is the one notice
+with no known queue, since it is what cost the queue. Practice Tool has hints and
+no Markers, so it shows only `Patch unknown` and the schedule line.
 
 ## Menu bar
 
@@ -164,7 +170,8 @@ no hotkey.
 - **Status line:** at the top, what was detected, such as
   `Master Yi · Mid · Gold`, with a reason in place of a missing value:
   `Role unknown`, `League client unavailable`, `Tier unknown`, `Unranked`, and
-  `Queue unknown` or `Patch unknown` added at the end.
+  `Queue unknown` or `Patch unknown` added at the end, then the table's and the
+  schedule's notice lines, all game.
 - **Switches:** one per Widget, on by default, including Widgets added later.
 - **Launch at login:** off by default.
 - **Quit.**
