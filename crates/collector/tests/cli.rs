@@ -29,7 +29,7 @@ fn now_ms() -> u64 {
 
 fn spawn(url: &str, dir: &Path) -> Child {
     Command::new(env!("CARGO_BIN_EXE_lollipop-collector"))
-        .args(["--tier", "gold"])
+        .args(["collect", "--tier", "gold"])
         .arg("--database")
         .arg(dir.join("collector.sqlite3"))
         .arg("--key-file")
@@ -95,7 +95,7 @@ async fn resumes_after_a_kill() {
 async fn a_missing_key_file_fails_with_a_message() {
     let dir = TempDir::new().unwrap();
     let output = Command::new(env!("CARGO_BIN_EXE_lollipop-collector"))
-        .args(["--tier", "gold", "--key-file"])
+        .args(["collect", "--tier", "gold", "--key-file"])
         .arg(dir.path().join("riot-key"))
         .output()
         .unwrap();
@@ -106,7 +106,7 @@ async fn a_missing_key_file_fails_with_a_message() {
 #[tokio::test]
 async fn an_unknown_tier_is_refused() {
     let output = Command::new(env!("CARGO_BIN_EXE_lollipop-collector"))
-        .args(["--tier", "wood"])
+        .args(["collect", "--tier", "wood"])
         .output()
         .unwrap();
     assert!(!output.status.success());

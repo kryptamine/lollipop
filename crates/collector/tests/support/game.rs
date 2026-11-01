@@ -12,6 +12,7 @@ pub struct Game {
     pub queue: u32,
     pub early_surrender: bool,
     pub has_timeline: bool,
+    pub minutes: u32,
 }
 
 impl Game {
@@ -23,6 +24,15 @@ impl Game {
             queue: 420,
             early_surrender: false,
             has_timeline: true,
+            minutes: 2,
+        }
+    }
+
+    /// Past the first two frames, each frame runs 50 ms per minute late.
+    pub fn lasting(id: &str, minutes: u32) -> Self {
+        Self {
+            minutes,
+            ..Self::new(id)
         }
     }
 
@@ -67,6 +77,30 @@ impl Game {
     }
 
     pub fn timeline_body(&self) -> Value {
+        let mut frames = vec![
+            frame(0, 0, &[json!({ "type": "PAUSE_END", "realTimestamp": 5 })]),
+            frame(
+                60_011,
+                1,
+                &[
+                    json!({ "type": "ITEM_PURCHASED", "timestamp": 30_000, "itemId": 1055 }),
+                    elite(50_000, "HORDE", None),
+                    elite(55_000, "HORDE", None),
+                ],
+            ),
+            frame(
+                120_050,
+                2,
+                &[
+                    elite(70_000, "DRAGON", Some("FIRE_DRAGON")),
+                    elite(80_000, "DRAGON", Some("WATER_DRAGON")),
+                    elite(90_000, "DRAGON", Some("ELDER_DRAGON")),
+                    elite(100_000, "BARON_NASHOR", None),
+                    elite(110_000, "RIFTHERALD", None),
+                ],
+            ),
+        ];
+        frames.extend((3..=self.minutes).map(|index| frame(index * 60_050, index, &[])));
         json!({
             "metadata": { "matchId": self.id },
             "info": {
@@ -74,21 +108,7 @@ impl Game {
                 "participants": (1..=PARTICIPANTS)
                     .map(|id| json!({ "participantId": id, "puuid": self.puuid_of(id) }))
                     .collect::<Vec<_>>(),
-                "frames": [
-                    frame(0, 0, &[json!({ "type": "PAUSE_END", "realTimestamp": 5 })]),
-                    frame(60_011, 1, &[
-                        json!({ "type": "ITEM_PURCHASED", "timestamp": 30_000, "itemId": 1055 }),
-                        elite(50_000, "HORDE", None),
-                        elite(55_000, "HORDE", None),
-                    ]),
-                    frame(120_050, 2, &[
-                        elite(70_000, "DRAGON", Some("FIRE_DRAGON")),
-                        elite(80_000, "DRAGON", Some("WATER_DRAGON")),
-                        elite(90_000, "DRAGON", Some("ELDER_DRAGON")),
-                        elite(100_000, "BARON_NASHOR", None),
-                        elite(110_000, "RIFTHERALD", None),
-                    ]),
-                ],
+                "frames": frames,
             },
         })
     }

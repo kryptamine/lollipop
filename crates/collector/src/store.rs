@@ -2,12 +2,13 @@
 
 mod kept_matches;
 mod match_queue;
+mod played_games;
 mod rate_limit_state;
 
 use std::path::Path;
 
 use rusqlite::types::FromSql;
-use rusqlite::{params, Connection, OptionalExtension, ToSql};
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension, ToSql};
 
 pub(crate) use match_queue::PendingMatch;
 
@@ -24,6 +25,12 @@ impl Store {
         connection.pragma_update(None, "journal_mode", "WAL")?;
         connection.pragma_update(None, "foreign_keys", true)?;
         connection.execute_batch(include_str!("store/schema.sql"))?;
+        Ok(Self { connection })
+    }
+
+    /// Refuses a missing file, rather than creating an empty database to build from.
+    pub(crate) fn open_read_only(path: &Path) -> rusqlite::Result<Self> {
+        let connection = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
         Ok(Self { connection })
     }
 
