@@ -119,7 +119,6 @@ make format    # format the Rust and the view
 make lint      # run every linter
 make test      # run the tests
 make check     # lint, test and build the view
-make afk       # work through the ready-for-agent issues and merge them
 ```
 
 **Run `make check` before every push, and do not push until it passes.** CI is off

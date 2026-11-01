@@ -1,0 +1,1 @@
+allow = ["Bash(cargo *)", "Bash(pnpm *)", "Bash(node *)", "Bash(shellcheck *)"]
