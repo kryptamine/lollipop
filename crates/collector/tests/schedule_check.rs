@@ -159,6 +159,20 @@ async fn a_later_build_does_not_repeat_the_issue() {
     assert_eq!(bench.issues().len(), 1);
 }
 
+// A closed notice has been dealt with, and the same stored kill must not reopen it weekly.
+#[tokio::test]
+async fn a_closed_issue_is_not_opened_again() {
+    let scenario = collected(&[Game::killing("EUW1_1", &[EARLY_BARON])]).await;
+    let bench = ReleaseBench::new();
+    bench.publish_built(&scenario.database(), &[]);
+    bench.close_issues();
+
+    let again = bench.publish_built(&scenario.database(), &[]);
+
+    assert!(again.status.success());
+    assert_eq!(bench.issues(), Vec::<String>::new());
+}
+
 // A new Season has no schedule to break, and an unknown type may be a renamed one to look at.
 #[tokio::test]
 async fn what_the_schedule_does_not_cover_is_reported_with_no_issue() {

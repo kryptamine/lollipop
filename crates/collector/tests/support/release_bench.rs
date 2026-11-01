@@ -134,6 +134,11 @@ impl ReleaseBench {
             .unwrap_or_default()
     }
 
+    pub fn close_issues(&self) {
+        let closed = self.dir.path().join("closed-issues");
+        std::fs::rename(self.dir.path().join("issues"), closed).unwrap();
+    }
+
     /// Corrupts a kept asset in place, as a bad upload or a hand edit would.
     pub fn overwrite_asset(&self, name: &str, body: &str) {
         std::fs::write(self.asset_path(name), body).unwrap();
