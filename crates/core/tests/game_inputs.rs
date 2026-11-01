@@ -60,7 +60,7 @@ async fn reads_queue_patch_and_tier_from_the_client() {
     );
 }
 
-// The recorded game is Warwick in the jungle, on the patch string the probe captured.
+// A real game's payload and version string, which hand-written scenarios could drift from.
 #[tokio::test]
 async fn reads_a_recorded_game_with_the_recorded_version_string() {
     let lcu = FakeLcu::start().await;
