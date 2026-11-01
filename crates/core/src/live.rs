@@ -26,6 +26,7 @@ pub use clock::{Clock, SystemClock};
 pub use live_game::LiveGame;
 pub use marker::Marker;
 pub use markers::Markers;
+pub use objective_schedule::ObjectiveSchedule;
 pub use poll::{poll, LIVE_CLIENT_URL};
 pub use snapshot::Snapshot;
 pub use status_line::status_line;

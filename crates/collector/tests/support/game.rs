@@ -13,7 +13,11 @@ pub struct Game {
     pub early_surrender: bool,
     pub has_timeline: bool,
     pub minutes: u32,
+    pub kills: Option<Vec<Kill>>,
 }
+
+/// When, the monster type and its sub type.
+pub type Kill = (u32, &'static str, Option<&'static str>);
 
 impl Game {
     pub fn new(id: &str) -> Self {
@@ -25,6 +29,15 @@ impl Game {
             early_surrender: false,
             has_timeline: true,
             minutes: 2,
+            kills: None,
+        }
+    }
+
+    /// Holds these kills in place of the default ones, which all fall before any spawn.
+    pub fn killing(id: &str, kills: &[Kill]) -> Self {
+        Self {
+            kills: Some(kills.to_vec()),
+            ..Self::new(id)
         }
     }
 
@@ -77,28 +90,14 @@ impl Game {
     }
 
     pub fn timeline_body(&self) -> Value {
+        let kills = self.kills.as_ref().map_or_else(default_kills, Clone::clone);
+        let (first, second) = kills.split_at(kills.iter().filter(|kill| kill.0 < 60_000).count());
+        let purchase = json!({ "type": "ITEM_PURCHASED", "timestamp": 30_000, "itemId": 1055 });
+        let first = [vec![purchase], elites(first)].concat();
         let mut frames = vec![
             frame(0, 0, &[json!({ "type": "PAUSE_END", "realTimestamp": 5 })]),
-            frame(
-                60_011,
-                1,
-                &[
-                    json!({ "type": "ITEM_PURCHASED", "timestamp": 30_000, "itemId": 1055 }),
-                    elite(50_000, "HORDE", None),
-                    elite(55_000, "HORDE", None),
-                ],
-            ),
-            frame(
-                120_050,
-                2,
-                &[
-                    elite(70_000, "DRAGON", Some("FIRE_DRAGON")),
-                    elite(80_000, "DRAGON", Some("WATER_DRAGON")),
-                    elite(90_000, "DRAGON", Some("ELDER_DRAGON")),
-                    elite(100_000, "BARON_NASHOR", None),
-                    elite(110_000, "RIFTHERALD", None),
-                ],
-            ),
+            frame(60_011, 1, &first),
+            frame(120_050, 2, &elites(second)),
         ];
         frames.extend((3..=self.minutes).map(|index| frame(index * 60_050, index, &[])));
         json!({
@@ -112,6 +111,23 @@ impl Game {
             },
         })
     }
+}
+
+fn default_kills() -> Vec<Kill> {
+    vec![
+        (50_000, "HORDE", None),
+        (55_000, "HORDE", None),
+        (70_000, "DRAGON", Some("FIRE_DRAGON")),
+        (80_000, "DRAGON", Some("WATER_DRAGON")),
+        (90_000, "DRAGON", Some("ELDER_DRAGON")),
+        (100_000, "BARON_NASHOR", None),
+        (110_000, "RIFTHERALD", None),
+    ]
+}
+
+fn elites(kills: &[Kill]) -> Vec<Value> {
+    let events = kills.iter();
+    events.map(|kill| elite(kill.0, kill.1, kill.2)).collect()
 }
 
 /// CS and gold follow the participant and the frame, so a mixed-up row shows.

@@ -44,6 +44,11 @@ case "$command" in
 "release delete-asset")
   rm "$assets/$2"
   ;;
+"issue list")
+  if [ -e "$state/issues" ]; then
+    sed 's/: .*//' "$state/issues"
+  fi
+  ;;
 "issue create")
   while [ "$#" -gt 0 ]; do
     case "$1" in

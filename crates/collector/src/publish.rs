@@ -13,12 +13,14 @@ mod rollback;
 mod rollback_config;
 mod table_summary;
 
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
 use lollipop_core::game_inputs::Patch;
 
+use crate::schedule_check::check_schedule;
 use crate::store::Store;
-use crate::table::{build_table, DriftReport, Reworks, TableConfig, TableError};
+use crate::table::{build_table, Reworks, TableConfig, TableError};
 use current_table::CurrentTable;
 use gh_release::GhRelease;
 use manifest::Manifest;
@@ -54,7 +56,7 @@ fn attempt(config: &PublishConfig, release: &GhRelease) -> Result<Published, Pub
     let reworks = Reworks::read(&config.reworks)?;
     let assets = release.assets()?;
     let current = CurrentTable::fetch(release, assets.as_ref(), &config.work_dir)?;
-    let table = built_table(config, current.as_ref())?;
+    let table = built_table(config, release, current.as_ref())?;
     let summary = TableSummary::read(&table).map_err(PublishError::Refused)?;
     if let Some(reason) = current
         .as_ref()
@@ -96,6 +98,7 @@ fn upload_table(
 
 fn built_table(
     config: &PublishConfig,
+    release: &GhRelease,
     current: Option<&CurrentTable>,
 ) -> Result<PathBuf, PublishError> {
     if let Some(table) = &config.table {
@@ -110,6 +113,7 @@ fn built_table(
         max_patch: config.max_patch.or(still_in_force(inherited, config)?),
     };
     print_report(&build_table(&table)?);
+    report_schedule(config, release)?;
     Ok(output)
 }
 
@@ -122,7 +126,16 @@ fn still_in_force(
     Ok(inherited.filter(|max_patch| window.last().is_some_and(|newest| newest <= max_patch)))
 }
 
-#[allow(clippy::print_stdout, reason = "each build prints its drift report")]
-fn print_report(report: &DriftReport) {
+fn report_schedule(config: &PublishConfig, release: &GhRelease) -> Result<(), PublishError> {
+    let check = check_schedule(&config.database)?;
+    print_report(&check);
+    for kill in check.early_kills() {
+        release.open_issue_once(&kill.issue_title(), &kill.issue_body())?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::print_stdout, reason = "each build prints what it found")]
+fn print_report(report: &impl Display) {
     println!("{report}");
 }

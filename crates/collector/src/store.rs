@@ -1,5 +1,6 @@
 //! The `SQLite` database, which is also everything a restarted run resumes from.
 
+mod first_kills;
 mod kept_matches;
 mod match_queue;
 mod played_games;

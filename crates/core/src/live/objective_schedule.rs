@@ -5,15 +5,16 @@ const fn minutes(minutes: f64) -> f64 {
 }
 
 /// When objectives appear, in seconds of game time. See ADR 0005.
-pub(super) struct ObjectiveSchedule {
+#[derive(Debug)]
+pub struct ObjectiveSchedule {
     from_patch: Patch,
-    pub(super) drake_first: f64,
+    pub drake_first: f64,
     pub(super) drake_respawn: f64,
     pub(super) elder_after_fourth_drake: f64,
     pub(super) elder_respawn: f64,
-    pub(super) voidgrubs_first: f64,
-    pub(super) herald_first: f64,
-    pub(super) baron_first: f64,
+    pub voidgrubs_first: f64,
+    pub herald_first: f64,
+    pub baron_first: f64,
     pub(super) baron_respawn: f64,
 }
 
@@ -36,10 +37,18 @@ static SCHEDULES: [ObjectiveSchedule; 1] = [ObjectiveSchedule {
 
 impl ObjectiveSchedule {
     /// `None` on a Season with no entry: last Season's timers may well be wrong for it.
-    pub(super) fn for_patch(patch: Patch) -> Option<&'static Self> {
+    #[must_use]
+    pub fn for_patch(patch: Patch) -> Option<&'static Self> {
         SCHEDULES
             .iter()
             .rev()
             .find(|entry| entry.from_patch.major == patch.major && entry.from_patch <= patch)
+    }
+
+    /// Elder has no fixed time. This is one team taking all four drakes as each spawns.
+    #[must_use]
+    pub fn earliest_elder(&self) -> f64 {
+        let fourth_drake = 3.0f64.mul_add(self.drake_respawn, self.drake_first);
+        fourth_drake + self.elder_after_fourth_drake
     }
 }

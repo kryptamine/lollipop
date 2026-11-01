@@ -18,6 +18,7 @@ mod match_payload;
 mod minute_values;
 mod publish;
 mod riot_api;
+mod schedule_check;
 mod seed_tier;
 mod seed_walk;
 mod store;
@@ -31,5 +32,6 @@ pub use config::Config;
 pub use publish::{
     publish, rollback, GhError, PublishConfig, PublishError, Published, RollbackConfig,
 };
+pub use schedule_check::{check_schedule, ScheduleCheck};
 pub use seed_tier::SeedTier;
 pub use table::{build_table, DriftReport, TableConfig, TableError};

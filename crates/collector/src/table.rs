@@ -108,6 +108,6 @@ fn write_atomically(output: &Path, file: &BenchmarkFile) -> Result<(), TableErro
     std::fs::rename(&partial, output).map_err(|error| TableError::Write(output.into(), error))
 }
 
-fn patch_label(patch: Patch) -> String {
+pub(crate) fn patch_label(patch: Patch) -> String {
     format!("{}.{}", patch.major, patch.minor)
 }

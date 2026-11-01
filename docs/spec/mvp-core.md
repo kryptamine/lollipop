@@ -135,8 +135,10 @@ as of patch 16.21:
 
 - The owner reads each patch's notes and ships a fix before the patch.
 - Each collector build compares the earliest `ELITE_MONSTER_KILL` per objective
-  and patch with the schedule. A kill before the spawn opens an issue through
-  `gh`. A delay of up to a week is accepted.
+  and patch with the schedule, and prints the result. In `publish`, a kill before
+  the spawn opens an issue through `gh`, once per objective and patch, even if that
+  issue has since closed. `build-table` stays offline. Elder is compared with its
+  earliest possible spawn, 26:00. A delay of up to a week is accepted.
 
 ## Notices
 
