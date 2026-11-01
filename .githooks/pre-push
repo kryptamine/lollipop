@@ -1,0 +1,3 @@
+#!/bin/sh
+# A push is the last place every check runs before a review reads the branch.
+exec pnpm lint

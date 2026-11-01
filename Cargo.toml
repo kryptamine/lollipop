@@ -1,0 +1,31 @@
+[workspace]
+members = ["crates/app", "crates/collector", "crates/core"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.lints.rust]
+missing_debug_implementations = "deny"
+unreachable_pub = "deny"
+unsafe_code = "deny"
+
+# Complexity thresholds live in clippy.toml.
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+# Contradicts unreachable_pub, which asks for the pub(crate) this lint rejects.
+redundant_pub_crate = "allow"
+allow_attributes_without_reason = "deny"
+cognitive_complexity = "deny"
+as_conversions = "deny"
+dbg_macro = "deny"
+exit = "deny"
+expect_used = "deny"
+indexing_slicing = "deny"
+print_stderr = "deny"
+print_stdout = "deny"
+todo = "deny"
+unwrap_used = "deny"

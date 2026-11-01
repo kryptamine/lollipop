@@ -201,5 +201,5 @@ Sanitizing:
 
 ## Reproducing
 
-The tooling is in `scripts/probe/`; see its README. On this branch, `main.rs` takes
-the variant from `LOLLIPOP_PROBE`.
+The tooling lived in `scripts/probe/`, with `main.rs` taking the variant from
+`LOLLIPOP_PROBE`. Both are gone; the last commit that has them is `4c425e6`.

@@ -1,0 +1,25 @@
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+#pill {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: center;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: rgba(10, 14, 20, 0.78);
+  color: #e8edf2;
+  font:
+    600 15px/1.4 -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
