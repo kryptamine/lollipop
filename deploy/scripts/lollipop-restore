@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+
+database=/var/lib/lollipop/collector.sqlite3
+remote=r2:lollipop/backups
+partial="$database.restoring"
+
+# A failed listing ends the script, so an outage cannot pass for "no backups yet".
+newest=$(rclone lsf --files-only "$remote" | sort | tail -n 1)
+if [ -z "$newest" ]; then
+    echo "no backup found, starting with an empty database"
+    exit 0
+fi
+
+trap 'rm -f "$partial"' EXIT
+rclone cat "$remote/$newest" | zstd --decompress --stdout > "$partial"
+
+check=$(sqlite3 "$partial" 'PRAGMA integrity_check')
+if [ "$check" != ok ]; then
+    echo "$newest failed its integrity check: $check" >&2
+    exit 1
+fi
+
+rm -f "$database-wal" "$database-shm"
+mv "$partial" "$database"
+echo "restored $newest"

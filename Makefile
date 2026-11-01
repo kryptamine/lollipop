@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-mock build format lint test check
+.PHONY: help install dev dev-mock build format lint test check deploy
 
 MOCK_URL := http://127.0.0.1:2998/
 MOCK_LOCKFILE := /tmp/lollipop-mock-lockfile
@@ -29,9 +29,14 @@ lint: ## Run every linter, Rust and view
 	cargo fmt --check
 	cargo clippy --workspace --all-targets -- -D warnings
 	scripts/check-boundaries.sh
+	uvx --python 3.14 ansible-lint==26.10.1 deploy/playbook.yml
+	uvx --from shellcheck-py==0.11.0.1 shellcheck deploy/scripts/*
 
 test: ## Run the tests
 	cargo test --workspace
 
 check: lint test ## Run the linters and the tests, required before a push
 	pnpm build
+
+deploy: ## Build the collector and configure the VPS in deploy/inventory.yml
+	cd deploy && uvx --python 3.14 --from ansible-core==2.21.5 ansible-playbook playbook.yml

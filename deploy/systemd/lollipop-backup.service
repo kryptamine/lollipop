@@ -1,0 +1,18 @@
+# Start it by hand before moving hosts: systemctl start lollipop-backup.service
+[Unit]
+Description=Back up the Lollipop database to object storage
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=lollipop
+EnvironmentFile=/etc/lollipop/backup.env
+ExecStart=/usr/local/bin/lollipop-backup
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/lollipop

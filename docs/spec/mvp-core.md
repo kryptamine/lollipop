@@ -242,13 +242,14 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   new seeds, and takes the tier after the last one walked. Seeds stay in memory, as
   they are PUUIDs. A rejected key, or an outage while reading seeds, ends the run for
   the service manager to restart. A single match that keeps failing is dropped.
-- **Backup:** a daily copy to object storage, kept about 2 weeks. About 2.6 GB
+- **Backup:** a daily copy to object storage, kept 2 weeks, which a new host restores
+  before its first collection. About 2.6 GB
   compressed at that size.
 
 ### Build and publish
 
 - **Cadence:** a weekly cron plus a manual run, both `lollipop-collector publish` on
-  the VPS through the systemd units in `deploy/`. The window shifts at the first build
+  the VPS through the systemd units in `deploy/systemd/`. The window shifts at the first build
   after a patch ships, using `gameVersion` from collected matches: a build takes the
   two newest patches stored.
 - **Publish gate:** the old table stays if Cells drop by more than 20%, excluding
