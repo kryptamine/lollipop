@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint --max-warnings 0 . && tsc",
-    "tauri": "tauri"
+    "lint": "prettier --check . && eslint --max-warnings 0 . && tsc",
+    "tauri": "tauri",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",
@@ -20,6 +21,10 @@
     "@preact/preset-vite": "^2.10.6",
     "@tauri-apps/cli": "^2.12.4",
     "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-sonarjs": "^4.2.2",
+    "eslint-plugin-unicorn": "^79.0.0",
+    "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.5"

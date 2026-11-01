@@ -1,0 +1,8 @@
+*.md
+.claude/
+crates/
+dist/
+docs/
+pnpm-lock.yaml
+scripts/
+target/

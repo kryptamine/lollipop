@@ -95,7 +95,7 @@ scripts/check-boundaries.sh
 cargo test --workspace
 ```
 
-Run the app with `pnpm tauri dev`.
+Run the app with `pnpm tauri dev`, and format the view with `pnpm format`.
 
 ## Working here
 
