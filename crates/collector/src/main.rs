@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 use lollipop_collector::{
-    build_table, collect, publish, rollback, Config, PublishConfig, RollbackConfig, SeedTier,
-    SystemClock, TableConfig,
+    build_table, check_schedule, collect, publish, rollback, Config, PublishConfig, RollbackConfig,
+    SeedTier, SystemClock, TableConfig,
 };
 use lollipop_core::game_inputs::Patch;
 
@@ -21,9 +21,11 @@ struct Cli {
 enum Command {
     /// Collects ranked solo matches into a database, until a failure it cannot retry.
     Collect(CollectArgs),
-    /// Aggregates the stored matches into a Benchmark table file and prints the drift report.
+    /// Aggregates the stored matches into a Benchmark table file and prints the drift report
+    /// and the schedule check.
     BuildTable(BuildTableArgs),
-    /// Builds a table and publishes it behind the publish gate. A failure opens an issue.
+    /// Builds a table and publishes it behind the publish gate. A failure, or a kill before its
+    /// scheduled spawn, opens an issue.
     Publish(PublishArgs),
     /// Points the manifest at a kept table.
     Rollback(RollbackArgs),
@@ -111,7 +113,7 @@ async fn run_collect(args: CollectArgs) -> Result<(), String> {
 
 #[allow(
     clippy::print_stdout,
-    reason = "the drift report is this command's output"
+    reason = "the drift report and the schedule check are this command's output"
 )]
 fn run_build_table(args: BuildTableArgs) -> Result<(), String> {
     let config = TableConfig {
@@ -122,6 +124,8 @@ fn run_build_table(args: BuildTableArgs) -> Result<(), String> {
     };
     let report = build_table(&config).map_err(|error| error.to_string())?;
     println!("{report}");
+    let check = check_schedule(&config.database).map_err(|error| error.to_string())?;
+    println!("{check}");
     Ok(())
 }
 

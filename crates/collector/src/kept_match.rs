@@ -8,7 +8,7 @@ use crate::minute_values::MinuteValues;
 use crate::store::PendingMatch;
 use crate::timeline_payload::{Event, TimelinePayload};
 
-const ELDER_DRAGON: &str = "ELDER_DRAGON";
+pub(crate) const ELDER_DRAGON: &str = "ELDER_DRAGON";
 
 /// The compact form of a match. It has no field for a PUUID, which is never stored.
 pub(crate) struct KeptMatch {

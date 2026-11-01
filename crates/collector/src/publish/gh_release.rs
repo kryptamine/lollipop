@@ -89,6 +89,28 @@ impl<'a> GhRelease<'a> {
             .map(drop)
     }
 
+    /// Opens at most one issue per title ever, so a closed one stays closed: the weekly
+    /// build sees the same kill for as long as its patch stays stored.
+    pub(super) fn open_issue_once(&self, title: &str, body: &str) -> Result<(), GhError> {
+        let search = format!("\"{title}\" in:title");
+        let listed = self.run(&[
+            "issue",
+            "list",
+            "--state",
+            "all",
+            "--search",
+            &search,
+            "--json",
+            "title",
+            "--jq",
+            ".[].title",
+        ])?;
+        if listed.lines().any(|line| line == title) {
+            return Ok(());
+        }
+        self.open_issue(title, body)
+    }
+
     fn run(&self, args: &[&str]) -> Result<String, GhError> {
         let command = args.iter().take(2).copied().collect::<Vec<_>>().join(" ");
         let output = Command::new("gh")

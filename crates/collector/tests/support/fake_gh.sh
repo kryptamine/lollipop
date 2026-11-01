@@ -44,6 +44,21 @@ case "$command" in
 "release delete-asset")
   rm "$assets/$2"
   ;;
+"issue list")
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+    --state) listed="$2" ;;
+    esac
+    shift
+  done
+  if [ -e "$state/issues" ]; then
+    sed 's/: .*//' "$state/issues"
+  fi
+  # Like the real one, this lists open issues unless told otherwise.
+  if [ "$listed" = all ] && [ -e "$state/closed-issues" ]; then
+    sed 's/: .*//' "$state/closed-issues"
+  fi
+  ;;
 "issue create")
   while [ "$#" -gt 0 ]; do
     case "$1" in
