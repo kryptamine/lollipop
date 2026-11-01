@@ -35,10 +35,9 @@ pub use rollback_config::RollbackConfig;
 
 const BUILT_TABLE: &str = "benchmark-table.json";
 
-/// Builds and publishes a table. Whatever stops it also opens an issue.
-///
 /// # Errors
 /// On a failed build, a refused publish, or any `gh` failure, even after the manifest moved.
+/// Whatever stops it also opens an issue.
 pub fn publish(config: &PublishConfig) -> Result<Published, PublishError> {
     let release = GhRelease::new(&config.repo);
     attempt(config, &release).map_err(|error| {
