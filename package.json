@@ -4,11 +4,20 @@
   "version": "0.1.0",
   "type": "module",
   "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
     "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "prettier --check . && eslint --max-warnings 0 . && tsc",
+    "build": "pnpm lint:type && vite build",
     "tauri": "tauri",
+    "lint": "concurrently --group pnpm:lint:format pnpm:lint:es pnpm:lint:type pnpm:lint:dead",
+    "lint:es": "eslint . --max-warnings 0 --cache --cache-strategy content",
+    "lint:type": "node node_modules/typescript-7/bin/tsc -p tsconfig.json --noEmit",
+    "lint:dead": "knip --cache",
+    "lint:format": "prettier --check . --cache",
+    "lint:fix": "eslint . --cache --cache-strategy content --fix",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -17,15 +26,30 @@
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
+    "@eslint-react/eslint-plugin": "^5.28.8",
     "@eslint/js": "^10.0.1",
     "@preact/preset-vite": "^2.10.6",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@tauri-apps/cli": "^2.12.4",
+    "concurrently": "^10.0.6",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-check-file": "^3.3.2",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-perfectionist": "^5.13.0",
+    "eslint-plugin-promise": "^7.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "eslint-plugin-regexp": "^3.3.2",
     "eslint-plugin-sonarjs": "^4.2.2",
     "eslint-plugin-unicorn": "^79.0.0",
+    "globals": "^17.13.0",
+    "knip": "^6.44.1",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
+    "typescript-7": "npm:typescript@^7.0.2",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.5"
   }

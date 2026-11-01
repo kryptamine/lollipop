@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // A union's members are exported types its file names; only a name nothing
+  // reads, in the file or out of it, is dead.
+  "ignoreExportsUsedInFile": true,
+  // Research and development tools run by hand, which nothing imports.
+  "ignore": ["scripts/**"],
+}

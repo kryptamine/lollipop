@@ -1,55 +1,23 @@
-import comments from "@eslint-community/eslint-plugin-eslint-comments";
-import js from "@eslint/js";
-import prettier from "eslint-config-prettier";
-import { defineConfig, globalIgnores } from "eslint/config";
-import sonarjs from "eslint-plugin-sonarjs";
-import unicorn from "eslint-plugin-unicorn";
-import tseslint from "typescript-eslint";
+import { defineConfig, globalIgnores } from 'eslint/config';
 
-export default defineConfig([
+import base from './eslint/base.js';
+import view from './eslint/view.js';
+import format from './eslint/format.js';
+import scripts from './eslint/scripts.js';
+
+// The rules are a file to a concern under eslint/. The order is kept: a later
+// block replaces a rule an earlier one set for the same file.
+export default defineConfig(
   globalIgnores([
-    "dist/",
-    "target/",
-    "crates/",
-    "scripts/",
-    "eslint.config.js",
+    'dist/**',
+    'target/**',
+    'crates/**',
+    // Research and development tools run by hand, which ship nothing.
+    'scripts/**',
   ]),
-  js.configs.recommended,
-  tseslint.configs.strictTypeChecked,
-  tseslint.configs.stylisticTypeChecked,
-  sonarjs.configs.recommended,
-  unicorn.configs.recommended,
-  {
-    linterOptions: { reportUnusedDisableDirectives: "error" },
-    languageOptions: { parserOptions: { projectService: true } },
-    plugins: { "eslint-comments": comments },
-    rules: {
-      complexity: ["error", 10],
-      "max-depth": ["error", 3],
-      "max-lines": [
-        "error",
-        { max: 200, skipBlankLines: true, skipComments: true },
-      ],
-      "max-lines-per-function": ["error", 60],
-      "max-params": ["error", 4],
-      // An exception must state its reason (ADR 0001).
-      "eslint-comments/require-description": "error",
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["@tauri-apps/*"],
-              message: "Reach Tauri through ui/src/bridge.ts.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["ui/src/bridge.ts"],
-    rules: { "no-restricted-imports": "off" },
-  },
-  prettier,
-]);
+
+  base,
+  view,
+  scripts,
+  format,
+);
