@@ -2,8 +2,9 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use super::cell_benchmarks::{CellBenchmarks, MinuteEntry};
+use super::cell_benchmarks::CellBenchmarks;
 use super::champion_key::champion_key;
+use super::minute_entry::MinuteEntry;
 use crate::game_inputs::{Role, Tier};
 
 const SCHEMA_VERSION: u32 = 1;

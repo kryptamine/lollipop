@@ -1,23 +1,10 @@
-use serde::Deserialize;
-
 use super::benchmarks_at::BenchmarksAt;
-
-const MINIMUM_N: u32 = 100;
-const SECONDS_PER_MINUTE: f64 = 60.0;
+use super::minute_entry::{MinuteEntry, SECONDS_PER_MINUTE};
 
 /// One Cell's minutes, in the order the build writes them: ascending.
 #[derive(Debug)]
 pub struct CellBenchmarks {
     minutes: Vec<MinuteEntry>,
-}
-
-#[derive(Debug, Deserialize)]
-pub(super) struct MinuteEntry {
-    minute: u32,
-    cs: f64,
-    total_gold: f64,
-    level: f64,
-    n: u32,
 }
 
 impl CellBenchmarks {
@@ -43,28 +30,5 @@ impl CellBenchmarks {
         }
         let share = (game_time - before.second()) / SECONDS_PER_MINUTE;
         Some(before.blended_with(after, share))
-    }
-}
-
-impl MinuteEntry {
-    fn second(&self) -> f64 {
-        f64::from(self.minute) * SECONDS_PER_MINUTE
-    }
-
-    const fn with_enough_games(&self) -> Option<&Self> {
-        if self.n >= MINIMUM_N {
-            Some(self)
-        } else {
-            None
-        }
-    }
-
-    fn blended_with(&self, after: &Self, share: f64) -> BenchmarksAt {
-        let blend = |from: f64, to: f64| (to - from).mul_add(share, from);
-        BenchmarksAt {
-            cs: blend(self.cs, after.cs),
-            gold: blend(self.total_gold, after.total_gold),
-            level: blend(self.level, after.level),
-        }
     }
 }

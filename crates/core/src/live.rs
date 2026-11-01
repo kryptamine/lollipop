@@ -1,6 +1,7 @@
 //! Polls Riot's Live Client Data API for the active player's own stats.
 
 mod clock;
+mod compared_game;
 mod game_markers;
 mod gold_earned;
 mod held_marker;
