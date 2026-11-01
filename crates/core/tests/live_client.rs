@@ -23,8 +23,16 @@ async fn update_for(body: &'static str) -> Option<Snapshot> {
     first_update(serve(Box::new(|| Some(body.to_string()))).await).await
 }
 
-// Protects the whole path from HTTP to Snapshot on real data. The values were read
-// from recorder.ndjson by hand, so a parser that drifts from the recording fails.
+const fn strip(cs: u32, level: u32, gold_earned: u32) -> Snapshot {
+    Snapshot {
+        cs,
+        level,
+        gold_earned: Some(gold_earned),
+    }
+}
+
+// Protects the whole path from HTTP to Snapshot on real data. The values come from a
+// separate replay of recorder.ndjson, so a parser that drifts from the recording fails.
 #[tokio::test]
 async fn replays_a_recorded_game_on_game_time() {
     let game = Arc::new(RecordedGame::load());
@@ -37,8 +45,8 @@ async fn replays_a_recorded_game_on_game_time() {
     // The recording opens on the loading screen, before GameStart.
     assert_eq!(updates.recv().await.unwrap().1, None);
 
-    let mut cs_at_minute = Vec::new();
-    let mut last_cs = None;
+    let mut at_minute = Vec::new();
+    let mut last = None;
     let mut next_minute = 5.0;
     let ended_at = loop {
         let (game_time, update) = updates.recv().await.unwrap();
@@ -46,47 +54,61 @@ async fn replays_a_recorded_game_on_game_time() {
             break game_time;
         };
         if game_time >= next_minute * 60.0 {
-            cs_at_minute.push(snapshot.cs);
+            at_minute.push(strip(
+                snapshot.cs,
+                snapshot.level,
+                snapshot.gold_earned.unwrap(),
+            ));
             next_minute += 5.0;
         }
-        last_cs = Some(snapshot.cs);
+        last = Some(snapshot);
     };
 
-    assert_eq!(cs_at_minute, [30, 70, 100, 140, 180, 200]);
-    assert_eq!(last_cs, Some(220));
+    assert_eq!(
+        at_minute,
+        [
+            strip(30, 4, 1738),
+            strip(70, 8, 4125),
+            strip(100, 10, 6858),
+            strip(140, 13, 9217),
+            strip(180, 16, 13098),
+            strip(200, 17, 15411),
+        ]
+    );
+    assert_eq!(last, Some(strip(220, 18, 17672)));
     assert!((1995.0..1997.0).contains(&ended_at), "ended at {ended_at}");
 }
 
-// Allied and enemy scores share the payload and must never be shown as the player's.
+// Allied and enemy stats share the payload and must never be shown as the player's.
 #[tokio::test]
-async fn reads_only_the_active_players_cs() {
+async fn reads_only_the_active_players_stats() {
     let update = update_for(
         r#"{
-          "activePlayer": { "riotId": "Me#EUW" },
+          "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
           "allPlayers": [
-            { "riotId": "Enemy#EUW", "scores": { "creepScore": 200 } },
-            { "riotId": "Me#EUW", "scores": { "creepScore": 60 } }
+            { "riotId": "Enemy#EUW", "level": 13, "items": [], "scores": { "creepScore": 200 } },
+            { "riotId": "Me#EUW", "level": 7, "items": [], "scores": { "creepScore": 60 } }
           ],
           "events": { "Events": [{ "EventName": "GameStart" }] },
-          "gameData": { "gameTime": 600.0 }
+          "gameData": { "gameTime": 30.0 }
         }"#,
     )
     .await;
-    assert_eq!(update, Some(Snapshot { cs: 60 }));
+    assert_eq!(update, Some(strip(60, 7, 500)));
 }
 
 #[tokio::test]
 async fn falls_back_to_the_summoner_name() {
     let update = update_for(
         r#"{
-          "activePlayer": { "summonerName": "Me" },
-          "allPlayers": [{ "summonerName": "Me", "scores": { "creepScore": 5 } }],
+          "activePlayer": { "summonerName": "Me", "currentGold": 500.0 },
+          "allPlayers": [{ "summonerName": "Me", "level": 2, "items": [], "scores": { "creepScore": 5 } }],
           "events": { "Events": [{ "EventName": "GameStart" }] },
-          "gameData": { "gameTime": 120.0 }
+          "gameData": { "gameTime": 30.0 }
         }"#,
     )
     .await;
-    assert_eq!(update, Some(Snapshot { cs: 5 }));
+    assert_eq!(update, Some(strip(5, 2, 500)));
 }
 
 // A spectator payload has no ids, and two missing ids are not the same player.
@@ -94,8 +116,8 @@ async fn falls_back_to_the_summoner_name() {
 async fn missing_ids_never_match_each_other() {
     let update = update_for(
         r#"{
-          "activePlayer": {},
-          "allPlayers": [{ "scores": { "creepScore": 5 } }],
+          "activePlayer": { "currentGold": 500.0 },
+          "allPlayers": [{ "level": 2, "items": [], "scores": { "creepScore": 5 } }],
           "events": { "Events": [{ "EventName": "GameStart" }] },
           "gameData": { "gameTime": 120.0 }
         }"#,
@@ -109,8 +131,8 @@ async fn missing_ids_never_match_each_other() {
 async fn a_game_before_game_start_has_no_snapshot() {
     let update = update_for(
         r#"{
-          "activePlayer": { "riotId": "Me#EUW" },
-          "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 0 } }],
+          "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
+          "allPlayers": [{ "riotId": "Me#EUW", "level": 1, "items": [], "scores": { "creepScore": 0 } }],
           "events": { "Events": [] },
           "gameData": { "gameTime": 0.02 }
         }"#,
@@ -124,8 +146,8 @@ async fn a_game_before_game_start_has_no_snapshot() {
 async fn a_game_after_game_end_has_no_snapshot() {
     let update = update_for(
         r#"{
-          "activePlayer": { "riotId": "Me#EUW" },
-          "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 220 } }],
+          "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
+          "allPlayers": [{ "riotId": "Me#EUW", "level": 1, "items": [], "scores": { "creepScore": 220 } }],
           "events": { "Events": [{ "EventName": "GameStart" }, { "EventName": "GameEnd" }] },
           "gameData": { "gameTime": 1995.2 }
         }"#,
@@ -139,7 +161,7 @@ async fn a_game_after_game_end_has_no_snapshot() {
 async fn a_game_with_no_active_player_has_no_snapshot() {
     let update = update_for(
         r#"{
-          "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 0 } }],
+          "allPlayers": [{ "riotId": "Me#EUW", "level": 1, "items": [], "scores": { "creepScore": 0 } }],
           "events": { "Events": [{ "EventName": "GameStart" }] },
           "gameData": { "gameTime": 0.02 }
         }"#,

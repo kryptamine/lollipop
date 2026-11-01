@@ -2,12 +2,15 @@
 
 use serde::Deserialize;
 
+use super::gold_earned::ItemCounts;
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct AllGameData {
     active_player: ActivePlayer,
     all_players: Vec<Player>,
     events: Events,
+    game_data: GameData,
 }
 
 #[derive(Deserialize)]
@@ -15,6 +18,7 @@ pub(super) struct AllGameData {
 struct ActivePlayer {
     riot_id: Option<String>,
     summoner_name: Option<String>,
+    current_gold: f64,
 }
 
 #[derive(Deserialize)]
@@ -22,7 +26,16 @@ struct ActivePlayer {
 pub(super) struct Player {
     riot_id: Option<String>,
     summoner_name: Option<String>,
+    pub(super) level: u32,
+    items: Vec<Item>,
     pub(super) scores: Scores,
+}
+
+#[derive(Deserialize)]
+struct Item {
+    #[serde(rename = "itemID")]
+    id: u32,
+    count: u32,
 }
 
 #[derive(Deserialize)]
@@ -43,6 +56,12 @@ struct Event {
     event_name: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GameData {
+    game_time: f64,
+}
+
 impl AllGameData {
     pub(super) fn active_player(&self) -> Option<&Player> {
         let active = &self.active_player;
@@ -54,6 +73,14 @@ impl AllGameData {
         })
     }
 
+    pub(super) const fn current_gold(&self) -> f64 {
+        self.active_player.current_gold
+    }
+
+    pub(super) const fn game_time(&self) -> f64 {
+        self.game_data.game_time
+    }
+
     /// A 200 alone proves nothing: it can come about 56 s before `GameStart`.
     pub(super) fn match_running(&self) -> bool {
         self.has_event("GameStart") && !self.has_event("GameEnd")
@@ -61,5 +88,15 @@ impl AllGameData {
 
     fn has_event(&self, name: &str) -> bool {
         self.events.events.iter().any(|e| e.event_name == name)
+    }
+}
+
+impl Player {
+    pub(super) fn item_counts(&self) -> ItemCounts {
+        let mut counts = ItemCounts::new();
+        for item in &self.items {
+            *counts.entry(item.id).or_default() += item.count;
+        }
+        counts
     }
 }

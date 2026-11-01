@@ -5,7 +5,7 @@ body {
   overflow: hidden;
 }
 
-#pill {
+#marker-strip {
   position: fixed;
   top: 24px;
   left: 24px;
@@ -25,4 +25,8 @@ body {
     sans-serif;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.metric-label {
+  color: #9aa6b2;
 }
