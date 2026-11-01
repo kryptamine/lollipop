@@ -119,11 +119,16 @@ make format    # format the Rust and the view
 make lint      # run every linter
 make test      # run the tests
 make check     # lint, test and build the view
+make afk       # work through the ready-for-agent issues and merge them
 ```
 
 **Run `make check` before every push, and do not push until it passes.** CI is off
 ([ADR 0009](docs/adr/0009-ci-is-off-while-the-gate-runs-locally.md)), and the
 pre-push hook checks only the view. Never skip it with `--no-verify`.
+
+**Do not package the app during development.** `make check` verifies a change, and
+`make dev` or `make dev-mock` runs it. Build a release bundle or a DMG only when the
+packaging itself is the work.
 
 ## Working here
 
