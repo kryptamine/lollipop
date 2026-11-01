@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
+use lollipop_core::delivery::TableFile;
 use lollipop_core::live::{poll, LiveGame, Snapshot};
 use tokio::sync::mpsc;
 
@@ -21,7 +22,7 @@ pub fn start_polling(
         poll(
             &url,
             &no_client,
-            Path::new(NO_TABLE),
+            &TableFile::new(NO_TABLE.into()),
             &clock,
             move |update| {
                 let snapshot = update.map(|game| game.snapshot);
@@ -53,7 +54,7 @@ pub fn start_watching(url: String, lockfile: &Path) -> mpsc::UnboundedReceiver<O
         poll(
             &url,
             &lockfile,
-            Path::new(NO_TABLE),
+            &TableFile::new(NO_TABLE.into()),
             &clock,
             move |update| {
                 let _ = updates.send(update);
@@ -71,12 +72,22 @@ pub fn start_playing(
     benchmark_table: &Path,
     clock: GameClock,
 ) -> mpsc::UnboundedReceiver<(f64, Option<LiveGame>)> {
+    let table = Arc::new(TableFile::new(benchmark_table.to_path_buf()));
+    start_playing_on(url, lockfile, table, clock)
+}
+
+/// As `start_playing`, on a table file the test shares with its downloads.
+pub fn start_playing_on(
+    url: String,
+    lockfile: &Path,
+    table: Arc<TableFile>,
+    clock: GameClock,
+) -> mpsc::UnboundedReceiver<(f64, Option<LiveGame>)> {
     let (updates, received) = mpsc::unbounded_channel();
     let lockfile = lockfile.to_path_buf();
-    let benchmark_table = benchmark_table.to_path_buf();
     tokio::spawn(async move {
         let stamp = clock.clone();
-        poll(&url, &lockfile, &benchmark_table, &clock, move |update| {
+        poll(&url, &lockfile, &table, &clock, move |update| {
             let _ = updates.send((stamp.now(), update));
         })
         .await;

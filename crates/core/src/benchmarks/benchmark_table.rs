@@ -7,7 +7,7 @@ use super::champion_key::champion_key;
 use super::minute_entry::MinuteEntry;
 use crate::game_inputs::{Role, Tier};
 
-const SCHEMA_VERSION: u32 = 1;
+pub(crate) const SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Deserialize)]
 pub struct BenchmarkTable {
@@ -27,8 +27,11 @@ impl BenchmarkTable {
     /// `None` for a missing file, one that does not read, or another schema's.
     #[must_use]
     pub fn read(path: &Path) -> Option<Self> {
-        let body = std::fs::read(path).ok()?;
-        let table: Self = serde_json::from_slice(&body).ok()?;
+        Self::parse(&std::fs::read(path).ok()?)
+    }
+
+    pub(crate) fn parse(body: &[u8]) -> Option<Self> {
+        let table: Self = serde_json::from_slice(body).ok()?;
         (table.schema_version == SCHEMA_VERSION).then_some(table)
     }
 
