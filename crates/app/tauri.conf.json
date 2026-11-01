@@ -15,10 +15,6 @@
       {
         "label": "overlay",
         "title": "Lollipop",
-        "width": 260,
-        "height": 44,
-        "x": 24,
-        "y": 24,
         "visible": false,
         "transparent": true,
         "decorations": false,
