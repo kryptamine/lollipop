@@ -26,6 +26,8 @@ struct ActivePlayer {
 pub(super) struct Player {
     riot_id: Option<String>,
     summoner_name: Option<String>,
+    pub(super) champion_name: Option<String>,
+    pub(super) position: Option<String>,
     pub(super) level: u32,
     items: Vec<Item>,
     pub(super) scores: Scores,
