@@ -371,6 +371,20 @@ fn an_identical_table_takes_no_slot() {
     assert_eq!(bench.asset_names().len(), 2);
 }
 
+// The weekly path: only a byte-identical rebuild of the same matches is seen as unchanged.
+#[test]
+fn a_rebuild_of_the_same_matches_takes_no_slot() {
+    let matches = matches_on((16, 21));
+    let bench = ReleaseBench::new();
+    assert_published(&bench.publish_built(&matches.database(), &[]));
+
+    let output = bench.publish_built(&matches.database(), &[]);
+
+    assert_published(&output);
+    assert!(stdout(&output).contains("table 1 is unchanged"));
+    assert_eq!(bench.asset_names().len(), 2);
+}
+
 #[test]
 fn a_rollback_points_the_manifest_at_an_older_table_with_its_hash() {
     let mut bench = ReleaseBench::new();

@@ -138,10 +138,6 @@ impl ReleaseBench {
     pub fn overwrite_asset(&self, name: &str, body: &str) {
         std::fs::write(self.asset_path(name), body).unwrap();
     }
-
-    pub fn remove_asset(&self, name: &str) {
-        std::fs::remove_file(self.asset_path(name)).unwrap();
-    }
 }
 
 /// A table of `count` Cells of one window, as Champion0, Champion1 and so on.
