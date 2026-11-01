@@ -1,0 +1,2257 @@
+{
+  "matches": 529,
+  "matchesBySeedTier": {
+    "GOLD": 109,
+    "EMERALD": 60,
+    "MASTER+": 60,
+    "IRON": 60,
+    "PLATINUM": 60,
+    "DIAMOND": 60,
+    "BRONZE": 60,
+    "SILVER": 60
+  },
+  "matchesByPatch": {
+    "16.20": 169,
+    "16.21": 360
+  },
+  "gameDurationMinutes": {
+    "n": 529,
+    "min": 3.9,
+    "p5": 17.736666666666665,
+    "median": 29.466666666666665,
+    "p95": 41.579999999999984,
+    "max": 60.4
+  },
+  "gamesUnder15Minutes": 4,
+  "gamesReachingMinute": {
+    "5": 0.998,
+    "10": 0.994,
+    "15": 0.992,
+    "20": 0.913,
+    "25": 0.777,
+    "30": 0.465,
+    "35": 0.202
+  },
+  "participantsWithoutRole": 1,
+  "roleDisagreesWithIndividualPosition": 0.002,
+  "distinctChampionRolePairs": 422,
+  "cells": {
+    "distinct": 1769,
+    "atLeast15": 334,
+    "largest": 25
+  },
+  "fields": {
+    "frameIntervalValues": {
+      "60000": 529
+    },
+    "frame0TotalGold": {
+      "n": 5290,
+      "min": 500,
+      "p5": 500,
+      "median": 500,
+      "p95": 500,
+      "max": 500
+    },
+    "frame0CurrentGold": {
+      "n": 5290,
+      "min": 100,
+      "p5": 100,
+      "median": 500,
+      "p95": 500,
+      "max": 500
+    },
+    "finalTotalGoldMinusGoldEarned": {
+      "n": 5290,
+      "min": 0,
+      "p5": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    "shareFinalTotalEqualsEarned": 1,
+    "shareFinalTotalEqualsEarnedPlus500": 0,
+    "finalCurrentMinusTotalPlusSpent": {
+      "n": 5290,
+      "min": -124,
+      "p5": -39,
+      "median": 0,
+      "p95": 539.5500000000002,
+      "max": 17867
+    },
+    "finalCsMinusMatchCs": {
+      "n": 5290,
+      "min": 0,
+      "p5": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    "finalLevelMinusChampLevel": {
+      "n": 5290,
+      "min": 0,
+      "p5": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    "totalGoldDrops": 0,
+    "csDrops": 0,
+    "currentGoldAboveTotal": 0,
+    "participantFramesChecked": 160040,
+    "frameOffsetMsByIndex": {
+      "1": {
+        "n": 529,
+        "min": 0,
+        "p5": 2,
+        "median": 16,
+        "p95": 32,
+        "max": 38
+      },
+      "5": {
+        "n": 528,
+        "min": 20,
+        "p5": 46,
+        "median": 155,
+        "p95": 197,
+        "max": 238
+      },
+      "10": {
+        "n": 526,
+        "min": 65,
+        "p5": 129.25,
+        "median": 243,
+        "p95": 295,
+        "max": 347
+      },
+      "15": {
+        "n": 525,
+        "min": 143,
+        "p5": 252.4,
+        "median": 325,
+        "p95": 392,
+        "max": 429
+      },
+      "20": {
+        "n": 483,
+        "min": 214,
+        "p5": 335,
+        "median": 413,
+        "p95": 481,
+        "max": 531
+      },
+      "25": {
+        "n": 411,
+        "min": 287,
+        "p5": 412,
+        "median": 496,
+        "p95": 576.5,
+        "max": 634
+      },
+      "30": {
+        "n": 246,
+        "min": 350,
+        "p5": 479,
+        "median": 573.5,
+        "p95": 666,
+        "max": 747
+      },
+      "35": {
+        "n": 107,
+        "min": 425,
+        "p5": 555.3,
+        "median": 663,
+        "p95": 751.7,
+        "max": 880
+      }
+    },
+    "framesWithIrregularGap": 0,
+    "finalFrameGapMs": {
+      "n": 529,
+      "min": 267,
+      "p5": 3750,
+      "median": 30030,
+      "p95": 56682,
+      "max": 60200
+    },
+    "finalFrameMinusGameDurationMs": {
+      "n": 529,
+      "min": 0,
+      "p5": 58.400000000000006,
+      "median": 503,
+      "p95": 945.5999999999999,
+      "max": 999
+    }
+  },
+  "spread": {
+    "cs": {
+      "5": {
+        "ALL": {
+          "cellsUsed": 334,
+          "games": 2500,
+          "pooledCv": 0.218,
+          "pooledSd": 5.6,
+          "medianErrorAt100": 1.4,
+          "medianErrorAt300": 0.8,
+          "nFor5pct": 116,
+          "nFor3pct": 320,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.824,
+          "shareAbove": 0.079,
+          "shareBelow": 0.097
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 635,
+          "pooledCv": 0.203,
+          "pooledSd": 6.4,
+          "medianErrorAt100": 1.6,
+          "medianErrorAt300": 0.9,
+          "nFor5pct": 100,
+          "nFor3pct": 278,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.756,
+          "shareAbove": 0.106,
+          "shareBelow": 0.139
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 446,
+          "pooledCv": 0.154,
+          "pooledSd": 5.1,
+          "medianErrorAt100": 1.2,
+          "medianErrorAt300": 0.7,
+          "nFor5pct": 58,
+          "nFor3pct": 160,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.852,
+          "shareAbove": 0.063,
+          "shareBelow": 0.085
+        },
+        "MIDDLE": {
+          "cellsUsed": 63,
+          "games": 446,
+          "pooledCv": 0.203,
+          "pooledSd": 6.5,
+          "medianErrorAt100": 1.6,
+          "medianErrorAt300": 0.9,
+          "nFor5pct": 100,
+          "nFor3pct": 277,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.744,
+          "shareAbove": 0.126,
+          "shareBelow": 0.13
+        },
+        "TOP": {
+          "cellsUsed": 58,
+          "games": 398,
+          "pooledCv": 0.227,
+          "pooledSd": 6.5,
+          "medianErrorAt100": 1.6,
+          "medianErrorAt300": 0.9,
+          "nFor5pct": 125,
+          "nFor3pct": 346,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.744,
+          "shareAbove": 0.113,
+          "shareBelow": 0.143
+        },
+        "UTILITY": {
+          "cellsUsed": 81,
+          "games": 575,
+          "pooledCv": 0.456,
+          "pooledSd": 2.9,
+          "medianErrorAt100": 0.7,
+          "medianErrorAt300": 0.4,
+          "nFor5pct": 502,
+          "nFor3pct": 1393,
+          "nForZoneWidth": 1,
+          "shareInNeutralZone": 0.997,
+          "shareAbove": 0.002,
+          "shareBelow": 0.002
+        }
+      },
+      "10": {
+        "ALL": {
+          "cellsUsed": 331,
+          "games": 2477,
+          "pooledCv": 0.183,
+          "pooledSd": 10.3,
+          "medianErrorAt100": 2.5,
+          "medianErrorAt300": 1.5,
+          "nFor5pct": 81,
+          "nFor3pct": 225,
+          "nForZoneWidth": 10,
+          "shareInNeutralZone": 0.587,
+          "shareAbove": 0.201,
+          "shareBelow": 0.212
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 632,
+          "pooledCv": 0.164,
+          "pooledSd": 11.5,
+          "medianErrorAt100": 2.8,
+          "medianErrorAt300": 1.6,
+          "nFor5pct": 66,
+          "nFor3pct": 182,
+          "nForZoneWidth": 13,
+          "shareInNeutralZone": 0.522,
+          "shareAbove": 0.237,
+          "shareBelow": 0.241
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 445,
+          "pooledCv": 0.14,
+          "pooledSd": 9.4,
+          "medianErrorAt100": 2.3,
+          "medianErrorAt300": 1.3,
+          "nFor5pct": 48,
+          "nFor3pct": 132,
+          "nForZoneWidth": 9,
+          "shareInNeutralZone": 0.602,
+          "shareAbove": 0.187,
+          "shareBelow": 0.211
+        },
+        "MIDDLE": {
+          "cellsUsed": 62,
+          "games": 441,
+          "pooledCv": 0.16,
+          "pooledSd": 11.3,
+          "medianErrorAt100": 2.8,
+          "medianErrorAt300": 1.6,
+          "nFor5pct": 62,
+          "nFor3pct": 171,
+          "nForZoneWidth": 13,
+          "shareInNeutralZone": 0.483,
+          "shareAbove": 0.256,
+          "shareBelow": 0.261
+        },
+        "TOP": {
+          "cellsUsed": 57,
+          "games": 392,
+          "pooledCv": 0.198,
+          "pooledSd": 12.9,
+          "medianErrorAt100": 3.2,
+          "medianErrorAt300": 1.8,
+          "nFor5pct": 95,
+          "nFor3pct": 264,
+          "nForZoneWidth": 16,
+          "shareInNeutralZone": 0.423,
+          "shareAbove": 0.268,
+          "shareBelow": 0.309
+        },
+        "UTILITY": {
+          "cellsUsed": 80,
+          "games": 567,
+          "pooledCv": 0.373,
+          "pooledSd": 5.2,
+          "medianErrorAt100": 1.3,
+          "medianErrorAt300": 0.7,
+          "nFor5pct": 336,
+          "nFor3pct": 933,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.84,
+          "shareAbove": 0.083,
+          "shareBelow": 0.078
+        }
+      },
+      "15": {
+        "ALL": {
+          "cellsUsed": 331,
+          "games": 2474,
+          "pooledCv": 0.177,
+          "pooledSd": 15.1,
+          "medianErrorAt100": 3.7,
+          "medianErrorAt300": 2.1,
+          "nFor5pct": 76,
+          "nFor3pct": 209,
+          "nForZoneWidth": 22,
+          "shareInNeutralZone": 0.427,
+          "shareAbove": 0.29,
+          "shareBelow": 0.283
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 631,
+          "pooledCv": 0.155,
+          "pooledSd": 16.4,
+          "medianErrorAt100": 4,
+          "medianErrorAt300": 2.3,
+          "nFor5pct": 58,
+          "nFor3pct": 161,
+          "nForZoneWidth": 26,
+          "shareInNeutralZone": 0.345,
+          "shareAbove": 0.33,
+          "shareBelow": 0.325
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 445,
+          "pooledCv": 0.14,
+          "pooledSd": 14.2,
+          "medianErrorAt100": 3.5,
+          "medianErrorAt300": 2,
+          "nFor5pct": 48,
+          "nFor3pct": 131,
+          "nForZoneWidth": 20,
+          "shareInNeutralZone": 0.434,
+          "shareAbove": 0.281,
+          "shareBelow": 0.285
+        },
+        "MIDDLE": {
+          "cellsUsed": 62,
+          "games": 440,
+          "pooledCv": 0.155,
+          "pooledSd": 16.6,
+          "medianErrorAt100": 4.1,
+          "medianErrorAt300": 2.3,
+          "nFor5pct": 58,
+          "nFor3pct": 161,
+          "nForZoneWidth": 26,
+          "shareInNeutralZone": 0.307,
+          "shareAbove": 0.357,
+          "shareBelow": 0.336
+        },
+        "TOP": {
+          "cellsUsed": 57,
+          "games": 392,
+          "pooledCv": 0.192,
+          "pooledSd": 19.8,
+          "medianErrorAt100": 4.9,
+          "medianErrorAt300": 2.8,
+          "nFor5pct": 90,
+          "nFor3pct": 248,
+          "nForZoneWidth": 37,
+          "shareInNeutralZone": 0.25,
+          "shareAbove": 0.375,
+          "shareBelow": 0.375
+        },
+        "UTILITY": {
+          "cellsUsed": 80,
+          "games": 566,
+          "pooledCv": 0.34,
+          "pooledSd": 7,
+          "medianErrorAt100": 1.7,
+          "medianErrorAt300": 1,
+          "nFor5pct": 280,
+          "nFor3pct": 776,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.73,
+          "shareAbove": 0.143,
+          "shareBelow": 0.127
+        }
+      },
+      "20": {
+        "ALL": {
+          "cellsUsed": 295,
+          "games": 2129,
+          "pooledCv": 0.17,
+          "pooledSd": 19.7,
+          "medianErrorAt100": 4.8,
+          "medianErrorAt300": 2.8,
+          "nFor5pct": 70,
+          "nFor3pct": 195,
+          "nForZoneWidth": 37,
+          "shareInNeutralZone": 0.361,
+          "shareAbove": 0.321,
+          "shareBelow": 0.318
+        },
+        "BOTTOM": {
+          "cellsUsed": 66,
+          "games": 567,
+          "pooledCv": 0.15,
+          "pooledSd": 21.6,
+          "medianErrorAt100": 5.3,
+          "medianErrorAt300": 3.1,
+          "nFor5pct": 55,
+          "nFor3pct": 152,
+          "nForZoneWidth": 45,
+          "shareInNeutralZone": 0.284,
+          "shareAbove": 0.362,
+          "shareBelow": 0.354
+        },
+        "JUNGLE": {
+          "cellsUsed": 57,
+          "games": 389,
+          "pooledCv": 0.148,
+          "pooledSd": 20.2,
+          "medianErrorAt100": 5,
+          "medianErrorAt300": 2.9,
+          "nFor5pct": 53,
+          "nFor3pct": 146,
+          "nForZoneWidth": 39,
+          "shareInNeutralZone": 0.344,
+          "shareAbove": 0.326,
+          "shareBelow": 0.329
+        },
+        "MIDDLE": {
+          "cellsUsed": 54,
+          "games": 377,
+          "pooledCv": 0.149,
+          "pooledSd": 21.4,
+          "medianErrorAt100": 5.3,
+          "medianErrorAt300": 3,
+          "nFor5pct": 54,
+          "nFor3pct": 149,
+          "nForZoneWidth": 44,
+          "shareInNeutralZone": 0.252,
+          "shareAbove": 0.374,
+          "shareBelow": 0.374
+        },
+        "TOP": {
+          "cellsUsed": 49,
+          "games": 323,
+          "pooledCv": 0.173,
+          "pooledSd": 24.3,
+          "medianErrorAt100": 6,
+          "medianErrorAt300": 3.4,
+          "nFor5pct": 73,
+          "nFor3pct": 202,
+          "nForZoneWidth": 56,
+          "shareInNeutralZone": 0.229,
+          "shareAbove": 0.384,
+          "shareBelow": 0.387
+        },
+        "UTILITY": {
+          "cellsUsed": 69,
+          "games": 473,
+          "pooledCv": 0.351,
+          "pooledSd": 9.4,
+          "medianErrorAt100": 2.3,
+          "medianErrorAt300": 1.3,
+          "nFor5pct": 298,
+          "nFor3pct": 827,
+          "nForZoneWidth": 9,
+          "shareInNeutralZone": 0.645,
+          "shareAbove": 0.184,
+          "shareBelow": 0.171
+        }
+      },
+      "25": {
+        "ALL": {
+          "cellsUsed": 216,
+          "games": 1546,
+          "pooledCv": 0.171,
+          "pooledSd": 24.6,
+          "medianErrorAt100": 6.1,
+          "medianErrorAt300": 3.5,
+          "nFor5pct": 71,
+          "nFor3pct": 195,
+          "nForZoneWidth": 58,
+          "shareInNeutralZone": 0.288,
+          "shareAbove": 0.358,
+          "shareBelow": 0.354
+        },
+        "BOTTOM": {
+          "cellsUsed": 55,
+          "games": 451,
+          "pooledCv": 0.151,
+          "pooledSd": 26.7,
+          "medianErrorAt100": 6.6,
+          "medianErrorAt300": 3.8,
+          "nFor5pct": 55,
+          "nFor3pct": 153,
+          "nForZoneWidth": 68,
+          "shareInNeutralZone": 0.233,
+          "shareAbove": 0.381,
+          "shareBelow": 0.386
+        },
+        "JUNGLE": {
+          "cellsUsed": 40,
+          "games": 271,
+          "pooledCv": 0.145,
+          "pooledSd": 25,
+          "medianErrorAt100": 6.1,
+          "medianErrorAt300": 3.6,
+          "nFor5pct": 52,
+          "nFor3pct": 142,
+          "nForZoneWidth": 60,
+          "shareInNeutralZone": 0.218,
+          "shareAbove": 0.387,
+          "shareBelow": 0.395
+        },
+        "MIDDLE": {
+          "cellsUsed": 39,
+          "games": 273,
+          "pooledCv": 0.151,
+          "pooledSd": 26.4,
+          "medianErrorAt100": 6.5,
+          "medianErrorAt300": 3.7,
+          "nFor5pct": 56,
+          "nFor3pct": 154,
+          "nForZoneWidth": 66,
+          "shareInNeutralZone": 0.212,
+          "shareAbove": 0.399,
+          "shareBelow": 0.388
+        },
+        "TOP": {
+          "cellsUsed": 34,
+          "games": 222,
+          "pooledCv": 0.179,
+          "pooledSd": 30.4,
+          "medianErrorAt100": 7.5,
+          "medianErrorAt300": 4.3,
+          "nFor5pct": 77,
+          "nFor3pct": 214,
+          "nForZoneWidth": 88,
+          "shareInNeutralZone": 0.18,
+          "shareAbove": 0.41,
+          "shareBelow": 0.41
+        },
+        "UTILITY": {
+          "cellsUsed": 48,
+          "games": 329,
+          "pooledCv": 0.36,
+          "pooledSd": 12.5,
+          "medianErrorAt100": 3.1,
+          "medianErrorAt300": 1.8,
+          "nFor5pct": 314,
+          "nFor3pct": 871,
+          "nForZoneWidth": 15,
+          "shareInNeutralZone": 0.556,
+          "shareAbove": 0.231,
+          "shareBelow": 0.213
+        }
+      },
+      "30": {
+        "ALL": {
+          "cellsUsed": 87,
+          "games": 559,
+          "pooledCv": 0.174,
+          "pooledSd": 30.1,
+          "medianErrorAt100": 7.4,
+          "medianErrorAt300": 4.3,
+          "nFor5pct": 74,
+          "nFor3pct": 203,
+          "nForZoneWidth": 86,
+          "shareInNeutralZone": 0.24,
+          "shareAbove": 0.379,
+          "shareBelow": 0.381
+        },
+        "BOTTOM": {
+          "cellsUsed": 28,
+          "games": 200,
+          "pooledCv": 0.154,
+          "pooledSd": 32.6,
+          "medianErrorAt100": 8,
+          "medianErrorAt300": 4.6,
+          "nFor5pct": 58,
+          "nFor3pct": 160,
+          "nForZoneWidth": 100,
+          "shareInNeutralZone": 0.195,
+          "shareAbove": 0.4,
+          "shareBelow": 0.405
+        },
+        "JUNGLE": {
+          "cellsUsed": 16,
+          "games": 93,
+          "pooledCv": 0.16,
+          "pooledSd": 31.9,
+          "medianErrorAt100": 7.8,
+          "medianErrorAt300": 4.5,
+          "nFor5pct": 62,
+          "nFor3pct": 172,
+          "nForZoneWidth": 96,
+          "shareInNeutralZone": 0.183,
+          "shareAbove": 0.409,
+          "shareBelow": 0.409
+        },
+        "MIDDLE": {
+          "cellsUsed": 13,
+          "games": 81,
+          "pooledCv": 0.15,
+          "pooledSd": 28.7,
+          "medianErrorAt100": 7.1,
+          "medianErrorAt300": 4.1,
+          "nFor5pct": 54,
+          "nFor3pct": 150,
+          "nForZoneWidth": 78,
+          "shareInNeutralZone": 0.21,
+          "shareAbove": 0.383,
+          "shareBelow": 0.407
+        },
+        "TOP": {
+          "cellsUsed": 13,
+          "games": 79,
+          "pooledCv": 0.186,
+          "pooledSd": 37,
+          "medianErrorAt100": 9.1,
+          "medianErrorAt300": 5.2,
+          "nFor5pct": 84,
+          "nFor3pct": 232,
+          "nForZoneWidth": 129,
+          "shareInNeutralZone": 0.215,
+          "shareAbove": 0.392,
+          "shareBelow": 0.392
+        },
+        "UTILITY": {
+          "cellsUsed": 17,
+          "games": 106,
+          "pooledCv": 0.347,
+          "pooledSd": 15.2,
+          "medianErrorAt100": 3.7,
+          "medianErrorAt300": 2.1,
+          "nFor5pct": 292,
+          "nFor3pct": 810,
+          "nForZoneWidth": 22,
+          "shareInNeutralZone": 0.415,
+          "shareAbove": 0.302,
+          "shareBelow": 0.283
+        }
+      },
+      "35": {
+        "ALL": {
+          "cellsUsed": 16,
+          "games": 90,
+          "pooledCv": 0.22,
+          "pooledSd": 40.2,
+          "medianErrorAt100": 9.9,
+          "medianErrorAt300": 5.7,
+          "nFor5pct": 118,
+          "nFor3pct": 326,
+          "nForZoneWidth": 152,
+          "shareInNeutralZone": 0.233,
+          "shareAbove": 0.378,
+          "shareBelow": 0.389
+        },
+        "BOTTOM": {
+          "cellsUsed": 6,
+          "games": 34,
+          "pooledCv": 0.163,
+          "pooledSd": 36.5,
+          "medianErrorAt100": 9,
+          "medianErrorAt300": 5.2,
+          "nFor5pct": 64,
+          "nFor3pct": 178,
+          "nForZoneWidth": 126,
+          "shareInNeutralZone": 0.206,
+          "shareAbove": 0.382,
+          "shareBelow": 0.412
+        },
+        "JUNGLE": {
+          "cellsUsed": 2,
+          "games": 12,
+          "pooledCv": 0.13,
+          "pooledSd": 28.9,
+          "medianErrorAt100": 7.1,
+          "medianErrorAt300": 4.1,
+          "nFor5pct": 41,
+          "nFor3pct": 114,
+          "nForZoneWidth": 79,
+          "shareInNeutralZone": 0.167,
+          "shareAbove": 0.417,
+          "shareBelow": 0.417
+        },
+        "MIDDLE": {
+          "cellsUsed": 2,
+          "games": 10,
+          "pooledCv": 0.147,
+          "pooledSd": 30,
+          "medianErrorAt100": 7.4,
+          "medianErrorAt300": 4.3,
+          "nFor5pct": 53,
+          "nFor3pct": 146,
+          "nForZoneWidth": 85,
+          "shareInNeutralZone": 0.4,
+          "shareAbove": 0.3,
+          "shareBelow": 0.3
+        },
+        "TOP": {
+          "cellsUsed": 2,
+          "games": 13,
+          "pooledCv": 0.343,
+          "pooledSd": 71.5,
+          "medianErrorAt100": 17.5,
+          "medianErrorAt300": 10.1,
+          "nFor5pct": 285,
+          "nFor3pct": 790,
+          "nForZoneWidth": 482,
+          "shareInNeutralZone": 0.154,
+          "shareAbove": 0.385,
+          "shareBelow": 0.462
+        },
+        "UTILITY": {
+          "cellsUsed": 4,
+          "games": 21,
+          "pooledCv": 0.384,
+          "pooledSd": 24.6,
+          "medianErrorAt100": 6,
+          "medianErrorAt300": 3.5,
+          "nFor5pct": 356,
+          "nFor3pct": 989,
+          "nForZoneWidth": 58,
+          "shareInNeutralZone": 0.286,
+          "shareAbove": 0.381,
+          "shareBelow": 0.333
+        }
+      }
+    },
+    "gold": {
+      "5": {
+        "ALL": {
+          "cellsUsed": 334,
+          "games": 2500,
+          "pooledCv": 0.153,
+          "pooledSd": 266.9,
+          "medianErrorAt100": 65.6,
+          "medianErrorAt300": 37.8,
+          "nFor5pct": 57,
+          "nFor3pct": 157,
+          "nForZoneWidth": 20,
+          "shareInNeutralZone": 0.442,
+          "shareAbove": 0.292,
+          "shareBelow": 0.266
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 635,
+          "pooledCv": 0.165,
+          "pooledSd": 305.9,
+          "medianErrorAt100": 75.1,
+          "medianErrorAt300": 43.4,
+          "nFor5pct": 66,
+          "nFor3pct": 183,
+          "nForZoneWidth": 26,
+          "shareInNeutralZone": 0.387,
+          "shareAbove": 0.328,
+          "shareBelow": 0.285
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 446,
+          "pooledCv": 0.129,
+          "pooledSd": 250.4,
+          "medianErrorAt100": 61.5,
+          "medianErrorAt300": 35.5,
+          "nFor5pct": 40,
+          "nFor3pct": 112,
+          "nForZoneWidth": 17,
+          "shareInNeutralZone": 0.433,
+          "shareAbove": 0.305,
+          "shareBelow": 0.262
+        },
+        "MIDDLE": {
+          "cellsUsed": 63,
+          "games": 446,
+          "pooledCv": 0.137,
+          "pooledSd": 239.9,
+          "medianErrorAt100": 58.9,
+          "medianErrorAt300": 34,
+          "nFor5pct": 46,
+          "nFor3pct": 127,
+          "nForZoneWidth": 16,
+          "shareInNeutralZone": 0.437,
+          "shareAbove": 0.28,
+          "shareBelow": 0.283
+        },
+        "TOP": {
+          "cellsUsed": 58,
+          "games": 398,
+          "pooledCv": 0.164,
+          "pooledSd": 285.5,
+          "medianErrorAt100": 70.1,
+          "medianErrorAt300": 40.5,
+          "nFor5pct": 65,
+          "nFor3pct": 181,
+          "nForZoneWidth": 22,
+          "shareInNeutralZone": 0.415,
+          "shareAbove": 0.279,
+          "shareBelow": 0.307
+        },
+        "UTILITY": {
+          "cellsUsed": 81,
+          "games": 575,
+          "pooledCv": 0.161,
+          "pooledSd": 236.3,
+          "medianErrorAt100": 58,
+          "medianErrorAt300": 33.5,
+          "nFor5pct": 63,
+          "nFor3pct": 174,
+          "nForZoneWidth": 15,
+          "shareInNeutralZone": 0.53,
+          "shareAbove": 0.263,
+          "shareBelow": 0.207
+        }
+      },
+      "10": {
+        "ALL": {
+          "cellsUsed": 331,
+          "games": 2477,
+          "pooledCv": 0.148,
+          "pooledSd": 513.7,
+          "medianErrorAt100": 126.2,
+          "medianErrorAt300": 72.8,
+          "nFor5pct": 53,
+          "nFor3pct": 146,
+          "nForZoneWidth": 71,
+          "shareInNeutralZone": 0.199,
+          "shareAbove": 0.4,
+          "shareBelow": 0.4
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 632,
+          "pooledCv": 0.158,
+          "pooledSd": 586.1,
+          "medianErrorAt100": 143.9,
+          "medianErrorAt300": 83.1,
+          "nFor5pct": 61,
+          "nFor3pct": 169,
+          "nForZoneWidth": 93,
+          "shareInNeutralZone": 0.222,
+          "shareAbove": 0.389,
+          "shareBelow": 0.389
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 445,
+          "pooledCv": 0.133,
+          "pooledSd": 514.7,
+          "medianErrorAt100": 126.4,
+          "medianErrorAt300": 73,
+          "nFor5pct": 43,
+          "nFor3pct": 120,
+          "nForZoneWidth": 72,
+          "shareInNeutralZone": 0.157,
+          "shareAbove": 0.411,
+          "shareBelow": 0.431
+        },
+        "MIDDLE": {
+          "cellsUsed": 62,
+          "games": 441,
+          "pooledCv": 0.131,
+          "pooledSd": 471.4,
+          "medianErrorAt100": 115.8,
+          "medianErrorAt300": 66.8,
+          "nFor5pct": 42,
+          "nFor3pct": 115,
+          "nForZoneWidth": 60,
+          "shareInNeutralZone": 0.197,
+          "shareAbove": 0.404,
+          "shareBelow": 0.399
+        },
+        "TOP": {
+          "cellsUsed": 57,
+          "games": 392,
+          "pooledCv": 0.163,
+          "pooledSd": 569.1,
+          "medianErrorAt100": 139.8,
+          "medianErrorAt300": 80.7,
+          "nFor5pct": 65,
+          "nFor3pct": 179,
+          "nForZoneWidth": 87,
+          "shareInNeutralZone": 0.173,
+          "shareAbove": 0.418,
+          "shareBelow": 0.408
+        },
+        "UTILITY": {
+          "cellsUsed": 80,
+          "games": 567,
+          "pooledCv": 0.141,
+          "pooledSd": 402.9,
+          "medianErrorAt100": 99,
+          "medianErrorAt300": 57.1,
+          "nFor5pct": 49,
+          "nFor3pct": 134,
+          "nForZoneWidth": 44,
+          "shareInNeutralZone": 0.228,
+          "shareAbove": 0.388,
+          "shareBelow": 0.384
+        }
+      },
+      "15": {
+        "ALL": {
+          "cellsUsed": 331,
+          "games": 2474,
+          "pooledCv": 0.158,
+          "pooledSd": 873.7,
+          "medianErrorAt100": 214.6,
+          "medianErrorAt300": 123.9,
+          "nFor5pct": 61,
+          "nFor3pct": 168,
+          "nForZoneWidth": 205,
+          "shareInNeutralZone": 0.133,
+          "shareAbove": 0.434,
+          "shareBelow": 0.434
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 631,
+          "pooledCv": 0.165,
+          "pooledSd": 1010.9,
+          "medianErrorAt100": 248.3,
+          "medianErrorAt300": 143.3,
+          "nFor5pct": 66,
+          "nFor3pct": 182,
+          "nForZoneWidth": 274,
+          "shareInNeutralZone": 0.125,
+          "shareAbove": 0.429,
+          "shareBelow": 0.445
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 445,
+          "pooledCv": 0.138,
+          "pooledSd": 840.9,
+          "medianErrorAt100": 206.5,
+          "medianErrorAt300": 119.2,
+          "nFor5pct": 47,
+          "nFor3pct": 129,
+          "nForZoneWidth": 190,
+          "shareInNeutralZone": 0.139,
+          "shareAbove": 0.436,
+          "shareBelow": 0.425
+        },
+        "MIDDLE": {
+          "cellsUsed": 62,
+          "games": 440,
+          "pooledCv": 0.149,
+          "pooledSd": 834.9,
+          "medianErrorAt100": 205,
+          "medianErrorAt300": 118.4,
+          "nFor5pct": 54,
+          "nFor3pct": 149,
+          "nForZoneWidth": 187,
+          "shareInNeutralZone": 0.109,
+          "shareAbove": 0.457,
+          "shareBelow": 0.434
+        },
+        "TOP": {
+          "cellsUsed": 57,
+          "games": 392,
+          "pooledCv": 0.184,
+          "pooledSd": 1003.5,
+          "medianErrorAt100": 246.4,
+          "medianErrorAt300": 142.3,
+          "nFor5pct": 82,
+          "nFor3pct": 227,
+          "nForZoneWidth": 270,
+          "shareInNeutralZone": 0.089,
+          "shareAbove": 0.457,
+          "shareBelow": 0.454
+        },
+        "UTILITY": {
+          "cellsUsed": 80,
+          "games": 566,
+          "pooledCv": 0.142,
+          "pooledSd": 626.1,
+          "medianErrorAt100": 153.8,
+          "medianErrorAt300": 88.8,
+          "nFor5pct": 49,
+          "nFor3pct": 135,
+          "nForZoneWidth": 106,
+          "shareInNeutralZone": 0.184,
+          "shareAbove": 0.403,
+          "shareBelow": 0.413
+        }
+      },
+      "20": {
+        "ALL": {
+          "cellsUsed": 295,
+          "games": 2129,
+          "pooledCv": 0.154,
+          "pooledSd": 1201.2,
+          "medianErrorAt100": 295,
+          "medianErrorAt300": 170.3,
+          "nFor5pct": 58,
+          "nFor3pct": 160,
+          "nForZoneWidth": 387,
+          "shareInNeutralZone": 0.114,
+          "shareAbove": 0.442,
+          "shareBelow": 0.444
+        },
+        "BOTTOM": {
+          "cellsUsed": 66,
+          "games": 567,
+          "pooledCv": 0.156,
+          "pooledSd": 1361.2,
+          "medianErrorAt100": 334.3,
+          "medianErrorAt300": 193,
+          "nFor5pct": 59,
+          "nFor3pct": 164,
+          "nForZoneWidth": 497,
+          "shareInNeutralZone": 0.102,
+          "shareAbove": 0.45,
+          "shareBelow": 0.448
+        },
+        "JUNGLE": {
+          "cellsUsed": 57,
+          "games": 389,
+          "pooledCv": 0.14,
+          "pooledSd": 1191.3,
+          "medianErrorAt100": 292.6,
+          "medianErrorAt300": 168.9,
+          "nFor5pct": 48,
+          "nFor3pct": 131,
+          "nForZoneWidth": 381,
+          "shareInNeutralZone": 0.103,
+          "shareAbove": 0.447,
+          "shareBelow": 0.45
+        },
+        "MIDDLE": {
+          "cellsUsed": 54,
+          "games": 377,
+          "pooledCv": 0.149,
+          "pooledSd": 1180.3,
+          "medianErrorAt100": 289.9,
+          "medianErrorAt300": 167.4,
+          "nFor5pct": 54,
+          "nFor3pct": 150,
+          "nForZoneWidth": 374,
+          "shareInNeutralZone": 0.138,
+          "shareAbove": 0.435,
+          "shareBelow": 0.427
+        },
+        "TOP": {
+          "cellsUsed": 49,
+          "games": 323,
+          "pooledCv": 0.18,
+          "pooledSd": 1384.7,
+          "medianErrorAt100": 340.1,
+          "medianErrorAt300": 196.3,
+          "nFor5pct": 78,
+          "nFor3pct": 217,
+          "nForZoneWidth": 514,
+          "shareInNeutralZone": 0.087,
+          "shareAbove": 0.449,
+          "shareBelow": 0.464
+        },
+        "UTILITY": {
+          "cellsUsed": 69,
+          "games": 473,
+          "pooledCv": 0.135,
+          "pooledSd": 819.8,
+          "medianErrorAt100": 201.3,
+          "medianErrorAt300": 116.2,
+          "nFor5pct": 45,
+          "nFor3pct": 123,
+          "nForZoneWidth": 181,
+          "shareInNeutralZone": 0.135,
+          "shareAbove": 0.431,
+          "shareBelow": 0.433
+        }
+      },
+      "25": {
+        "ALL": {
+          "cellsUsed": 216,
+          "games": 1546,
+          "pooledCv": 0.153,
+          "pooledSd": 1544.5,
+          "medianErrorAt100": 379.3,
+          "medianErrorAt300": 219,
+          "nFor5pct": 57,
+          "nFor3pct": 157,
+          "nForZoneWidth": 640,
+          "shareInNeutralZone": 0.072,
+          "shareAbove": 0.462,
+          "shareBelow": 0.465
+        },
+        "BOTTOM": {
+          "cellsUsed": 55,
+          "games": 451,
+          "pooledCv": 0.155,
+          "pooledSd": 1749.8,
+          "medianErrorAt100": 429.7,
+          "medianErrorAt300": 248.1,
+          "nFor5pct": 58,
+          "nFor3pct": 161,
+          "nForZoneWidth": 821,
+          "shareInNeutralZone": 0.062,
+          "shareAbove": 0.47,
+          "shareBelow": 0.468
+        },
+        "JUNGLE": {
+          "cellsUsed": 40,
+          "games": 271,
+          "pooledCv": 0.137,
+          "pooledSd": 1520.5,
+          "medianErrorAt100": 373.4,
+          "medianErrorAt300": 215.6,
+          "nFor5pct": 46,
+          "nFor3pct": 127,
+          "nForZoneWidth": 620,
+          "shareInNeutralZone": 0.077,
+          "shareAbove": 0.454,
+          "shareBelow": 0.469
+        },
+        "MIDDLE": {
+          "cellsUsed": 39,
+          "games": 273,
+          "pooledCv": 0.156,
+          "pooledSd": 1582,
+          "medianErrorAt100": 388.5,
+          "medianErrorAt300": 224.3,
+          "nFor5pct": 59,
+          "nFor3pct": 163,
+          "nForZoneWidth": 671,
+          "shareInNeutralZone": 0.07,
+          "shareAbove": 0.465,
+          "shareBelow": 0.465
+        },
+        "TOP": {
+          "cellsUsed": 34,
+          "games": 222,
+          "pooledCv": 0.178,
+          "pooledSd": 1766.7,
+          "medianErrorAt100": 433.9,
+          "medianErrorAt300": 250.5,
+          "nFor5pct": 77,
+          "nFor3pct": 213,
+          "nForZoneWidth": 837,
+          "shareInNeutralZone": 0.032,
+          "shareAbove": 0.482,
+          "shareBelow": 0.486
+        },
+        "UTILITY": {
+          "cellsUsed": 48,
+          "games": 329,
+          "pooledCv": 0.122,
+          "pooledSd": 949.7,
+          "medianErrorAt100": 233.2,
+          "medianErrorAt300": 134.7,
+          "nFor5pct": 37,
+          "nFor3pct": 101,
+          "nForZoneWidth": 242,
+          "shareInNeutralZone": 0.112,
+          "shareAbove": 0.444,
+          "shareBelow": 0.444
+        }
+      },
+      "30": {
+        "ALL": {
+          "cellsUsed": 87,
+          "games": 559,
+          "pooledCv": 0.157,
+          "pooledSd": 1951.7,
+          "medianErrorAt100": 479.3,
+          "medianErrorAt300": 276.7,
+          "nFor5pct": 60,
+          "nFor3pct": 166,
+          "nForZoneWidth": 1022,
+          "shareInNeutralZone": 0.05,
+          "shareAbove": 0.469,
+          "shareBelow": 0.481
+        },
+        "BOTTOM": {
+          "cellsUsed": 28,
+          "games": 200,
+          "pooledCv": 0.166,
+          "pooledSd": 2288.3,
+          "medianErrorAt100": 562,
+          "medianErrorAt300": 324.5,
+          "nFor5pct": 67,
+          "nFor3pct": 185,
+          "nForZoneWidth": 1404,
+          "shareInNeutralZone": 0.03,
+          "shareAbove": 0.48,
+          "shareBelow": 0.49
+        },
+        "JUNGLE": {
+          "cellsUsed": 16,
+          "games": 93,
+          "pooledCv": 0.128,
+          "pooledSd": 1731.3,
+          "medianErrorAt100": 425.2,
+          "medianErrorAt300": 245.5,
+          "nFor5pct": 40,
+          "nFor3pct": 111,
+          "nForZoneWidth": 804,
+          "shareInNeutralZone": 0.054,
+          "shareAbove": 0.462,
+          "shareBelow": 0.484
+        },
+        "MIDDLE": {
+          "cellsUsed": 13,
+          "games": 81,
+          "pooledCv": 0.159,
+          "pooledSd": 1965.6,
+          "medianErrorAt100": 482.7,
+          "medianErrorAt300": 278.7,
+          "nFor5pct": 62,
+          "nFor3pct": 171,
+          "nForZoneWidth": 1036,
+          "shareInNeutralZone": 0.049,
+          "shareAbove": 0.469,
+          "shareBelow": 0.481
+        },
+        "TOP": {
+          "cellsUsed": 13,
+          "games": 79,
+          "pooledCv": 0.182,
+          "pooledSd": 2191.7,
+          "medianErrorAt100": 538.3,
+          "medianErrorAt300": 310.8,
+          "nFor5pct": 80,
+          "nFor3pct": 222,
+          "nForZoneWidth": 1288,
+          "shareInNeutralZone": 0.038,
+          "shareAbove": 0.481,
+          "shareBelow": 0.481
+        },
+        "UTILITY": {
+          "cellsUsed": 17,
+          "games": 106,
+          "pooledCv": 0.106,
+          "pooledSd": 987.1,
+          "medianErrorAt100": 242.4,
+          "medianErrorAt300": 140,
+          "nFor5pct": 28,
+          "nFor3pct": 76,
+          "nForZoneWidth": 262,
+          "shareInNeutralZone": 0.094,
+          "shareAbove": 0.443,
+          "shareBelow": 0.462
+        }
+      },
+      "35": {
+        "ALL": {
+          "cellsUsed": 16,
+          "games": 90,
+          "pooledCv": 0.155,
+          "pooledSd": 2237,
+          "medianErrorAt100": 549.4,
+          "medianErrorAt300": 317.2,
+          "nFor5pct": 59,
+          "nFor3pct": 162,
+          "nForZoneWidth": 1342,
+          "shareInNeutralZone": 0.033,
+          "shareAbove": 0.5,
+          "shareBelow": 0.467
+        },
+        "BOTTOM": {
+          "cellsUsed": 6,
+          "games": 34,
+          "pooledCv": 0.141,
+          "pooledSd": 2312.4,
+          "medianErrorAt100": 567.9,
+          "medianErrorAt300": 327.9,
+          "nFor5pct": 49,
+          "nFor3pct": 134,
+          "nForZoneWidth": 1434,
+          "shareInNeutralZone": 0,
+          "shareAbove": 0.529,
+          "shareBelow": 0.471
+        },
+        "JUNGLE": {
+          "cellsUsed": 2,
+          "games": 12,
+          "pooledCv": 0.102,
+          "pooledSd": 1643.4,
+          "medianErrorAt100": 403.6,
+          "medianErrorAt300": 233,
+          "nFor5pct": 26,
+          "nFor3pct": 71,
+          "nForZoneWidth": 724,
+          "shareInNeutralZone": 0.083,
+          "shareAbove": 0.5,
+          "shareBelow": 0.417
+        },
+        "MIDDLE": {
+          "cellsUsed": 2,
+          "games": 10,
+          "pooledCv": 0.169,
+          "pooledSd": 2353.3,
+          "medianErrorAt100": 577.9,
+          "medianErrorAt300": 333.7,
+          "nFor5pct": 70,
+          "nFor3pct": 192,
+          "nForZoneWidth": 1485,
+          "shareInNeutralZone": 0.1,
+          "shareAbove": 0.5,
+          "shareBelow": 0.4
+        },
+        "TOP": {
+          "cellsUsed": 2,
+          "games": 13,
+          "pooledCv": 0.255,
+          "pooledSd": 3367.5,
+          "medianErrorAt100": 827,
+          "medianErrorAt300": 477.5,
+          "nFor5pct": 157,
+          "nFor3pct": 435,
+          "nForZoneWidth": 3040,
+          "shareInNeutralZone": 0,
+          "shareAbove": 0.538,
+          "shareBelow": 0.462
+        },
+        "UTILITY": {
+          "cellsUsed": 4,
+          "games": 21,
+          "pooledCv": 0.107,
+          "pooledSd": 1201.2,
+          "medianErrorAt100": 295,
+          "medianErrorAt300": 170.3,
+          "nFor5pct": 28,
+          "nFor3pct": 77,
+          "nForZoneWidth": 387,
+          "shareInNeutralZone": 0.048,
+          "shareAbove": 0.429,
+          "shareBelow": 0.524
+        }
+      }
+    },
+    "level": {
+      "5": {
+        "ALL": {
+          "cellsUsed": 334,
+          "games": 2500,
+          "pooledCv": 0.098,
+          "pooledSd": 0.4,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 24,
+          "nFor3pct": 65,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 0.976,
+          "shareAbove": 0.012,
+          "shareBelow": 0.013
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 635,
+          "pooledCv": 0.085,
+          "pooledSd": 0.3,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0,
+          "nFor5pct": 18,
+          "nFor3pct": 49,
+          "nForZoneWidth": 1,
+          "shareInNeutralZone": 0.983,
+          "shareAbove": 0.011,
+          "shareBelow": 0.006
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 446,
+          "pooledCv": 0.11,
+          "pooledSd": 0.5,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 30,
+          "nFor3pct": 82,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 0.987,
+          "shareAbove": 0,
+          "shareBelow": 0.013
+        },
+        "MIDDLE": {
+          "cellsUsed": 63,
+          "games": 446,
+          "pooledCv": 0.089,
+          "pooledSd": 0.5,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 19,
+          "nFor3pct": 53,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 0.966,
+          "shareAbove": 0.018,
+          "shareBelow": 0.016
+        },
+        "TOP": {
+          "cellsUsed": 58,
+          "games": 398,
+          "pooledCv": 0.089,
+          "pooledSd": 0.4,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 20,
+          "nFor3pct": 53,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 0.955,
+          "shareAbove": 0.023,
+          "shareBelow": 0.023
+        },
+        "UTILITY": {
+          "cellsUsed": 81,
+          "games": 575,
+          "pooledCv": 0.116,
+          "pooledSd": 0.4,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 33,
+          "nFor3pct": 91,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 0.981,
+          "shareAbove": 0.009,
+          "shareBelow": 0.01
+        }
+      },
+      "10": {
+        "ALL": {
+          "cellsUsed": 331,
+          "games": 2477,
+          "pooledCv": 0.083,
+          "pooledSd": 0.6,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 17,
+          "nFor3pct": 47,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.947,
+          "shareAbove": 0.02,
+          "shareBelow": 0.033
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 632,
+          "pooledCv": 0.079,
+          "pooledSd": 0.5,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 16,
+          "nFor3pct": 43,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 0.964,
+          "shareAbove": 0.016,
+          "shareBelow": 0.021
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 445,
+          "pooledCv": 0.079,
+          "pooledSd": 0.6,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 16,
+          "nFor3pct": 42,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 0.933,
+          "shareAbove": 0.031,
+          "shareBelow": 0.036
+        },
+        "MIDDLE": {
+          "cellsUsed": 62,
+          "games": 441,
+          "pooledCv": 0.072,
+          "pooledSd": 0.6,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 13,
+          "nFor3pct": 35,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.968,
+          "shareAbove": 0.014,
+          "shareBelow": 0.018
+        },
+        "TOP": {
+          "cellsUsed": 57,
+          "games": 392,
+          "pooledCv": 0.085,
+          "pooledSd": 0.7,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 18,
+          "nFor3pct": 49,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.921,
+          "shareAbove": 0.02,
+          "shareBelow": 0.059
+        },
+        "UTILITY": {
+          "cellsUsed": 80,
+          "games": 567,
+          "pooledCv": 0.1,
+          "pooledSd": 0.6,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 24,
+          "nFor3pct": 67,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.94,
+          "shareAbove": 0.021,
+          "shareBelow": 0.039
+        }
+      },
+      "15": {
+        "ALL": {
+          "cellsUsed": 331,
+          "games": 2474,
+          "pooledCv": 0.079,
+          "pooledSd": 0.7,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 15,
+          "nFor3pct": 42,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.854,
+          "shareAbove": 0.075,
+          "shareBelow": 0.071
+        },
+        "BOTTOM": {
+          "cellsUsed": 69,
+          "games": 631,
+          "pooledCv": 0.073,
+          "pooledSd": 0.6,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 13,
+          "nFor3pct": 36,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.894,
+          "shareAbove": 0.057,
+          "shareBelow": 0.049
+        },
+        "JUNGLE": {
+          "cellsUsed": 63,
+          "games": 445,
+          "pooledCv": 0.073,
+          "pooledSd": 0.7,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 13,
+          "nFor3pct": 37,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.838,
+          "shareAbove": 0.094,
+          "shareBelow": 0.067
+        },
+        "MIDDLE": {
+          "cellsUsed": 62,
+          "games": 440,
+          "pooledCv": 0.069,
+          "pooledSd": 0.7,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 12,
+          "nFor3pct": 32,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.841,
+          "shareAbove": 0.077,
+          "shareBelow": 0.082
+        },
+        "TOP": {
+          "cellsUsed": 57,
+          "games": 392,
+          "pooledCv": 0.088,
+          "pooledSd": 1,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 19,
+          "nFor3pct": 52,
+          "nForZoneWidth": 6,
+          "shareInNeutralZone": 0.753,
+          "shareAbove": 0.12,
+          "shareBelow": 0.128
+        },
+        "UTILITY": {
+          "cellsUsed": 80,
+          "games": 566,
+          "pooledCv": 0.088,
+          "pooledSd": 0.7,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 19,
+          "nFor3pct": 53,
+          "nForZoneWidth": 3,
+          "shareInNeutralZone": 0.905,
+          "shareAbove": 0.046,
+          "shareBelow": 0.049
+        }
+      },
+      "20": {
+        "ALL": {
+          "cellsUsed": 295,
+          "games": 2129,
+          "pooledCv": 0.075,
+          "pooledSd": 0.9,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 14,
+          "nFor3pct": 38,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.808,
+          "shareAbove": 0.107,
+          "shareBelow": 0.085
+        },
+        "BOTTOM": {
+          "cellsUsed": 66,
+          "games": 567,
+          "pooledCv": 0.069,
+          "pooledSd": 0.8,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 12,
+          "nFor3pct": 32,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.864,
+          "shareAbove": 0.085,
+          "shareBelow": 0.051
+        },
+        "JUNGLE": {
+          "cellsUsed": 57,
+          "games": 389,
+          "pooledCv": 0.074,
+          "pooledSd": 0.9,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 14,
+          "nFor3pct": 37,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.751,
+          "shareAbove": 0.144,
+          "shareBelow": 0.105
+        },
+        "MIDDLE": {
+          "cellsUsed": 54,
+          "games": 377,
+          "pooledCv": 0.068,
+          "pooledSd": 0.8,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 12,
+          "nFor3pct": 31,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.777,
+          "shareAbove": 0.106,
+          "shareBelow": 0.117
+        },
+        "TOP": {
+          "cellsUsed": 49,
+          "games": 323,
+          "pooledCv": 0.083,
+          "pooledSd": 1.1,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.2,
+          "nFor5pct": 17,
+          "nFor3pct": 47,
+          "nForZoneWidth": 8,
+          "shareInNeutralZone": 0.724,
+          "shareAbove": 0.133,
+          "shareBelow": 0.142
+        },
+        "UTILITY": {
+          "cellsUsed": 69,
+          "games": 473,
+          "pooledCv": 0.082,
+          "pooledSd": 0.8,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 17,
+          "nFor3pct": 45,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.871,
+          "shareAbove": 0.085,
+          "shareBelow": 0.044
+        }
+      },
+      "25": {
+        "ALL": {
+          "cellsUsed": 216,
+          "games": 1546,
+          "pooledCv": 0.072,
+          "pooledSd": 1,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 13,
+          "nFor3pct": 35,
+          "nForZoneWidth": 6,
+          "shareInNeutralZone": 0.743,
+          "shareAbove": 0.132,
+          "shareBelow": 0.125
+        },
+        "BOTTOM": {
+          "cellsUsed": 55,
+          "games": 451,
+          "pooledCv": 0.066,
+          "pooledSd": 0.9,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 11,
+          "nFor3pct": 29,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.812,
+          "shareAbove": 0.1,
+          "shareBelow": 0.089
+        },
+        "JUNGLE": {
+          "cellsUsed": 40,
+          "games": 271,
+          "pooledCv": 0.072,
+          "pooledSd": 1,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 13,
+          "nFor3pct": 35,
+          "nForZoneWidth": 7,
+          "shareInNeutralZone": 0.649,
+          "shareAbove": 0.181,
+          "shareBelow": 0.17
+        },
+        "MIDDLE": {
+          "cellsUsed": 39,
+          "games": 273,
+          "pooledCv": 0.066,
+          "pooledSd": 0.9,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 11,
+          "nFor3pct": 29,
+          "nForZoneWidth": 6,
+          "shareInNeutralZone": 0.762,
+          "shareAbove": 0.11,
+          "shareBelow": 0.128
+        },
+        "TOP": {
+          "cellsUsed": 34,
+          "games": 222,
+          "pooledCv": 0.088,
+          "pooledSd": 1.4,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.2,
+          "nFor5pct": 19,
+          "nFor3pct": 53,
+          "nForZoneWidth": 12,
+          "shareInNeutralZone": 0.622,
+          "shareAbove": 0.18,
+          "shareBelow": 0.198
+        },
+        "UTILITY": {
+          "cellsUsed": 48,
+          "games": 329,
+          "pooledCv": 0.068,
+          "pooledSd": 0.8,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 12,
+          "nFor3pct": 32,
+          "nForZoneWidth": 4,
+          "shareInNeutralZone": 0.79,
+          "shareAbove": 0.122,
+          "shareBelow": 0.088
+        }
+      },
+      "30": {
+        "ALL": {
+          "cellsUsed": 87,
+          "games": 559,
+          "pooledCv": 0.067,
+          "pooledSd": 1,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 11,
+          "nFor3pct": 31,
+          "nForZoneWidth": 7,
+          "shareInNeutralZone": 0.714,
+          "shareAbove": 0.148,
+          "shareBelow": 0.138
+        },
+        "BOTTOM": {
+          "cellsUsed": 28,
+          "games": 200,
+          "pooledCv": 0.063,
+          "pooledSd": 0.9,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 10,
+          "nFor3pct": 27,
+          "nForZoneWidth": 6,
+          "shareInNeutralZone": 0.74,
+          "shareAbove": 0.15,
+          "shareBelow": 0.11
+        },
+        "JUNGLE": {
+          "cellsUsed": 16,
+          "games": 93,
+          "pooledCv": 0.068,
+          "pooledSd": 1.1,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.2,
+          "nFor5pct": 12,
+          "nFor3pct": 32,
+          "nForZoneWidth": 8,
+          "shareInNeutralZone": 0.613,
+          "shareAbove": 0.161,
+          "shareBelow": 0.226
+        },
+        "MIDDLE": {
+          "cellsUsed": 13,
+          "games": 81,
+          "pooledCv": 0.06,
+          "pooledSd": 1,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 9,
+          "nFor3pct": 25,
+          "nForZoneWidth": 6,
+          "shareInNeutralZone": 0.753,
+          "shareAbove": 0.136,
+          "shareBelow": 0.111
+        },
+        "TOP": {
+          "cellsUsed": 13,
+          "games": 79,
+          "pooledCv": 0.08,
+          "pooledSd": 1.4,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.2,
+          "nFor5pct": 16,
+          "nFor3pct": 43,
+          "nForZoneWidth": 12,
+          "shareInNeutralZone": 0.696,
+          "shareAbove": 0.139,
+          "shareBelow": 0.165
+        },
+        "UTILITY": {
+          "cellsUsed": 17,
+          "games": 106,
+          "pooledCv": 0.064,
+          "pooledSd": 0.9,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 10,
+          "nFor3pct": 28,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.736,
+          "shareAbove": 0.151,
+          "shareBelow": 0.113
+        }
+      },
+      "35": {
+        "ALL": {
+          "cellsUsed": 16,
+          "games": 90,
+          "pooledCv": 0.084,
+          "pooledSd": 1.4,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.2,
+          "nFor5pct": 17,
+          "nFor3pct": 48,
+          "nForZoneWidth": 12,
+          "shareInNeutralZone": 0.756,
+          "shareAbove": 0.111,
+          "shareBelow": 0.133
+        },
+        "BOTTOM": {
+          "cellsUsed": 6,
+          "games": 34,
+          "pooledCv": 0.051,
+          "pooledSd": 0.8,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 7,
+          "nFor3pct": 18,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.794,
+          "shareAbove": 0.118,
+          "shareBelow": 0.088
+        },
+        "JUNGLE": {
+          "cellsUsed": 2,
+          "games": 12,
+          "pooledCv": 0.023,
+          "pooledSd": 0.4,
+          "medianErrorAt100": 0.1,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 2,
+          "nFor3pct": 4,
+          "nForZoneWidth": 2,
+          "shareInNeutralZone": 1,
+          "shareAbove": 0,
+          "shareBelow": 0
+        },
+        "MIDDLE": {
+          "cellsUsed": 2,
+          "games": 10,
+          "pooledCv": 0.051,
+          "pooledSd": 0.9,
+          "medianErrorAt100": 0.2,
+          "medianErrorAt300": 0.1,
+          "nFor5pct": 7,
+          "nFor3pct": 18,
+          "nForZoneWidth": 5,
+          "shareInNeutralZone": 0.8,
+          "shareAbove": 0,
+          "shareBelow": 0.2
+        },
+        "TOP": {
+          "cellsUsed": 2,
+          "games": 13,
+          "pooledCv": 0.163,
+          "pooledSd": 2.9,
+          "medianErrorAt100": 0.7,
+          "medianErrorAt300": 0.4,
+          "nFor5pct": 65,
+          "nFor3pct": 179,
+          "nForZoneWidth": 51,
+          "shareInNeutralZone": 0.538,
+          "shareAbove": 0.154,
+          "shareBelow": 0.308
+        },
+        "UTILITY": {
+          "cellsUsed": 4,
+          "games": 21,
+          "pooledCv": 0.074,
+          "pooledSd": 1.1,
+          "medianErrorAt100": 0.3,
+          "medianErrorAt300": 0.2,
+          "nFor5pct": 14,
+          "nFor3pct": 37,
+          "nForZoneWidth": 8,
+          "shareInNeutralZone": 0.667,
+          "shareAbove": 0.19,
+          "shareBelow": 0.143
+        }
+      }
+    }
+  },
+  "tierLookup": {
+    "matchesSampled": 54,
+    "otherParticipantsRanked": 486,
+    "otherParticipantsUnrankedInSolo": 0,
+    "tierDistanceCounts": {
+      "0": 265,
+      "1": 169,
+      "2": 11,
+      "-1": 37,
+      "-2": 4
+    },
+    "sameTierShare": 0.545,
+    "withinOneTierShare": 0.969,
+    "sameTierShareBySeedTier": {
+      "GOLD": 0.509,
+      "EMERALD": 0.648,
+      "MASTER+": 1,
+      "IRON": 0.352,
+      "PLATINUM": 0.352,
+      "DIAMOND": 0.63,
+      "BRONZE": 0.537,
+      "SILVER": 0.37
+    },
+    "benchmarkShiftFromMislabel": {
+      "cs": {
+        "10": {
+          "n": 486,
+          "meanSigned": -0.58,
+          "meanAbsolute": 1.06,
+          "p95Absolute": 4.47
+        },
+        "15": {
+          "n": 486,
+          "meanSigned": -1.1,
+          "meanAbsolute": 1.88,
+          "p95Absolute": 8.51
+        },
+        "20": {
+          "n": 486,
+          "meanSigned": -1.53,
+          "meanAbsolute": 2.68,
+          "p95Absolute": 12.02
+        }
+      },
+      "gold": {
+        "10": {
+          "n": 486,
+          "meanSigned": -14.26,
+          "meanAbsolute": 31.68,
+          "p95Absolute": 157.41
+        },
+        "15": {
+          "n": 486,
+          "meanSigned": -24.94,
+          "meanAbsolute": 62.11,
+          "p95Absolute": 284.71
+        },
+        "20": {
+          "n": 486,
+          "meanSigned": -32.39,
+          "meanAbsolute": 88.78,
+          "p95Absolute": 444.6
+        }
+      },
+      "level": {
+        "10": {
+          "n": 486,
+          "meanSigned": -0.01,
+          "meanAbsolute": 0.01,
+          "p95Absolute": 0
+        },
+        "15": {
+          "n": 486,
+          "meanSigned": -0.04,
+          "meanAbsolute": 0.06,
+          "p95Absolute": 0.49
+        },
+        "20": {
+          "n": 486,
+          "meanSigned": -0.04,
+          "meanAbsolute": 0.09,
+          "p95Absolute": 0.99
+        }
+      }
+    }
+  },
+  "ladder": {
+    "BOTTOM": {
+      "IRON": {
+        "cs15": 84.9,
+        "gold15": 5596
+      },
+      "BRONZE": {
+        "cs15": 93.9,
+        "gold15": 5829
+      },
+      "SILVER": {
+        "cs15": 102.5,
+        "gold15": 5941
+      },
+      "GOLD": {
+        "cs15": 108.9,
+        "gold15": 5967
+      },
+      "PLATINUM": {
+        "cs15": 112,
+        "gold15": 6321
+      },
+      "EMERALD": {
+        "cs15": 110.5,
+        "gold15": 6015
+      },
+      "DIAMOND": {
+        "cs15": 116,
+        "gold15": 6365
+      },
+      "MASTER+": {
+        "cs15": 121.9,
+        "gold15": 6514
+      }
+    },
+    "JUNGLE": {
+      "IRON": {
+        "cs15": 89,
+        "gold15": 5514
+      },
+      "BRONZE": {
+        "cs15": 90,
+        "gold15": 5615
+      },
+      "SILVER": {
+        "cs15": 99.5,
+        "gold15": 5900
+      },
+      "GOLD": {
+        "cs15": 99,
+        "gold15": 5841
+      },
+      "PLATINUM": {
+        "cs15": 104.4,
+        "gold15": 6126
+      },
+      "EMERALD": {
+        "cs15": 107,
+        "gold15": 6148
+      },
+      "DIAMOND": {
+        "cs15": 109.9,
+        "gold15": 6280
+      },
+      "MASTER+": {
+        "cs15": 112.5,
+        "gold15": 6459
+      }
+    },
+    "MIDDLE": {
+      "IRON": {
+        "cs15": 91,
+        "gold15": 5236
+      },
+      "BRONZE": {
+        "cs15": 98.4,
+        "gold15": 5357
+      },
+      "SILVER": {
+        "cs15": 103.5,
+        "gold15": 5487
+      },
+      "GOLD": {
+        "cs15": 106.9,
+        "gold15": 5549
+      },
+      "PLATINUM": {
+        "cs15": 112.9,
+        "gold15": 5586
+      },
+      "EMERALD": {
+        "cs15": 116.9,
+        "gold15": 5695
+      },
+      "DIAMOND": {
+        "cs15": 116.5,
+        "gold15": 5609
+      },
+      "MASTER+": {
+        "cs15": 120,
+        "gold15": 5874
+      }
+    },
+    "TOP": {
+      "IRON": {
+        "cs15": 92,
+        "gold15": 5122
+      },
+      "BRONZE": {
+        "cs15": 93.4,
+        "gold15": 4940
+      },
+      "SILVER": {
+        "cs15": 101.5,
+        "gold15": 5166
+      },
+      "GOLD": {
+        "cs15": 104,
+        "gold15": 5359
+      },
+      "PLATINUM": {
+        "cs15": 109.9,
+        "gold15": 5422
+      },
+      "EMERALD": {
+        "cs15": 114.4,
+        "gold15": 5514
+      },
+      "DIAMOND": {
+        "cs15": 111.4,
+        "gold15": 5583
+      },
+      "MASTER+": {
+        "cs15": 111.5,
+        "gold15": 5564
+      }
+    },
+    "UTILITY": {
+      "IRON": {
+        "cs15": 22,
+        "gold15": 4454
+      },
+      "BRONZE": {
+        "cs15": 21,
+        "gold15": 4402
+      },
+      "SILVER": {
+        "cs15": 20,
+        "gold15": 4298
+      },
+      "GOLD": {
+        "cs15": 21,
+        "gold15": 4335
+      },
+      "PLATINUM": {
+        "cs15": 21,
+        "gold15": 4300
+      },
+      "EMERALD": {
+        "cs15": 20,
+        "gold15": 4431
+      },
+      "DIAMOND": {
+        "cs15": 20,
+        "gold15": 4473
+      },
+      "MASTER+": {
+        "cs15": 19,
+        "gold15": 4340
+      }
+    }
+  }
+}
