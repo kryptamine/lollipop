@@ -11,7 +11,7 @@ Data API and shows the active player's CS, Gold earned and level.
 - `crates/collector` (`lollipop-collector`): the Benchmark CLI, which collects
   ranked matches into SQLite, builds the Benchmark table file from them and
   publishes it.
-- `deploy/`: the systemd units that run the CLI on the VPS.
+- `deploy/`: the Ansible playbook and systemd units that run the CLI on the VPS.
 - `ui/`: the Preact view. It draws state it is given, and only `ui/src/bridge.ts`
   may import Tauri.
 
@@ -122,6 +122,7 @@ make format    # format the Rust and the view
 make lint      # run every linter
 make test      # run the tests
 make check     # lint, test and build the view
+make deploy    # build the collector and configure the VPS
 ```
 
 **Run `make check` before every push, and do not push until it passes.** CI is off

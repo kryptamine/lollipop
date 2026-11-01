@@ -1,0 +1,28 @@
+#!/bin/bash
+set -euo pipefail
+
+database=/var/lib/lollipop/collector.sqlite3
+work=/var/lib/lollipop/backup
+remote=r2:lollipop/backups
+copy="$work/collector.sqlite3"
+
+rm -rf "$work"
+mkdir -p "$work"
+trap 'rm -rf "$work"' EXIT
+
+# VACUUM INTO reads in one transaction. `.backup` restarts on every write from
+# the collector, so it might never finish.
+sqlite3 -cmd '.timeout 60000' "$database" "VACUUM INTO '$copy'"
+
+# Retention removes older copies, so a corrupt one must never be uploaded.
+check=$(sqlite3 "$copy" 'PRAGMA integrity_check')
+if [ "$check" != ok ]; then
+    echo "the database copy failed its integrity check: $check" >&2
+    exit 1
+fi
+
+zstd --quiet --rm "$copy"
+rclone copyto "$copy.zst" "$remote/collector-$(date -u +%Y-%m-%dT%H%M%SZ).sqlite3.zst"
+
+# The token cannot set a lifecycle rule on the bucket, so retention lives here.
+rclone delete --min-age 14d "$remote"

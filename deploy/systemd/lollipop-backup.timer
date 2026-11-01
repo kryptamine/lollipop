@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up the Lollipop database daily
+
+[Timer]
+# Clear of the weekly publish, which starts at midnight on Monday.
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

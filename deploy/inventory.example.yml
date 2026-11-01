@@ -1,0 +1,15 @@
+# Copy to deploy/inventory.yml, which git ignores: it holds the secrets.
+all:
+  hosts:
+    collector:
+      ansible_host: 203.0.113.10
+      ansible_user: root
+      # Set for a user other than root, which also needs sudo.
+      # ansible_become: true
+      collector_tier: gold
+      riot_api_key: RGAPI-00000000-0000-0000-0000-000000000000
+      # Fine-grained, with contents and issues write on the repository.
+      github_token: github_pat_00000000
+      r2_access_key_id: '00000000'
+      r2_secret_access_key: '00000000'
+      r2_endpoint: https://00000000.r2.cloudflarestorage.com
