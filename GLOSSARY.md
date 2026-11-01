@@ -18,7 +18,7 @@ The green or red triangle beside a metric, showing whether the player is above o
 _Avoid_: Arrow, indicator, delta
 
 **Timing hint**:
-A pop-up shown shortly before a scheduled game event, such as an objective spawn or a cannon wave.
+A pop-up shown shortly before an objective spawns.
 _Avoid_: Timer, alert, notification
 
 **Widget**:
