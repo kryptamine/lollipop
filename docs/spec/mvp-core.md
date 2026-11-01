@@ -139,6 +139,12 @@ as of patch 16.21:
   the spawn opens an issue through `gh`, once per objective and patch, even if that
   issue has since closed. `build-table` stays offline. Elder is compared with its
   earliest possible spawn, 26:00. A delay of up to a week is accepted.
+- This catches a spawn moved earlier. Moving it later needs a threshold that is not
+  set.
+- A kill's `timestamp` is in game milliseconds. Its `monsterType` is `DRAGON`,
+  `HORDE`, `RIFTHERALD` or `BARON_NASHOR`, and only a dragon has a `monsterSubType`,
+  with Elder as `ELDER_DRAGON`. Seen on third-party captures of real timelines, not
+  yet on one of ours.
 
 ## Notices
 
@@ -359,8 +365,6 @@ These were not tested and can reopen a decision.
   against a fake of GitHub's API. Also that reading the Keychain shows no prompt after
   a rebuild or with the Keychain locked, since a prompt would take focus from League.
 - **Relaunch:** after `GameEnd` with the Tauri updater.
-- **`ELITE_MONSTER_KILL`:** the event fields, known from memory only. Moving the
-  spawn later needs a threshold that is not set.
 
 ## Provisional values
 
