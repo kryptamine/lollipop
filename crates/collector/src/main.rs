@@ -1,8 +1,14 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
-use lollipop_collector::{build_table, collect, Config, SeedTier, SystemClock, TableConfig};
+use lollipop_collector::{
+    build_table, collect, publish, rollback, Config, PublishConfig, RollbackConfig, SeedTier,
+    SystemClock, TableConfig,
+};
 use lollipop_core::game_inputs::Patch;
+
+const REPO: &str = "kryptamine/lollipop";
+const WORK_DIR: &str = "/var/lib/lollipop/publish";
 
 #[derive(Parser)]
 #[command(version)]
@@ -17,6 +23,10 @@ enum Command {
     Collect(CollectArgs),
     /// Aggregates the stored matches into a Benchmark table file and prints the drift report.
     BuildTable(BuildTableArgs),
+    /// Builds a table and publishes it behind the publish gate. A failure opens an issue.
+    Publish(PublishArgs),
+    /// Points the manifest at a kept table.
+    Rollback(RollbackArgs),
 }
 
 #[derive(Args)]
@@ -46,6 +56,36 @@ struct BuildTableArgs {
     /// A game patch above this, such as 16.24, makes the table stale.
     #[arg(long, value_parser = parse_patch)]
     max_patch: Option<Patch>,
+}
+
+#[derive(Args)]
+struct PublishArgs {
+    #[arg(long, default_value = "/var/lib/lollipop/collector.sqlite3")]
+    database: PathBuf,
+    /// The repository's `crates/collector/reworks.json`.
+    #[arg(long)]
+    reworks: PathBuf,
+    /// Publishes this built file in place of a new build, behind the same gate.
+    #[arg(long, conflicts_with = "max_patch")]
+    table: Option<PathBuf>,
+    /// A game patch above this, such as 16.24, makes the table stale.
+    #[arg(long, value_parser = parse_patch)]
+    max_patch: Option<Patch>,
+    #[arg(long, default_value = REPO)]
+    repo: String,
+    #[arg(long, default_value = WORK_DIR)]
+    work_dir: PathBuf,
+}
+
+#[derive(Args)]
+struct RollbackArgs {
+    /// The kept table the manifest should name.
+    #[arg(long)]
+    version: u32,
+    #[arg(long, default_value = REPO)]
+    repo: String,
+    #[arg(long, default_value = WORK_DIR)]
+    work_dir: PathBuf,
 }
 
 fn parse_patch(value: &str) -> Result<Patch, String> {
@@ -85,10 +125,36 @@ fn run_build_table(args: BuildTableArgs) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(clippy::print_stdout, reason = "the outcome is this command's output")]
+fn run_publish(args: PublishArgs) -> Result<(), String> {
+    let config = PublishConfig {
+        database: args.database,
+        reworks: args.reworks,
+        table: args.table,
+        max_patch: args.max_patch,
+        repo: args.repo,
+        work_dir: args.work_dir,
+    };
+    let published = publish(&config).map_err(|error| error.to_string())?;
+    println!("{published}");
+    Ok(())
+}
+
+fn run_rollback(args: RollbackArgs) -> Result<(), String> {
+    let config = RollbackConfig {
+        version: args.version,
+        repo: args.repo,
+        work_dir: args.work_dir,
+    };
+    rollback(&config).map_err(|error| error.to_string())
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), String> {
     match Cli::parse().command {
         Command::Collect(args) => run_collect(args).await,
         Command::BuildTable(args) => run_build_table(args),
+        Command::Publish(args) => run_publish(args),
+        Command::Rollback(args) => run_rollback(args),
     }
 }

@@ -6,7 +6,7 @@ use serde::Serialize;
 use super::patch_label;
 
 // Also the `v1/` of the path the file is published on.
-const SCHEMA_VERSION: u32 = 1;
+pub(crate) const SCHEMA_VERSION: u32 = 1;
 
 #[derive(Serialize)]
 pub(super) struct BenchmarkFile {

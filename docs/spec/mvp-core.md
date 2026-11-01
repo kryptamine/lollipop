@@ -232,10 +232,19 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 
 ### Build and publish
 
-- **Cadence:** a weekly cron plus a manual run. The window shifts at the first
-  build after a patch ships, using `gameVersion` from collected matches.
+- **Cadence:** a weekly cron plus a manual run, both `lollipop-collector publish` on
+  the VPS through the systemd units in `deploy/`. The window shifts at the first build
+  after a patch ships, using `gameVersion` from collected matches: a build takes the
+  two newest patches stored.
 - **Publish gate:** the old table stays if Cells drop by more than 20%, excluding
-  a `max_patch` reset and rework entries, or if the file does not read.
+  a `max_patch` reset and rework entries, or if the file does not read. The old table
+  is the one the manifest names. A dropped Cell is one in the old table and not in the
+  new, so gained Cells do not offset it. A `max_patch` reset is data past the old
+  table's `max_patch`, which skips the Cell check. A rework entry excuses a champion
+  while its first valid patch is above the old table's oldest patch. A Release whose
+  manifest or live table does not read also stops the publish, until a rollback.
+- **`max_patch` across builds:** a build with no `--max-patch` keeps the old table's
+  until stored data passes it.
 - **Failure notice:** a failed build or refused publish opens an issue through
   `gh`.
 - **Reworks:** `crates/collector/reworks.json`, one entry per champion and first
@@ -246,12 +255,17 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   the two patches: by more than the Neutral zone in CS or gold at minute 20, in a Cell
   with n≥100 on both. It never excludes anyone.
 - **Rollback:** the manifest is the truth and the app follows it, even to an
-  older version. The last 4 tables are kept.
+  older version. The last 4 tables are kept. `lollipop-collector rollback --version N`
+  points the manifest at a kept table, and the next publish still takes a new version.
+- **Unchanged build:** a table identical to the live one is not published, so it takes
+  no slot among the 4.
 
 ### Delivery to the app
 
 - **Manifest:** `v1/manifest.json` holds the table version and sha256, next to
-  the table. The path carries the schema version.
+  the table. The path carries the schema version. In the private phase `v1` is the tag
+  of a GitHub Release, whose assets are `manifest.json` and
+  `benchmark-table-<version>.json`, and the version is an integer that only grows.
 - **Checks:** at launch and after every game. Downloads run in the background and
   swap atomically, and the previous file stays until the new one succeeds.
 - **During a game:** never swap, even when Markers are hidden. The app reads the table

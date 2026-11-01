@@ -16,14 +16,16 @@ const PLAYED_FRAMES: &str = "SELECT p.champion, p.role, m.tier, m.patch_major, m
     WHERE p.role IN ('TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY')
     ORDER BY p.champion, p.role, p.match, p.participant, v.at_ms";
 
-const STORED_PATCHES: &str = "SELECT DISTINCT patch_major, patch_minor FROM matches
-    ORDER BY patch_major, patch_minor";
+const PATCH_WINDOW: &str = "SELECT patch_major, patch_minor FROM (
+        SELECT DISTINCT patch_major, patch_minor FROM matches
+        ORDER BY patch_major DESC, patch_minor DESC LIMIT 2
+    ) ORDER BY patch_major, patch_minor";
 
 impl Store {
-    /// The patches of the stored matches, oldest first. They are the Patch window, as
-    /// `keep` deletes whatever falls out of it.
-    pub(crate) fn stored_patches(&self) -> rusqlite::Result<Vec<Patch>> {
-        let mut statement = self.connection.prepare(STORED_PATCHES)?;
+    /// The two newest patches among the stored matches' `gameVersion`, oldest first. A
+    /// build takes these whether or not `keep` has deleted what fell out of them.
+    pub(crate) fn patch_window(&self) -> rusqlite::Result<Vec<Patch>> {
+        let mut statement = self.connection.prepare(PATCH_WINDOW)?;
         let patches = statement.query_map([], |row| {
             Ok(Patch {
                 major: row.get(0)?,

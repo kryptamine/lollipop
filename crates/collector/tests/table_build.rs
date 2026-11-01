@@ -554,6 +554,54 @@ fn a_stored_tier_outside_the_ladder_fails_the_build() {
     assert!(build.stderr().contains("WOOD"), "{}", build.stderr());
 }
 
+// A database the collector has not shifted yet, such as a restored backup, must still build
+// on the last two patches: a third would mix an old economy into every median.
+#[test]
+fn a_build_takes_the_window_as_the_two_newest_patches() {
+    let mut bench = TableBench::new();
+    for (patch, champion) in [((16, 9), "Old"), ((16, 10), "Ahri"), ((16, 11), "Ahri")] {
+        bench.add(
+            100,
+            &Played {
+                patch,
+                ..Played::new(champion, "GOLD")
+            },
+        );
+    }
+
+    let build = bench.build(&[]);
+
+    assert_eq!(build.table()["patch_window"], json!(["16.10", "16.11"]));
+    assert!(build.cell("Old", "GOLD").is_none());
+    assert_eq!(build.n_at("Ahri", "GOLD", 20), 200);
+}
+
+// The first build after a patch ships shifts the window, read from `gameVersion` alone.
+#[tokio::test]
+async fn the_window_shifts_at_the_first_build_after_a_patch_ships() {
+    let scenario = Scenario::start(SeedTier::Gold).await;
+    let reworks = Path::new(env!("CARGO_MANIFEST_DIR")).join("reworks.json");
+    for (index, version) in ["16.20.824.1", "16.21.824.1", "16.22.1.1"]
+        .iter()
+        .enumerate()
+    {
+        let game = Game::on_patch(&format!("EUW1_{index}"), version);
+        scenario
+            .riot
+            .add_seed("GOLD", &format!("seed-{index}"), &[game]);
+        scenario
+            .run_until(|s| s.visited() > i64::try_from(index).unwrap())
+            .await;
+        let build = run_build(&scenario.database(), &reworks, scenario.dir.path(), &[]);
+        let window = &build.table()["patch_window"];
+        match index {
+            0 => assert_eq!(window, &json!(["16.20"])),
+            1 => assert_eq!(window, &json!(["16.20", "16.21"])),
+            _ => assert_eq!(window, &json!(["16.21", "16.22"])),
+        }
+    }
+}
+
 // Protects the seam between the two commands: what the collector really stores, in WAL
 // mode and from Riot's real shapes, reads back as a table, using the repository's list.
 #[tokio::test]

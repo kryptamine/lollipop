@@ -1,0 +1,9 @@
+[Unit]
+Description=Publish the Lollipop Benchmark table weekly
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
