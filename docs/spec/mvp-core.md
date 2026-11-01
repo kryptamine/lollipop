@@ -190,7 +190,8 @@ Built offline and shipped as one versioned file
   is no all-tier step.
 - **Thresholds:** minimum n=100, target n=300. Choosing a source reads the minimum,
   and the target is what collection aims for.
-- **Optional field:** `max_patch`. A game patch above it makes the table stale.
+- **Optional field:** `max_patch`, given to the build as `--max-patch` and left out of
+  the file without it. A game patch above it makes the table stale.
 
 ### Stale table
 
