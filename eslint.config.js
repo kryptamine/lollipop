@@ -15,6 +15,7 @@ export default defineConfig([
     rules: {
       complexity: ["error", 10],
       "max-depth": ["error", 3],
+      "max-lines": ["error", { max: 200, skipBlankLines: true, skipComments: true }],
       "max-lines-per-function": ["error", 60],
       "max-params": ["error", 4],
       // An exception must state its reason (ADR 0001).

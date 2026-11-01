@@ -15,6 +15,7 @@ fn live_client_url() -> String {
     LIVE_CLIENT_URL.to_string()
 }
 
+#[allow(clippy::expect_used, reason = "tauri.conf.json declares this window")]
 fn overlay_window(app: &AppHandle) -> WebviewWindow {
     app.get_webview_window("overlay")
         .expect("overlay window is declared in tauri.conf.json")
@@ -40,6 +41,11 @@ async fn publish_live_client(app: AppHandle) {
     poll(&live_client_url(), &SystemClock, on_update).await;
 }
 
+#[allow(
+    clippy::exit,
+    clippy::expect_used,
+    reason = "generate_context! expands to process::exit, and the app needs its event loop"
+)]
 fn main() {
     tauri::Builder::default()
         .setup(|app| {

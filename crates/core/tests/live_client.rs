@@ -1,4 +1,10 @@
 //! Drives the poll loop against a local HTTP server standing in for League.
+#![allow(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    unreachable_pub,
+    reason = "a failed test should panic, and a test crate has no public API"
+)]
 
 mod support;
 

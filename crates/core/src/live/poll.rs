@@ -17,6 +17,10 @@ pub async fn poll(
 ) {
     // The League client serves loopback HTTPS with a self-signed certificate,
     // and this client only ever talks to the fixed loopback URL.
+    #[allow(
+        clippy::expect_used,
+        reason = "no game data can be read without a client"
+    )]
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .timeout(Duration::from_millis(800))

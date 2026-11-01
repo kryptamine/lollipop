@@ -6,6 +6,7 @@ pub trait Clock: Sync {
     fn sleep(&self, duration: Duration) -> impl Future<Output = ()> + Send;
 }
 
+#[derive(Debug)]
 pub struct SystemClock;
 
 impl Clock for SystemClock {

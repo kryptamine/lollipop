@@ -1,4 +1,3 @@
-fn main() {
-    eprintln!("the collector has no commands yet");
-    std::process::exit(1);
+fn main() -> Result<(), String> {
+    Err(String::from("the collector has no commands yet"))
 }
