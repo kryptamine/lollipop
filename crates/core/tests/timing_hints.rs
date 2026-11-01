@@ -18,7 +18,7 @@ use serde_json::{json, Value};
 use support::fake_lcu::{FakeLcu, RANKED, SESSION, VERSION};
 use support::game_clock::GameClock;
 use support::hint_game::{
-    banner_at, banner_over, banner_with_lockfile, baron_kill, dragon_kill, lines_of, no_client,
+    banner_at, banner_over, banner_with_lockfile, baron_kill, dragon_kill, hints_over, no_client,
     HintPoll, CHAOS_PLAYER, ORDER_PLAYER,
 };
 use support::polling::start_playing;
@@ -481,16 +481,18 @@ async fn a_new_game_picks_its_own_schedule() {
 }
 
 // The view reads this shape: see TimingHintState in ui/src/bridge.ts.
-#[test]
-fn the_view_is_told_the_objective_and_its_countdown() {
-    let hint = TimingHint {
-        objective: "Baron",
-        countdown: "0:15".to_string(),
-    };
+#[tokio::test]
+async fn the_view_is_told_the_objective_and_its_countdown() {
+    let lcu = FakeLcu::start().await;
+    let polls = vec![HintPoll {
+        game_time: 1185.0,
+        events: Vec::new(),
+    }];
+
+    let hints = hints_over(&lcu.lockfile(), polls, |_| {}).await;
 
     assert_eq!(
-        serde_json::to_value(&hint).unwrap(),
-        json!({ "objective": "Baron", "countdown": "0:15" })
+        serde_json::to_value(&hints[0]).unwrap(),
+        json!([{ "objective": "Baron", "countdown": "0:15" }])
     );
-    assert_eq!(lines_of(&[hint]), ["Baron 0:15"]);
 }

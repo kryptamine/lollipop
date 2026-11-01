@@ -60,7 +60,7 @@ fn player(mut identity: Value) -> Value {
 }
 
 /// What the banner reads, top to bottom.
-pub fn lines_of(hints: &[TimingHint]) -> Vec<String> {
+fn lines_of(hints: &[TimingHint]) -> Vec<String> {
     hints
         .iter()
         .map(|hint| format!("{} {}", hint.objective, hint.countdown))
@@ -73,6 +73,19 @@ pub async fn banner_over(
     polls: Vec<HintPoll>,
     before_serving: impl Fn(usize) + Send + 'static,
 ) -> Vec<Vec<String>> {
+    hints_over(lockfile, polls, before_serving)
+        .await
+        .iter()
+        .map(|hints| lines_of(hints))
+        .collect()
+}
+
+/// The poll loop's hints at each poll.
+pub async fn hints_over(
+    lockfile: &Path,
+    polls: Vec<HintPoll>,
+    before_serving: impl Fn(usize) + Send + 'static,
+) -> Vec<Vec<TimingHint>> {
     let count = polls.len();
     let served = Mutex::new(polls.into_iter().enumerate());
     let url = serve(Box::new(move || {
@@ -83,14 +96,13 @@ pub async fn banner_over(
     .await;
     let clock = GameClock::starting_at(0.0);
     let mut updates = start_playing(url, lockfile, Path::new(NO_TABLE), clock);
-    let mut banners = Vec::with_capacity(count);
+    let mut hints = Vec::with_capacity(count);
     for _ in 0..count {
         let (_, update) = updates.recv().await.unwrap();
         // Without this, "no hints" would also pass when the whole game went missing.
-        let game = update.unwrap();
-        banners.push(lines_of(&game.hints));
+        hints.push(update.unwrap().hints);
     }
-    banners
+    hints
 }
 
 /// The banner of a game first seen at `game_time`, with this event list.
