@@ -13,14 +13,14 @@ struct Entry {
 }
 
 /// The first valid patch per reworked champion, from the file in the repository.
-pub(super) struct Reworks {
+pub(crate) struct Reworks {
     first_valid: HashMap<String, Patch>,
 }
 
 impl Reworks {
     /// A file that does not read fails the build: going on would serve a reworked champion
     /// its old Benchmark.
-    pub(super) fn read(path: &Path) -> Result<Self, TableError> {
+    pub(crate) fn read(path: &Path) -> Result<Self, TableError> {
         let refuse = |reason: String| TableError::Reworks(path.into(), reason);
         let body = std::fs::read_to_string(path).map_err(|error| refuse(error.to_string()))?;
         let entries: Vec<Entry> =
@@ -36,7 +36,7 @@ impl Reworks {
         Ok(Self { first_valid })
     }
 
-    pub(super) fn drops(&self, champion: &str, patch: Patch) -> bool {
+    pub(crate) fn drops(&self, champion: &str, patch: Patch) -> bool {
         self.first_valid
             .get(champion)
             .is_some_and(|first_valid| patch < *first_valid)

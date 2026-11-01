@@ -1,5 +1,5 @@
 //! Walks seed players on Riot's web API, stores their matches in compact form, and
-//! aggregates those into the Benchmark table file.
+//! aggregates those into the Benchmark table file it publishes.
 
 #![allow(
     clippy::future_not_send,
@@ -16,6 +16,7 @@ mod kept_participant;
 mod league_entries;
 mod match_payload;
 mod minute_values;
+mod publish;
 mod riot_api;
 mod seed_tier;
 mod seed_walk;
@@ -27,5 +28,8 @@ pub use clock::{Clock, SystemClock};
 pub use collect::collect;
 pub use collect_error::CollectError;
 pub use config::Config;
+pub use publish::{
+    publish, rollback, GhError, PublishConfig, PublishError, Published, RollbackConfig,
+};
 pub use seed_tier::SeedTier;
 pub use table::{build_table, DriftReport, TableConfig, TableError};

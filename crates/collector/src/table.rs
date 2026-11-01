@@ -24,10 +24,11 @@ use benchmark_file::{BenchmarkFile, CellEntry};
 use cell_drift::CellDrift;
 use cell_samples::CellSamples;
 use drift_comparison::DriftComparison;
-use reworks::Reworks;
 
+pub(crate) use benchmark_file::SCHEMA_VERSION;
 pub use drift_report::DriftReport;
 pub(crate) use played_game::PlayedGame;
+pub(crate) use reworks::Reworks;
 pub use table_config::TableConfig;
 pub use table_error::TableError;
 
@@ -38,10 +39,10 @@ pub use table_error::TableError;
 pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
     let reworks = Reworks::read(&config.reworks)?;
     let store = Store::open_read_only(&config.database)?;
-    let patches = store.stored_patches()?;
-    if patches.is_empty() {
+    let patches = store.patch_window()?;
+    let Some(&floor) = patches.first() else {
         return Err(TableError::NoMatches);
-    }
+    };
     let comparison = DriftComparison::of_window(&patches);
     let mut build = Build {
         comparison,
@@ -50,7 +51,7 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
         open: None,
     };
     store.for_each_played_game(|game: PlayedGame| {
-        if reworks.drops(&game.champion, game.patch) {
+        if game.patch < floor || reworks.drops(&game.champion, game.patch) {
             return Ok::<(), TableError>(());
         }
         build.add(&game)
