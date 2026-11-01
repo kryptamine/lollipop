@@ -36,14 +36,14 @@ Bad, restates the code and names the caller:
 ```rust
 // Called by poll_live_client on every tick.
 // Parses the snapshot from the body.
-pub fn parse_snapshot(body: &str, target_per_min: f64) -> Option<Snapshot> { ... }
+pub fn parse_snapshot(body: &str) -> Option<Snapshot> { ... }
 ```
 
 Good, what the signature cannot state:
 
 ```rust
 /// Returns `None` when the payload isn't a running game the player is part of.
-pub fn parse_snapshot(body: &str, target_per_min: f64) -> Option<Snapshot> { ... }
+pub fn parse_snapshot(body: &str) -> Option<Snapshot> { ... }
 ```
 
 Good, stops a reader "fixing" it:
