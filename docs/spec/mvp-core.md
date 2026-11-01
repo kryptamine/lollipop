@@ -267,10 +267,20 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   of a GitHub Release, whose assets are `manifest.json` and
   `benchmark-table-<version>.json`, and the version is an integer that only grows.
 - **Checks:** at launch and after every game. Downloads run in the background and
-  swap atomically, and the previous file stays until the new one succeeds.
-- **During a game:** never swap, even when Markers are hidden. The app reads the table
+  swap atomically, and the previous file stays until the new one succeeds. A file is
+  current when its sha256 is the manifest's, so a lower version is followed like any
+  other. A download must match that sha256 and read as a table. A failed check waits
+  for the next one.
+- **During a game:** never swap, even when Markers are hidden. A finished download waits
+  until no game is held, and a failed poll does not release it. The app reads the table
   once, at game start, from `benchmark-table.json` in its data directory.
 - **No table and no network:** no Markers, everything else works.
+- **Token:** read at run time from the Keychain item with service
+  `lollipop-benchmark-token`, through the `security` tool, so a rebuild's new ad-hoc
+  signature brings no prompt. Without it the app has no downloads. It needs read access
+  to Contents, and is stored with
+  `security add-generic-password -a lollipop -s lollipop-benchmark-token -w`, which asks
+  for the value so that it stays out of the shell history.
 
 | | Private phase | Public phase |
 | --- | --- | --- |
@@ -336,6 +346,9 @@ These were not tested and can reopen a decision.
   Also which name `KillerName` carries for a player: the recording sanitized them, so
   it is joined to `riotId`, `riotIdGameName` and `summonerName`. If none match, every
   drake kill reads as having no team and the pit's hints stop.
+- **Table download:** a real Release through a real fine-grained token, tested only
+  against a fake of GitHub's API. Also that reading the Keychain shows no prompt after
+  a rebuild or with the Keychain locked, since a prompt would take focus from League.
 - **Relaunch:** after `GameEnd` with the Tauri updater.
 - **`ELITE_MONSTER_KILL`:** the event fields, known from memory only. Moving the
   spawn later needs a threshold that is not set.

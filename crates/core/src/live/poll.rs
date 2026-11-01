@@ -10,6 +10,7 @@ use super::inputs_of_game::InputsOfGame;
 use super::live_game::LiveGame;
 use super::payload::{AllGameData, Player};
 use super::snapshot::Snapshot;
+use crate::delivery::TableFile;
 use crate::game_inputs::GameInputs;
 
 pub const LIVE_CLIENT_URL: &str = "https://127.0.0.1:2999/liveclientdata/allgamedata";
@@ -21,7 +22,7 @@ const POLL_INTERVAL: Duration = Duration::from_secs(1);
 pub async fn poll(
     url: &str,
     lockfile: &Path,
-    benchmark_table: &Path,
+    benchmark_table: &TableFile,
     clock: &impl Clock,
     mut on_update: impl FnMut(Option<LiveGame>) + Send,
 ) {
@@ -47,11 +48,16 @@ pub async fn poll(
         hints: GameHints::default(),
     };
     loop {
-        let update = match fetch(&http, url).await {
-            Some(data) => game.update(&data).await,
+        let data = fetch(&http, url).await;
+        let update = match &data {
+            Some(data) => game.update(data).await,
             None => None,
         };
         on_update(update);
+        // A failed poll does not end a game, so a game still held rules out a swap too.
+        if !data.is_some_and(|data| data.match_running()) && !game.inputs.holds_game() {
+            benchmark_table.swap_staged();
+        }
         clock.sleep(POLL_INTERVAL).await;
     }
 }
@@ -64,7 +70,7 @@ async fn fetch(client: &reqwest::Client, url: &str) -> Option<AllGameData> {
 struct CurrentGame<'a> {
     http: &'a reqwest::Client,
     lockfile: &'a Path,
-    benchmark_table: &'a Path,
+    benchmark_table: &'a TableFile,
     gold_earned: GoldEarned,
     inputs: InputsOfGame,
     markers: GameMarkers,
@@ -72,10 +78,16 @@ struct CurrentGame<'a> {
 }
 
 impl CurrentGame<'_> {
+    fn end_held_game(&mut self) {
+        if self.inputs.end_game() {
+            self.benchmark_table.request_check();
+        }
+    }
+
     async fn update(&mut self, data: &AllGameData) -> Option<LiveGame> {
         if !data.match_running() {
             self.gold_earned.end_game();
-            self.inputs.end_game();
+            self.end_held_game();
             return None;
         }
         let player = data.active_player()?;
@@ -102,6 +114,8 @@ impl CurrentGame<'_> {
         if let Some(inputs) = self.inputs.held_at(game_time) {
             return inputs;
         }
+        // Still holding a game here means the clock turned back: its end went unseen.
+        self.end_held_game();
         let inputs = GameInputs::read(
             self.http,
             self.lockfile,
@@ -109,7 +123,8 @@ impl CurrentGame<'_> {
             player.position.as_deref(),
         )
         .await;
-        self.markers = GameMarkers::start(self.benchmark_table, &inputs, player.cell_champion());
+        self.markers =
+            GameMarkers::start(self.benchmark_table.path(), &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)
     }

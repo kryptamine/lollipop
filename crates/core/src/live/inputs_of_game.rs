@@ -15,8 +15,13 @@ struct Latest {
 
 impl InputsOfGame {
     /// A failed poll must not end the game: reading again would break "once per game".
-    pub(super) fn end_game(&mut self) {
-        self.latest = None;
+    /// Says whether a game was being held.
+    pub(super) fn end_game(&mut self) -> bool {
+        self.latest.take().is_some()
+    }
+
+    pub(super) const fn holds_game(&self) -> bool {
+        self.latest.is_some()
     }
 
     /// `None` when this game has not been read yet.

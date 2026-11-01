@@ -61,7 +61,7 @@ pub const MASTER_YI_MID: Seat = Seat {
     position: ROLE,
 };
 
-fn body(seat: Seat, moment: Moment, events: &[&str]) -> String {
+pub fn body(seat: Seat, moment: Moment, events: &[&str]) -> String {
     let events: Vec<Value> = events.iter().map(|e| json!({ "EventName": e })).collect();
     let mut player = json!({
         "riotId": "Me#EUW",

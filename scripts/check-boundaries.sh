@@ -19,3 +19,9 @@ if grep -rl 'unsafe_code' crates --include='*.rs' | grep -v '^crates/app/src/pla
   echo "unsafe_code may only be allowed in crates/app/src/platform" >&2
   exit 1
 fi
+
+# A value read at compile time ends up in the binary, which is how a token would get there.
+if grep -rnE '\b(option_)?env!\(' crates --include='*.rs' | grep -v 'env!("CARGO_'; then
+  echo "only Cargo's own variables may be read at compile time" >&2
+  exit 1
+fi

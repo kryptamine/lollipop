@@ -6,9 +6,12 @@ mod overlay;
 #[cfg(target_os = "macos")]
 mod platform;
 mod settings_store;
+mod table_downloads;
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
+use lollipop_core::delivery::TableFile;
 use lollipop_core::game_inputs::LOCKFILE_PATH;
 use lollipop_core::live::{poll, status_line, LiveGame, SystemClock, LIVE_CLIENT_URL};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
@@ -38,7 +41,7 @@ async fn publish_live_client(
     overlay: Overlay,
     store: SettingsStore,
     status: MenuItem<Wry>,
-    benchmark_table: PathBuf,
+    benchmark_table: Arc<TableFile>,
 ) {
     let mut shown_status = status_line(None);
     let on_update = move |update: Option<LiveGame>| {
@@ -59,14 +62,10 @@ async fn publish_live_client(
     };
     let url = dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL);
     let lockfile = dev_setting("LOLLIPOP_LOCKFILE", LOCKFILE_PATH);
-    let table = dev_setting(
-        "LOLLIPOP_BENCHMARK_TABLE",
-        &benchmark_table.to_string_lossy(),
-    );
     poll(
         &url,
         Path::new(&lockfile),
-        Path::new(&table),
+        &benchmark_table,
         &SystemClock,
         on_update,
     )
@@ -109,7 +108,13 @@ fn main() {
             let launch_on_login = store.read(|settings| settings.launch_at_login);
             let _ = launch_at_login::apply(app.handle(), launch_on_login);
             let status = menu_bar::install(app.handle(), store.clone())?;
-            let benchmark_table = app.path().app_data_dir()?.join("benchmark-table.json");
+            let delivered = app.path().app_data_dir()?.join("benchmark-table.json");
+            let table = dev_setting("LOLLIPOP_BENCHMARK_TABLE", &delivered.to_string_lossy());
+            let benchmark_table = Arc::new(TableFile::new(PathBuf::from(table)));
+            // A stand-in table from `make dev-mock` must not be overwritten.
+            if benchmark_table.path() == delivered {
+                tauri::async_runtime::spawn(table_downloads::run(Arc::clone(&benchmark_table)));
+            }
             tauri::async_runtime::spawn(publish_live_client(
                 app.handle().clone(),
                 overlay,
