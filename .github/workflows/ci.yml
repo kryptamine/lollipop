@@ -1,9 +1,8 @@
 name: CI
 
+# Off on purpose: the gate runs locally, see docs/adr/0009.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
