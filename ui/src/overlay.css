@@ -9,13 +9,6 @@ body {
   position: fixed;
   top: 24px;
   left: 24px;
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  justify-content: center;
-  height: 44px;
-  box-sizing: border-box;
-  padding: 11px 14px;
   border-radius: 10px;
   background: rgba(10, 14, 20, 0.78);
   color: #e8edf2;
@@ -25,6 +18,26 @@ body {
     sans-serif;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.metrics {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 11px 14px;
+}
+
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 14px 9px;
+  border-top: 1px solid rgba(232, 237, 242, 0.12);
+  color: #9aa6b2;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 #timing-hint-banner {

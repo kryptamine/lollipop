@@ -15,16 +15,31 @@ use lollipop_core::live::status_line;
 use serde_json::json;
 use tempfile::TempDir;
 
+use support::benchmark_file::table_of;
 use support::fake_lcu::{
     champ_select, ranked, stale_lockfile, FakeLcu, CHAMP_SELECT, RANKED, SESSION, VERSION,
 };
-use support::polling::{serve_in_order, start_watching};
+use support::game_clock::GameClock;
+use support::polling::{serve_in_order, start_playing};
 use support::scripted_game::{as_master_yi, loading_body};
 
-async fn status_for(body: String, lockfile: &Path) -> String {
+async fn status_with_table(body: String, lockfile: &Path, table: Option<&str>) -> String {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("benchmark-table.json");
+    if let Some(table) = table {
+        std::fs::write(&path, table).unwrap();
+    }
     let url = serve_in_order(vec![Some(body)]).await;
-    let update = start_watching(url, lockfile).recv().await.unwrap();
-    status_line(update.as_ref().map(|game| game.inputs.as_ref()))
+    let clock = GameClock::starting_at(0.0);
+    let (_, update) = start_playing(url, lockfile, &path, clock)
+        .recv()
+        .await
+        .unwrap();
+    status_line(update.as_ref())
+}
+
+async fn status_for(body: String, lockfile: &Path) -> String {
+    status_with_table(body, lockfile, Some(&table_of(&[]))).await
 }
 
 async fn status_as_mid(lcu: &FakeLcu) -> String {
@@ -153,4 +168,27 @@ async fn takes_the_role_from_champ_select_with_no_position() {
     lcu.set(CHAMP_SELECT, &champ_select("middle"));
     let status = status_for(as_master_yi(30.0, ""), &lcu.lockfile()).await;
     assert_eq!(status, "Master Yi · Mid · Gold");
+}
+
+// With the strip off this line is the only place these reasons show, so they last all game.
+#[tokio::test]
+async fn names_what_the_strip_would_have_noticed_long_after_its_notices_went() {
+    let lcu = FakeLcu::start().await;
+    let late = as_master_yi(600.0, "MIDDLE");
+    let missing = status_with_table(late.clone(), &lcu.lockfile(), None).await;
+    assert_eq!(missing, "Master Yi · Mid · Gold · No Benchmarks yet");
+
+    lcu.set(VERSION, r#""16.23.1+branch.code.public""#);
+    let stale = status_with_table(late.clone(), &lcu.lockfile(), Some(&table_of(&[]))).await;
+    assert_eq!(
+        stale,
+        "Master Yi · Mid · Gold · Benchmarks out of date (patch 16.23)"
+    );
+
+    lcu.set(VERSION, r#""17.2.1+branch.code.public""#);
+    let new_season = status_with_table(late, &lcu.lockfile(), Some(&table_of(&[]))).await;
+    assert_eq!(
+        new_season,
+        "Master Yi · Mid · Gold · Benchmarks out of date (patch 17.2) · No schedule for Season 17"
+    );
 }
