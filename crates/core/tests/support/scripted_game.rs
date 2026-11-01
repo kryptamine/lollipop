@@ -22,11 +22,33 @@ pub fn running(game_time: f64, gold: f64, items: &[(u32, u32)]) -> Poll {
 }
 
 pub fn loading(game_time: f64) -> Poll {
-    Poll::Served(payload(game_time, 0.0, &[], &[]))
+    Poll::Served(loading_body(game_time))
+}
+
+pub fn loading_body(game_time: f64) -> String {
+    payload(game_time, 0.0, &[], &[])
 }
 
 pub fn ended(game_time: f64, gold: f64) -> Poll {
     Poll::Served(payload(game_time, gold, &[], &["GameStart", "GameEnd"]))
+}
+
+/// A running match as Master Yi, with Live Client Data's `position`.
+pub fn as_master_yi(game_time: f64, position: &str) -> String {
+    let body = json!({
+        "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
+        "allPlayers": [{
+            "riotId": "Me#EUW",
+            "championName": "Master Yi",
+            "position": position,
+            "level": LEVEL,
+            "items": [],
+            "scores": { "creepScore": CS },
+        }],
+        "events": { "Events": [{ "EventName": "GameStart" }] },
+        "gameData": { "gameTime": game_time },
+    });
+    body.to_string()
 }
 
 fn payload(game_time: f64, gold: f64, items: &[(u32, u32)], events: &[&str]) -> String {

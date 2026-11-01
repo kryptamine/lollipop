@@ -21,9 +21,17 @@ Patch notes number 16.21 as 26.21, so every comparison uses `gameVersion`.
 | Queue, patch, tier | League client API (LCU), through the lockfile | Once, at game start |
 
 - Lockfile: `/Applications/League of Legends.app/Contents/LoL/lockfile`.
+- Queue: `gameData.queue.id` of `/lol-gameflow/v1/session`.
 - Patch: `/lol-patch/v1/game-version`.
-- Tier: `current-ranked-stats`, the entry whose `queueType` is solo/duo.
-- Role: `position`, then LCU `assignedPosition` if it is empty or `NONE`.
+- Tier: `/lol-ranked/v1/current-ranked-stats`, the entry whose `queueType` is
+  `RANKED_SOLO_5x5`. A `tier` of empty, `NONE` or `UNRANKED` is an unranked player.
+  A failed request, no such entry or any other value is an unknown tier.
+- Role: `position`, then LCU `assignedPosition` if it is empty or `NONE`, from the
+  `myTeam` entry of `/lol-champ-select/v1/session` for `localPlayerCellId`.
+- The LCU is unavailable when the lockfile cannot be read or none of queue, patch
+  and ranked stats answers.
+- Queue, patch, tier, role and champion hold for the whole game. A failed poll does
+  not end a game: a loading screen, `GameEnd` or a clock turned back does.
 - A `200` from Live Client Data does not mean the game has started. It can come
   about 56 s before `GameStart`, and once came with no active player.
 - The game is loading until `GameStart` appears in `events.Events`, and has
@@ -153,7 +161,9 @@ The menu bar menu is the only settings surface. There is no settings window and
 no hotkey.
 
 - **Status line:** at the top, what was detected, such as
-  `Master Yi · Mid · Gold`, or the reason for a missing Marker.
+  `Master Yi · Mid · Gold`, with a reason in place of a missing value:
+  `Role unknown`, `League client unavailable`, `Tier unknown`, `Unranked`, and
+  `Queue unknown` or `Patch unknown` added at the end.
 - **Switches:** one per Widget, on by default, including Widgets added later.
 - **Launch at login:** off by default.
 - **Quit.**
@@ -280,7 +290,10 @@ These were not tested and can reopen a decision.
 - **Menu bar:** reachable over League in Fullscreen, and whether opening it takes
   focus.
 - **Detection:** role and tier in a real ranked game, including a lane swap and an
-  unranked player, and `position` in draft and blind.
+  unranked player, and `position` in draft and blind. Also whether
+  `/lol-champ-select/v1/session` still answers at game start: the probe read it only
+  in phase `ChampSelect`. If it does not, an empty `position` gives an unknown role.
+  The unranked `tier` values are from memory, as the probe sanitized rank values.
 - **Timing hints:** the 45 s lead in a real game, and a non-champion drake kill.
 - **Relaunch:** after `GameEnd` with the Tauri updater.
 - **`ELITE_MONSTER_KILL`:** the event fields, known from memory only. Moving the

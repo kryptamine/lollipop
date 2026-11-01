@@ -2,6 +2,7 @@
 .PHONY: help install dev dev-mock build format lint test check
 
 MOCK_URL := http://127.0.0.1:2998/
+MOCK_LOCKFILE := /tmp/lollipop-mock-lockfile
 
 help: ## List the commands
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -13,7 +14,7 @@ dev: ## Run the app against the real League client
 	pnpm tauri dev
 
 dev-mock: ## Run the app against scripts/mock-live-client.mjs, shown while this terminal is frontmost
-	node scripts/mock-live-client.mjs & trap "kill $$!" EXIT; LOLLIPOP_LIVE_URL=$(MOCK_URL) LOLLIPOP_GAME_BUNDLE=$$__CFBundleIdentifier pnpm tauri dev
+	node scripts/mock-live-client.mjs $(MOCK_LOCKFILE) & trap "kill $$!" EXIT; LOLLIPOP_LIVE_URL=$(MOCK_URL) LOLLIPOP_LOCKFILE=$(MOCK_LOCKFILE) LOLLIPOP_GAME_BUNDLE=$$__CFBundleIdentifier pnpm tauri dev
 
 build: ## Build the release bundle
 	pnpm tauri build

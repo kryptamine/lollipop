@@ -15,7 +15,7 @@ pub(crate) fn install(
     app: &AppHandle,
     store: SettingsStore,
 ) -> tauri::Result<MenuItem<tauri::Wry>> {
-    let status = MenuItem::new(app, status_line(false), false, None::<&str>)?;
+    let status = MenuItem::new(app, status_line(None), false, None::<&str>)?;
     let widgets = store.read(|settings| widget_items(app, settings))?;
     let launch_at_login = CheckMenuItem::with_id(
         app,

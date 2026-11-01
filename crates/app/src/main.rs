@@ -7,7 +7,10 @@ mod overlay;
 mod platform;
 mod settings_store;
 
-use lollipop_core::live::{poll, status_line, Snapshot, SystemClock, LIVE_CLIENT_URL};
+use std::path::Path;
+
+use lollipop_core::game_inputs::LOCKFILE_PATH;
+use lollipop_core::live::{poll, status_line, LiveGame, SystemClock, LIVE_CLIENT_URL};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
 use overlay::Overlay;
 use settings_store::SettingsStore;
@@ -36,22 +39,24 @@ async fn publish_live_client(
     store: SettingsStore,
     status: MenuItem<Wry>,
 ) {
-    let mut was_running = false;
-    let on_update = move |update: Option<Snapshot>| {
+    let mut shown_status = status_line(None);
+    let on_update = move |update: Option<LiveGame>| {
         let running = update.is_some();
         // Before the snapshot: the view draws no Widget until it knows its switch.
         store.publish_switches();
-        if let Some(snapshot) = update {
-            let _ = app.emit("snapshot", &snapshot);
+        if let Some(game) = &update {
+            let _ = app.emit("snapshot", &game.snapshot);
         }
         overlay.set_match_running(running);
-        if running != was_running {
-            let _ = status.set_text(status_line(running));
-            was_running = running;
+        let next_status = status_line(update.as_ref().map(|game| game.inputs.as_ref()));
+        if next_status != shown_status {
+            let _ = status.set_text(&next_status);
+            shown_status = next_status;
         }
     };
     let url = dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL);
-    poll(&url, &SystemClock, on_update).await;
+    let lockfile = dev_setting("LOLLIPOP_LOCKFILE", LOCKFILE_PATH);
+    poll(&url, Path::new(&lockfile), &SystemClock, on_update).await;
 }
 
 #[allow(
