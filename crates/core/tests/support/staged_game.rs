@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use serde_json::{json, Value};
+
 use super::marker_game::{body, Moment, MASTER_YI_MID};
 use super::server::serve;
 
@@ -7,6 +9,7 @@ use super::server::serve;
 #[derive(Clone, Copy)]
 pub enum Stage {
     Running { game_time: f64 },
+    RunningWithNoActivePlayer,
     Ended,
     Unanswered,
 }
@@ -27,6 +30,12 @@ impl StagedGame {
                 Stage::Running { game_time } => {
                     let moment = Moment::at(game_time);
                     Some(body(MASTER_YI_MID, moment, &["GameStart"]))
+                }
+                Stage::RunningWithNoActivePlayer => {
+                    let running = body(MASTER_YI_MID, Moment::at(100.0), &["GameStart"]);
+                    let mut game: Value = serde_json::from_str(&running).unwrap();
+                    game["allPlayers"] = json!([]);
+                    Some(game.to_string())
                 }
                 Stage::Ended => {
                     let moment = Moment::at(0.0);

@@ -159,12 +159,12 @@ async fn answer_api(listener: TcpListener, state: Arc<Mutex<State>>, storage: St
     loop {
         let (mut stream, _) = listener.accept().await.unwrap();
         let request = read_request(&mut stream).await;
-        let reply = api_reply(&request, &mut state.lock().unwrap(), &storage);
+        let reply = api_reply(&request, &state.lock().unwrap(), &storage);
         reply.send(&mut stream).await;
     }
 }
 
-fn api_reply(request: &str, state: &mut State, storage: &str) -> Reply {
+fn api_reply(request: &str, state: &State, storage: &str) -> Reply {
     if state.down {
         return Reply::with_status("503 Service Unavailable");
     }
@@ -189,11 +189,6 @@ fn api_reply(request: &str, state: &mut State, storage: &str) -> Reply {
     // Without this header GitHub answers with the asset's metadata, not its bytes.
     if !request.contains("accept: application/octet-stream") {
         return Reply::ok(r#"{ "id": 1 }"#.to_string());
-    }
-    if id == MANIFEST_ID {
-        state.manifest_downloads += 1;
-    } else {
-        *state.table_downloads.entry(id - TABLE_IDS).or_default() += 1;
     }
     Reply {
         location: Some(format!("{storage}/{id}")),
@@ -228,9 +223,12 @@ fn storage_reply(request: &str, state: &mut State) -> Reply {
         .trim_start_matches('/')
         .parse()
         .unwrap_or_default();
+    // Counted with the choice of body, so a test that saw the count can republish safely.
     if id == MANIFEST_ID {
+        state.manifest_downloads += 1;
         return Reply::ok(state.manifest.clone().unwrap_or_default());
     }
+    *state.table_downloads.entry(id - TABLE_IDS).or_default() += 1;
     match state.tables.get(&(id - TABLE_IDS)).cloned() {
         Some(Served::Whole(body)) => Reply::ok(body),
         Some(Served::CutShort(body)) => Reply {

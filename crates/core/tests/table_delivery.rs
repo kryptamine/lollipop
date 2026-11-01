@@ -180,6 +180,7 @@ async fn a_failed_download_is_tried_again_after_the_next_game() {
         bench.live().as_ref() == Some(&table)
     })
     .await;
+    assert_eq!(bench.release.table_downloads(2), 2);
 }
 
 #[tokio::test]
@@ -214,7 +215,8 @@ async fn a_table_is_never_swapped_during_a_game_even_with_markers_hidden() {
         bench.release.publish(2, &table);
 
         bench.start_polling();
-        bench.next_game_update().await;
+        let game = bench.next_game_update().await;
+        assert_eq!(game.markers == Markers::default(), queue == 3140);
         bench.start_downloads();
         until("the table is fetched", || {
             bench.release.table_downloads(2) == 1
@@ -274,6 +276,31 @@ async fn a_failed_poll_during_a_game_does_not_open_the_swap() {
     bench.settle().await;
 
     bench.game.move_to(Stage::Unanswered);
+    bench.settle().await;
+    assert_eq!(bench.live().as_ref(), Some(&previous));
+
+    bench.game.move_to(Stage::Ended);
+    until("the table is live", || {
+        bench.live().as_ref() == Some(&table)
+    })
+    .await;
+}
+
+// A running match that does not list the player yet holds no game, and is still a game.
+#[tokio::test]
+async fn a_running_match_with_no_active_player_does_not_open_the_swap() {
+    let mut bench = DeliveryBench::at(Stage::RunningWithNoActivePlayer).await;
+    let previous = table_with_cs(100.0);
+    let table = table_with_cs(200.0);
+    bench.write_live(&previous);
+    bench.release.publish(2, &table);
+
+    bench.start_polling();
+    bench.start_downloads();
+    until("the table is fetched", || {
+        bench.release.table_downloads(2) == 1
+    })
+    .await;
     bench.settle().await;
     assert_eq!(bench.live().as_ref(), Some(&previous));
 
@@ -428,6 +455,43 @@ async fn a_rollback_beats_a_table_still_waiting_for_its_swap() {
         bench.live().as_ref() == Some(&older)
     })
     .await;
+}
+
+// A check made during the next game finds the rollback already live: the bad table must
+// not go live when that game ends, not even for the moment before a repair.
+#[tokio::test]
+async fn a_table_the_manifest_stopped_naming_is_not_swapped_in() {
+    let mut bench = DeliveryBench::at(IN_GAME).await;
+    let older = table_with_cs(100.0);
+    bench.write_live(&older);
+    bench.release.upload(4, &older);
+    bench.release.publish(5, &table_with_cs(200.0));
+
+    bench.start_polling();
+    bench.next_game_update().await;
+    bench.start_downloads();
+    until("the bad table is fetched", || {
+        bench.release.table_downloads(5) == 1
+    })
+    .await;
+    bench.settle().await;
+    bench.release.point_manifest_at(4, &older);
+
+    bench.game.move_to(Stage::Running { game_time: 5.0 });
+    until("the next game's check is done", || {
+        bench.release.manifest_downloads() == 2
+    })
+    .await;
+    bench.settle().await;
+    bench.game.move_to(Stage::Ended);
+    until("the check after that game is done", || {
+        bench.release.manifest_downloads() == 3
+    })
+    .await;
+    bench.settle().await;
+
+    assert_eq!(bench.live().as_ref(), Some(&older));
+    assert_eq!(bench.release.table_downloads(4), 0);
 }
 
 #[tokio::test]
