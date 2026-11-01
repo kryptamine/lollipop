@@ -1,4 +1,4 @@
-//! Tables downloaded from a fake GitHub Release, with League faked over HTTP.
+//! Tables downloaded from a fake public bucket, with League faked over HTTP.
 #![allow(
     clippy::unwrap_used,
     clippy::indexing_slicing,
@@ -9,12 +9,12 @@
 #[allow(dead_code, reason = "each test crate uses only part of the harness")]
 mod support;
 
-use lollipop_core::delivery::{ManifestKey, ReleaseChannel, ReleaseToken};
+use lollipop_core::delivery::{ManifestKey, TableChannel};
 use lollipop_core::live::{status_line, Markers};
 
 use support::delivery_bench::{table_with_cs, until, DeliveryBench};
+use support::fake_bucket::{manifest_body, message, sha256_of, sign, sign_with_this_bucket};
 use support::fake_lcu::SESSION;
-use support::fake_release::{manifest_body, message, sha256_of, sign, sign_with_this_release};
 use support::staged_game::Stage;
 
 const IN_GAME: Stage = Stage::Running { game_time: 100.0 };
@@ -23,7 +23,7 @@ const IN_GAME: Stage = Stage::Running { game_time: 100.0 };
 async fn a_launch_with_no_table_installs_the_one_the_manifest_names() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let table = table_with_cs(100.0);
-    bench.release.publish(3, &table);
+    bench.bucket.publish(3, &table);
 
     bench.start_polling();
     bench.start_downloads();
@@ -34,13 +34,12 @@ async fn a_launch_with_no_table_installs_the_one_the_manifest_names() {
     .await;
 }
 
-// GitHub's storage refuses a request that carries a token, and a token sent there would
-// also have left GitHub.
+// The bucket is public, and a credential sent to it would only be a secret given away.
 #[tokio::test]
-async fn the_token_reaches_the_api_and_stays_off_the_storage_host() {
+async fn tables_are_read_from_the_schemas_path_with_no_credentials() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let table = table_with_cs(100.0);
-    bench.release.publish(1, &table);
+    bench.bucket.publish(1, &table);
 
     bench.start_polling();
     bench.start_downloads();
@@ -49,22 +48,7 @@ async fn the_token_reaches_the_api_and_stays_off_the_storage_host() {
     })
     .await;
 
-    assert!(!bench.release.storage_saw_a_token());
-}
-
-#[tokio::test]
-async fn a_wrong_token_keeps_the_previous_file() {
-    let mut bench = DeliveryBench::at(Stage::Unanswered).await;
-    let previous = table_with_cs(100.0);
-    bench.write_live(&previous);
-    bench.release.publish(2, &table_with_cs(200.0));
-
-    bench.start_polling();
-    bench.start_downloads_on(bench.release.channel_with(ReleaseToken::new("revoked")));
-    bench.settle().await;
-
-    assert_eq!(bench.release.manifest_downloads(), 0);
-    assert_eq!(bench.live(), Some(previous));
+    assert!(!bench.bucket.saw_credentials());
 }
 
 #[tokio::test]
@@ -72,13 +56,13 @@ async fn a_table_that_fails_its_checksum_keeps_the_previous_file() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let previous = table_with_cs(100.0);
     bench.write_live(&previous);
-    bench.release.upload(2, &table_with_cs(300.0));
-    bench.release.point_manifest_at(2, &table_with_cs(200.0));
+    bench.bucket.upload(2, &table_with_cs(300.0));
+    bench.bucket.point_manifest_at(2, &table_with_cs(200.0));
 
     bench.start_polling();
     bench.start_downloads();
     until("the table is fetched", || {
-        bench.release.table_downloads(2) == 1
+        bench.bucket.table_downloads(2) == 1
     })
     .await;
     bench.settle().await;
@@ -91,12 +75,12 @@ async fn a_download_cut_short_keeps_the_previous_file() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let previous = table_with_cs(100.0);
     bench.write_live(&previous);
-    bench.release.publish_cut_short(2, &table_with_cs(200.0));
+    bench.bucket.publish_cut_short(2, &table_with_cs(200.0));
 
     bench.start_polling();
     bench.start_downloads();
     until("the table is fetched", || {
-        bench.release.table_downloads(2) == 1
+        bench.bucket.table_downloads(2) == 1
     })
     .await;
     bench.settle().await;
@@ -111,12 +95,12 @@ async fn a_table_that_does_not_read_keeps_the_previous_file() {
         let mut bench = DeliveryBench::at(Stage::Unanswered).await;
         let previous = table_with_cs(100.0);
         bench.write_live(&previous);
-        bench.release.publish(2, unreadable);
+        bench.bucket.publish(2, unreadable);
 
         bench.start_polling();
         bench.start_downloads();
         until("the table is fetched", || {
-            bench.release.table_downloads(2) == 1
+            bench.bucket.table_downloads(2) == 1
         })
         .await;
         bench.settle().await;
@@ -130,22 +114,22 @@ async fn a_manifest_that_does_not_read_keeps_the_previous_file() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let previous = table_with_cs(100.0);
     bench.write_live(&previous);
-    bench.release.upload(2, &table_with_cs(200.0));
-    bench.release.write_manifest("not a manifest");
+    bench.bucket.upload(2, &table_with_cs(200.0));
+    bench.bucket.write_manifest("not a manifest");
 
     bench.start_polling();
     bench.start_downloads();
     until("the manifest is fetched", || {
-        bench.release.manifest_downloads() == 1
+        bench.bucket.manifest_downloads() == 1
     })
     .await;
     bench.settle().await;
 
-    assert_eq!(bench.release.table_downloads(2), 0);
+    assert_eq!(bench.bucket.table_downloads(2), 0);
     assert_eq!(bench.live(), Some(previous));
 }
 
-// Once the channel is public, anyone able to write to it must not be able to choose the table.
+// The channel is public, and anyone able to write to it must not be able to choose the table.
 #[tokio::test]
 async fn a_manifest_without_a_valid_signature_keeps_the_previous_file() {
     let table = table_with_cs(200.0);
@@ -161,33 +145,33 @@ async fn a_manifest_without_a_valid_signature_keeps_the_previous_file() {
         ("not hex", manifest_body(2, &sha256, "zz")),
         (
             "another table",
-            manifest_body(2, &sha256, &sign_with_this_release(&message(1, 2, "abc"))),
+            manifest_body(2, &sha256, &sign_with_this_bucket(&message(1, 2, "abc"))),
         ),
         (
             "another version",
-            manifest_body(2, &sha256, &sign_with_this_release(&message(1, 3, &sha256))),
+            manifest_body(2, &sha256, &sign_with_this_bucket(&message(1, 3, &sha256))),
         ),
         (
             "another schema",
-            manifest_body(2, &sha256, &sign_with_this_release(&message(2, 2, &sha256))),
+            manifest_body(2, &sha256, &sign_with_this_bucket(&message(2, 2, &sha256))),
         ),
     ];
     for (case, manifest) in forged {
         let mut bench = DeliveryBench::at(Stage::Unanswered).await;
         let previous = table_with_cs(100.0);
         bench.write_live(&previous);
-        bench.release.upload(2, &table);
-        bench.release.write_manifest(&manifest);
+        bench.bucket.upload(2, &table);
+        bench.bucket.write_manifest(&manifest);
 
         bench.start_polling();
         bench.start_downloads();
         until("the manifest is fetched", || {
-            bench.release.manifest_downloads() == 1
+            bench.bucket.manifest_downloads() == 1
         })
         .await;
         bench.settle().await;
 
-        assert_eq!(bench.release.table_downloads(2), 0, "{case}");
+        assert_eq!(bench.bucket.table_downloads(2), 0, "{case}");
         assert_eq!(bench.live(), Some(previous), "{case}");
     }
 }
@@ -198,17 +182,35 @@ async fn the_compiled_in_key_decodes_and_refuses_a_table_it_did_not_sign() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let previous = table_with_cs(100.0);
     bench.write_live(&previous);
-    bench.release.publish(2, &table_with_cs(200.0));
+    bench.bucket.publish(2, &table_with_cs(200.0));
 
     bench.start_polling();
-    bench.start_downloads_with(bench.release.channel(), ManifestKey::compiled_in().unwrap());
+    bench.start_downloads_with(bench.bucket.channel(), ManifestKey::compiled_in().unwrap());
     until("the manifest is fetched", || {
-        bench.release.manifest_downloads() == 1
+        bench.bucket.manifest_downloads() == 1
     })
     .await;
     bench.settle().await;
 
-    assert_eq!(bench.release.table_downloads(2), 0);
+    assert_eq!(bench.bucket.table_downloads(2), 0);
+    assert_eq!(bench.live(), Some(previous));
+}
+
+// A bucket with no manifest yet answers 404, and that is not a reason to touch anything.
+#[tokio::test]
+async fn a_missing_manifest_keeps_the_previous_file() {
+    let mut bench = DeliveryBench::at(Stage::Unanswered).await;
+    let previous = table_with_cs(100.0);
+    bench.write_live(&previous);
+
+    bench.start_polling();
+    bench.start_downloads();
+    until("the manifest is asked for", || {
+        bench.bucket.manifest_downloads() == 1
+    })
+    .await;
+    bench.settle().await;
+
     assert_eq!(bench.live(), Some(previous));
 }
 
@@ -217,8 +219,8 @@ async fn an_outage_keeps_the_previous_file() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let previous = table_with_cs(100.0);
     bench.write_live(&previous);
-    bench.release.publish(2, &table_with_cs(200.0));
-    bench.release.go_down();
+    bench.bucket.publish(2, &table_with_cs(200.0));
+    bench.bucket.go_down();
 
     bench.start_polling();
     bench.start_downloads();
@@ -232,23 +234,23 @@ async fn an_outage_keeps_the_previous_file() {
 async fn a_failed_download_is_tried_again_after_the_next_game() {
     let mut bench = DeliveryBench::at(IN_GAME).await;
     bench.write_live(&table_with_cs(100.0));
-    bench.release.publish_cut_short(2, &table_with_cs(200.0));
+    bench.bucket.publish_cut_short(2, &table_with_cs(200.0));
 
     bench.start_polling();
     bench.start_downloads();
     until("the table is fetched", || {
-        bench.release.table_downloads(2) == 1
+        bench.bucket.table_downloads(2) == 1
     })
     .await;
     let table = table_with_cs(200.0);
-    bench.release.publish(2, &table);
+    bench.bucket.publish(2, &table);
     bench.game.move_to(Stage::Ended);
 
     until("the table is live", || {
         bench.live().as_ref() == Some(&table)
     })
     .await;
-    assert_eq!(bench.release.table_downloads(2), 2);
+    assert_eq!(bench.bucket.table_downloads(2), 2);
 }
 
 #[tokio::test]
@@ -256,17 +258,17 @@ async fn a_table_already_live_is_not_downloaded_again() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let table = table_with_cs(100.0);
     bench.write_live(&table);
-    bench.release.publish(2, &table);
+    bench.bucket.publish(2, &table);
 
     bench.start_polling();
     bench.start_downloads();
     until("the manifest is fetched", || {
-        bench.release.manifest_downloads() == 1
+        bench.bucket.manifest_downloads() == 1
     })
     .await;
     bench.settle().await;
 
-    assert_eq!(bench.release.table_downloads(2), 0);
+    assert_eq!(bench.bucket.table_downloads(2), 0);
 }
 
 // ADR 0003. A restart mid-game reads the file again, so the file itself must hold still.
@@ -280,14 +282,14 @@ async fn a_table_is_never_swapped_during_a_game_even_with_markers_hidden() {
         let previous = table_with_cs(100.0);
         let table = table_with_cs(200.0);
         bench.write_live(&previous);
-        bench.release.publish(2, &table);
+        bench.bucket.publish(2, &table);
 
         bench.start_polling();
         let game = bench.next_game_update().await;
         assert_eq!(game.markers == Markers::default(), queue == 3140);
         bench.start_downloads();
         until("the table is fetched", || {
-            bench.release.table_downloads(2) == 1
+            bench.bucket.table_downloads(2) == 1
         })
         .await;
         bench.settle().await;
@@ -306,13 +308,13 @@ async fn a_table_is_never_swapped_during_a_game_even_with_markers_hidden() {
 async fn a_first_table_also_waits_for_the_game_to_end() {
     let mut bench = DeliveryBench::at(IN_GAME).await;
     let table = table_with_cs(100.0);
-    bench.release.publish(1, &table);
+    bench.bucket.publish(1, &table);
 
     bench.start_polling();
     bench.next_game_update().await;
     bench.start_downloads();
     until("the table is fetched", || {
-        bench.release.table_downloads(1) == 1
+        bench.bucket.table_downloads(1) == 1
     })
     .await;
     bench.settle().await;
@@ -332,13 +334,13 @@ async fn a_failed_poll_during_a_game_does_not_open_the_swap() {
     let previous = table_with_cs(100.0);
     let table = table_with_cs(200.0);
     bench.write_live(&previous);
-    bench.release.publish(2, &table);
+    bench.bucket.publish(2, &table);
 
     bench.start_polling();
     bench.next_game_update().await;
     bench.start_downloads();
     until("the table is fetched", || {
-        bench.release.table_downloads(2) == 1
+        bench.bucket.table_downloads(2) == 1
     })
     .await;
     bench.settle().await;
@@ -361,12 +363,12 @@ async fn a_running_match_with_no_active_player_does_not_open_the_swap() {
     let previous = table_with_cs(100.0);
     let table = table_with_cs(200.0);
     bench.write_live(&previous);
-    bench.release.publish(2, &table);
+    bench.bucket.publish(2, &table);
 
     bench.start_polling();
     bench.start_downloads();
     until("the table is fetched", || {
-        bench.release.table_downloads(2) == 1
+        bench.bucket.table_downloads(2) == 1
     })
     .await;
     bench.settle().await;
@@ -384,13 +386,13 @@ async fn the_game_after_a_swap_reads_the_new_table_and_the_one_before_it_keeps_t
     let mut bench = DeliveryBench::at(IN_GAME).await;
     let no_cell_for_this_player = support::benchmark_file::table_of(&[]);
     bench.write_live(&table_with_cs(100.0));
-    bench.release.publish(2, &no_cell_for_this_player);
+    bench.bucket.publish(2, &no_cell_for_this_player);
 
     bench.start_polling();
     assert_ne!(bench.next_game_update().await.markers, Markers::default());
     bench.start_downloads();
     until("the table is fetched", || {
-        bench.release.table_downloads(2) == 1
+        bench.bucket.table_downloads(2) == 1
     })
     .await;
     bench.settle().await;
@@ -410,19 +412,19 @@ async fn the_game_after_a_swap_reads_the_new_table_and_the_one_before_it_keeps_t
 async fn each_finished_game_checks_the_manifest_once() {
     let mut bench = DeliveryBench::at(IN_GAME).await;
     bench.write_live(&table_with_cs(100.0));
-    bench.release.publish(1, &table_with_cs(100.0));
+    bench.bucket.publish(1, &table_with_cs(100.0));
 
     bench.start_polling();
     bench.next_game_update().await;
     bench.start_downloads();
     until("the launch check is done", || {
-        bench.release.manifest_downloads() == 1
+        bench.bucket.manifest_downloads() == 1
     })
     .await;
     let table = table_with_cs(200.0);
-    bench.release.publish(2, &table);
+    bench.bucket.publish(2, &table);
     bench.settle().await;
-    assert_eq!(bench.release.manifest_downloads(), 1);
+    assert_eq!(bench.bucket.manifest_downloads(), 1);
 
     bench.game.move_to(Stage::Ended);
     until("the table is live", || {
@@ -430,14 +432,14 @@ async fn each_finished_game_checks_the_manifest_once() {
     })
     .await;
     bench.settle().await;
-    assert_eq!(bench.release.manifest_downloads(), 2);
+    assert_eq!(bench.bucket.manifest_downloads(), 2);
 
     bench.game.move_to(IN_GAME);
     bench.settle().await;
-    assert_eq!(bench.release.manifest_downloads(), 2);
+    assert_eq!(bench.bucket.manifest_downloads(), 2);
     bench.game.move_to(Stage::Ended);
     until("the second game's check is done", || {
-        bench.release.manifest_downloads() == 3
+        bench.bucket.manifest_downloads() == 3
     })
     .await;
 }
@@ -449,21 +451,21 @@ async fn a_clock_turned_back_counts_as_a_finished_game() {
     let mut bench = DeliveryBench::at(IN_GAME).await;
     let previous = table_with_cs(100.0);
     bench.write_live(&previous);
-    bench.release.publish(1, &previous);
+    bench.bucket.publish(1, &previous);
 
     bench.start_polling();
     bench.next_game_update().await;
     bench.start_downloads();
     until("the launch check is done", || {
-        bench.release.manifest_downloads() == 1
+        bench.bucket.manifest_downloads() == 1
     })
     .await;
     let table = table_with_cs(200.0);
-    bench.release.publish(2, &table);
+    bench.bucket.publish(2, &table);
 
     bench.game.move_to(Stage::Running { game_time: 5.0 });
     until("the table is fetched", || {
-        bench.release.table_downloads(2) == 1
+        bench.bucket.table_downloads(2) == 1
     })
     .await;
     bench.settle().await;
@@ -482,8 +484,8 @@ async fn the_app_follows_the_manifest_to_an_older_version() {
     let mut bench = DeliveryBench::at(Stage::Unanswered).await;
     let older = table_with_cs(100.0);
     bench.write_live(&table_with_cs(200.0));
-    bench.release.upload(5, &table_with_cs(200.0));
-    bench.release.publish(4, &older);
+    bench.bucket.upload(5, &table_with_cs(200.0));
+    bench.bucket.publish(4, &older);
 
     bench.start_polling();
     bench.start_downloads();
@@ -500,22 +502,22 @@ async fn a_rollback_beats_a_table_still_waiting_for_its_swap() {
     let mut bench = DeliveryBench::at(IN_GAME).await;
     let older = table_with_cs(100.0);
     bench.write_live(&older);
-    bench.release.upload(4, &older);
-    bench.release.publish(5, &table_with_cs(200.0));
+    bench.bucket.upload(4, &older);
+    bench.bucket.publish(5, &table_with_cs(200.0));
 
     bench.start_polling();
     bench.next_game_update().await;
     bench.start_downloads();
     until("the bad table is fetched", || {
-        bench.release.table_downloads(5) == 1
+        bench.bucket.table_downloads(5) == 1
     })
     .await;
     bench.settle().await;
-    bench.release.point_manifest_at(4, &older);
+    bench.bucket.point_manifest_at(4, &older);
 
     bench.game.move_to(Stage::Ended);
     until("the check after the game is done", || {
-        bench.release.manifest_downloads() == 2
+        bench.bucket.manifest_downloads() == 2
     })
     .await;
 
@@ -532,34 +534,34 @@ async fn a_table_the_manifest_stopped_naming_is_not_swapped_in() {
     let mut bench = DeliveryBench::at(IN_GAME).await;
     let older = table_with_cs(100.0);
     bench.write_live(&older);
-    bench.release.upload(4, &older);
-    bench.release.publish(5, &table_with_cs(200.0));
+    bench.bucket.upload(4, &older);
+    bench.bucket.publish(5, &table_with_cs(200.0));
 
     bench.start_polling();
     bench.next_game_update().await;
     bench.start_downloads();
     until("the bad table is fetched", || {
-        bench.release.table_downloads(5) == 1
+        bench.bucket.table_downloads(5) == 1
     })
     .await;
     bench.settle().await;
-    bench.release.point_manifest_at(4, &older);
+    bench.bucket.point_manifest_at(4, &older);
 
     bench.game.move_to(Stage::Running { game_time: 5.0 });
     until("the next game's check is done", || {
-        bench.release.manifest_downloads() == 2
+        bench.bucket.manifest_downloads() == 2
     })
     .await;
     bench.settle().await;
     bench.game.move_to(Stage::Ended);
     until("the check after that game is done", || {
-        bench.release.manifest_downloads() == 3
+        bench.bucket.manifest_downloads() == 3
     })
     .await;
     bench.settle().await;
 
     assert_eq!(bench.live().as_ref(), Some(&older));
-    assert_eq!(bench.release.table_downloads(4), 0);
+    assert_eq!(bench.bucket.table_downloads(4), 0);
 }
 
 #[tokio::test]
@@ -567,8 +569,7 @@ async fn with_no_table_and_no_network_only_the_markers_are_missing() {
     // 4:30 is inside the first drake's hint.
     let mut bench = DeliveryBench::at(Stage::Running { game_time: 270.0 }).await;
     // Nothing listens on port 1.
-    let channel =
-        ReleaseChannel::new("http://127.0.0.1:1", "owner/repo", ReleaseToken::new("t")).unwrap();
+    let channel = TableChannel::new("http://127.0.0.1:1").unwrap();
 
     bench.start_polling();
     bench.start_downloads_on(channel);

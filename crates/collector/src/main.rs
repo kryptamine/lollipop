@@ -9,6 +9,7 @@ use lollipop_core::game_inputs::Patch;
 
 const REPO: &str = "kryptamine/lollipop";
 const WORK_DIR: &str = "/var/lib/lollipop/publish";
+const BUCKET: &str = "lollipop-assets";
 const SIGNING_KEY: &str = "/etc/lollipop/manifest-key";
 
 #[derive(Parser)]
@@ -78,6 +79,8 @@ struct PublishArgs {
     max_patch: Option<Patch>,
     #[arg(long, default_value = REPO)]
     repo: String,
+    #[arg(long, default_value = BUCKET)]
+    bucket: String,
     #[arg(long, default_value = WORK_DIR)]
     work_dir: PathBuf,
     #[arg(long, default_value = SIGNING_KEY)]
@@ -89,8 +92,8 @@ struct RollbackArgs {
     /// The kept table the manifest should name.
     #[arg(long)]
     version: u32,
-    #[arg(long, default_value = REPO)]
-    repo: String,
+    #[arg(long, default_value = BUCKET)]
+    bucket: String,
     #[arg(long, default_value = WORK_DIR)]
     work_dir: PathBuf,
     #[arg(long, default_value = SIGNING_KEY)]
@@ -150,6 +153,7 @@ fn run_publish(args: PublishArgs) -> Result<(), String> {
         table: args.table,
         max_patch: args.max_patch,
         repo: args.repo,
+        bucket: args.bucket,
         work_dir: args.work_dir,
         signing_key: args.signing_key_file,
     };
@@ -161,7 +165,7 @@ fn run_publish(args: PublishArgs) -> Result<(), String> {
 fn run_rollback(args: RollbackArgs) -> Result<(), String> {
     let config = RollbackConfig {
         version: args.version,
-        repo: args.repo,
+        bucket: args.bucket,
         work_dir: args.work_dir,
         signing_key: args.signing_key_file,
     };

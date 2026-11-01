@@ -1,5 +1,6 @@
 # Start it by hand for the manual run: systemctl start lollipop-publish.service
-# /etc/lollipop/publish.env holds GH_TOKEN, with contents and issues write on the repo.
+# /etc/lollipop/publish.env holds GH_TOKEN, with issues write on the repo.
+# /etc/lollipop/tables.env holds a token that can write only to the table bucket.
 [Unit]
 Description=Build and publish the Lollipop Benchmark table
 After=network-online.target
@@ -9,4 +10,5 @@ Wants=network-online.target
 Type=oneshot
 User=lollipop
 EnvironmentFile=/etc/lollipop/publish.env
+EnvironmentFile=/etc/lollipop/tables.env
 ExecStart=/usr/local/bin/lollipop-collector publish --reworks /etc/lollipop/reworks.json

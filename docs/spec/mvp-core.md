@@ -257,7 +257,7 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   is the one the manifest names. A dropped Cell is one in the old table and not in the
   new, so gained Cells do not offset it. A `max_patch` reset is data past the old
   table's `max_patch`, which skips the Cell check. A rework entry excuses a champion
-  while its first valid patch is above the old table's oldest patch. A Release whose
+  while its first valid patch is above the old table's oldest patch. A bucket whose
   manifest or live table does not read also stops the publish, until a rollback.
 - **`max_patch` across builds:** a build with no `--max-patch` keeps the old table's
   until stored data passes it.
@@ -280,9 +280,9 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 
 - **Manifest:** `v1/manifest.json` holds the table version, its sha256 and an Ed25519
   signature over both and the schema, next to the table. The path carries the schema
-  version. In the private phase `v1` is the tag of a GitHub Release, whose assets are
-  `manifest.json` and `benchmark-table-<version>.json`, and the version is an integer
-  that only grows.
+  version. `v1/` is a prefix in the public bucket, beside `v1/benchmark-table-<version>.json`,
+  and the version is an integer that only grows. The manifest is cached for 60 s, and a
+  table for a year, as its file never changes.
 - **Checks:** at launch and after every game. Downloads run in the background and
   swap atomically, and the previous file stays until the new one succeeds. A file is
   current when its sha256 is the manifest's, so a lower version is followed like any
@@ -292,19 +292,8 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   until no game is held, and a failed poll does not release it. The app reads the table
   once, at game start, from `benchmark-table.json` in its data directory.
 - **No table and no network:** no Markers, everything else works.
-- **Token:** read at run time from the Keychain item with service
-  `lollipop-benchmark-token`, through the `security` tool, so a rebuild's new ad-hoc
-  signature brings no prompt. Without it the app has no downloads. It needs read access
-  to Contents, and is stored with
-  `security add-generic-password -a lollipop -s lollipop-benchmark-token -w`, which asks
-  for the value so that it stays out of the shell history.
-
-| | Private phase | Public phase |
-| --- | --- | --- |
-| Hosting | Private GitHub Release | Object storage with a CDN |
-| Access | Fine-grained read-only token in the Keychain | Public |
-| Manifest | Signed, with the public key compiled into the app | Signed, with the public key compiled into the app |
-| Key | Personal key | Production key |
+- **Hosting:** the R2 bucket `lollipop-assets`, read publicly with no token. It runs on a
+  personal key: see [ADR 0011](../adr/0011-public-tables-on-a-personal-key.md).
 
 A schema change publishes in parallel only once other people have installs. A
 retired schema gets no new tables, so that app ends up with a Stale table.
@@ -363,9 +352,7 @@ These were not tested and can reopen a decision.
   Also which name `KillerName` carries for a player: the recording sanitized them, so
   it is joined to `riotId`, `riotIdGameName` and `summonerName`. If none match, every
   drake kill reads as having no team and the pit's hints stop.
-- **Table download:** a real Release through a real fine-grained token, tested only
-  against a fake of GitHub's API. Also that reading the Keychain shows no prompt after
-  a rebuild or with the Keychain locked, since a prompt would take focus from League.
+- **Table download:** the real public bucket through `r2.dev`, tested only against a fake.
 - **Relaunch:** after `GameEnd` with the Tauri updater.
 
 ## Provisional values

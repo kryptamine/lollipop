@@ -31,7 +31,7 @@ pub use collect_error::CollectError;
 pub use config::Config;
 pub use publish::{
     manifest_public_key, publish, rollback, GhError, PublishConfig, PublishError, Published,
-    RollbackConfig,
+    RcloneError, RollbackConfig,
 };
 pub use schedule_check::{check_schedule, ScheduleCheck};
 pub use seed_tier::SeedTier;

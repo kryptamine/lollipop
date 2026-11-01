@@ -14,5 +14,5 @@ Benchmarks are built offline by a Rust collector on a VPS and shipped as one ver
 
 ## Consequences
 
-- A table built on a personal key may not be public, so the private phase reads it with a token. Public tables need a production key.
+- A table built on a personal key may not be public under Riot's policy. [ADR 0011](0011-public-tables-on-a-personal-key.md) accepts that risk and serves tables publicly anyway.
 - The VPS holds the manifest signing key, so signing protects against a compromised host, not a compromised VPS.

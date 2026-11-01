@@ -8,13 +8,13 @@ pub(super) fn table_name(version: u32) -> String {
     format!("{TABLE_PREFIX}{version}{TABLE_SUFFIX}")
 }
 
-/// What a Release holds: the manifest, and the kept tables by version, oldest first.
-pub(super) struct ReleaseAssets {
+/// What the bucket holds: the manifest, and the kept tables by version, oldest first.
+pub(super) struct BucketAssets {
     has_manifest: bool,
     versions: Vec<u32>,
 }
 
-impl ReleaseAssets {
+impl BucketAssets {
     pub(super) fn new(names: &str) -> Self {
         let mut versions: Vec<u32> = names.lines().filter_map(version_of).collect();
         versions.sort_unstable();

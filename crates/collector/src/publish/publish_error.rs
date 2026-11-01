@@ -2,16 +2,18 @@ use std::fmt;
 use std::path::PathBuf;
 
 use super::gh_error::GhError;
+use super::rclone_error::RcloneError;
 use crate::table::TableError;
 
 #[derive(Debug)]
 pub enum PublishError {
     Build(TableError),
     Refused(String),
-    /// What the Release holds cannot serve as the old table. A rollback repairs it.
+    /// What the bucket holds cannot serve as the old table. A rollback repairs it.
     Baseline(String),
     NotKept(u32),
-    Release(GhError),
+    Bucket(RcloneError),
+    Issue(GhError),
     Write(PathBuf, std::io::Error),
     SigningKey(PathBuf, String),
     NoticeFailed(Box<Self>, GhError),
@@ -37,7 +39,8 @@ impl fmt::Display for PublishError {
                 "{reason}; point the manifest at a kept table with the rollback command"
             ),
             Self::NotKept(version) => write!(formatter, "table {version} is not kept"),
-            Self::Release(error) => write!(formatter, "{error}"),
+            Self::Bucket(error) => write!(formatter, "{error}"),
+            Self::Issue(error) => write!(formatter, "{error}"),
             Self::Write(path, error) => {
                 write!(formatter, "cannot write {}: {error}", path.display())
             }
@@ -62,8 +65,14 @@ impl From<TableError> for PublishError {
     }
 }
 
+impl From<RcloneError> for PublishError {
+    fn from(error: RcloneError) -> Self {
+        Self::Bucket(error)
+    }
+}
+
 impl From<GhError> for PublishError {
     fn from(error: GhError) -> Self {
-        Self::Release(error)
+        Self::Issue(error)
     }
 }

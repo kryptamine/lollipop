@@ -4,10 +4,10 @@ use serde::Deserialize;
 use serde_json::json;
 use sha2::{Digest, Sha256};
 
-use super::gh_release::GhRelease;
+use super::bucket_assets::MANIFEST;
 use super::manifest_signer::ManifestSigner;
 use super::publish_error::PublishError;
-use super::release_assets::MANIFEST;
+use super::table_bucket::TableBucket;
 
 /// The truth about which table is live: the app follows it, even to an older version.
 /// A manifest with no signature still reads: it only needs signing.
@@ -44,7 +44,7 @@ impl Manifest {
 
     pub(super) fn upload(
         &self,
-        release: &GhRelease,
+        bucket: &TableBucket,
         signer: &ManifestSigner,
         work_dir: &Path,
     ) -> Result<(), PublishError> {
@@ -56,7 +56,7 @@ impl Manifest {
         });
         std::fs::write(&path, body.to_string())
             .map_err(|error| PublishError::Write(path.clone(), error))?;
-        release.upload(&path)?;
+        bucket.upload_manifest(&path, MANIFEST)?;
         Ok(())
     }
 }
