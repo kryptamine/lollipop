@@ -17,9 +17,17 @@ _Avoid_: Dataset, baseline
 One champion, role and tier combination, the group of games a player is compared to.
 _Avoid_: Bucket, segment, cohort
 
+**Gold earned**:
+All gold a player has received in a game, starting gold included. Spending never lowers it, and selling an item never raises it.
+_Avoid_: Net worth, total gold
+
 **Marker**:
-The green or red triangle beside a metric, showing whether the player is above or below its Benchmark.
+The green or red triangle beside a metric, showing that the player is above or below its Benchmark by more than the Neutral zone.
 _Avoid_: Arrow, indicator, delta
+
+**Neutral zone**:
+The distance from a Benchmark within which a metric shows no Marker colour.
+_Avoid_: Threshold, tolerance
 
 **Patch window**:
 The patches whose matches a Benchmark table is built from.
