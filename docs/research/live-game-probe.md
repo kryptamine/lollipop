@@ -110,6 +110,11 @@ In one load of three, 200 came about 0.25 s before the active player could be
 matched in the payload. A reader must treat that as no game yet. `parse_snapshot`
 already returns `None` there.
 
+In the ranked game, 200 came about 56 s before the game started: `gameTime` stayed
+near 0 and gold at 0 until `GameStart` arrived. In Practice Tool the gap was under
+a second. A 200 therefore does not mean the game has started, and an overlay that
+shows on the first valid snapshot would appear during the loading screen.
+
 ## Events
 
 | Event | Fields besides `EventID`, `EventName`, `EventTime` | Observed |
@@ -117,7 +122,7 @@ already returns `None` there.
 | `GameStart` | none | At `gameTime` near 0 |
 | `MinionsSpawning` | none | 30.05 s in all three games |
 | `DragonKill` | `DragonType`, `KillerName`, `Assisters`, `Stolen` | Types seen: `Hextech`, `Water`, `Air`, `Earth` |
-| `HordeKill` | `KillerName`, `Assisters`, `Stolen` | One per grub, three per game |
+| `HordeKill` | `KillerName`, `Assisters`, `Stolen` | One per grub, three in each of the two games where grubs were killed |
 | `HeraldKill` | `KillerName`, `Assisters`, `Stolen` | |
 | `BaronKill` | `KillerName`, `Assisters`, `Stolen` | |
 | `TurretKilled` | `TurretKilled`, `KillerName`, `Assisters` | Example `Turret_TChaos_L1_P3_...` |
@@ -169,7 +174,8 @@ real game, with a window-list snapshot at the end. "Shield" means `setLevel` to
 ## Not tested
 
 - `position` in draft, blind, ARAM, Arena, custom and Swiftplay.
-- Herald despawn time: Herald was killed in each game where it spawned.
+- Herald despawn time: Herald was killed in two games, and nobody watched it in
+  the second Practice Tool game, which ran to 20:55.
 - The cannon rule at 14:00 and 25:00, and while an inhibitor is down.
 - A non-champion drake kill.
 - The overlay in a real match, its FPS cost, and a `tauri build` bundle.
