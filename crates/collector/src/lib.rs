@@ -30,7 +30,8 @@ pub use collect::collect;
 pub use collect_error::CollectError;
 pub use config::Config;
 pub use publish::{
-    publish, rollback, GhError, PublishConfig, PublishError, Published, RollbackConfig,
+    manifest_public_key, publish, rollback, GhError, PublishConfig, PublishError, Published,
+    RollbackConfig,
 };
 pub use schedule_check::{check_schedule, ScheduleCheck};
 pub use seed_tier::SeedTier;

@@ -5,4 +5,5 @@ pub struct RollbackConfig {
     pub version: u32,
     pub repo: String,
     pub work_dir: PathBuf,
+    pub signing_key: PathBuf,
 }

@@ -12,13 +12,14 @@ mod support;
 
 use std::process::Output;
 
+use ed25519_dalek::{Signature, VerifyingKey};
 use lollipop_core::benchmarks::BenchmarkTable;
 use lollipop_core::game_inputs::{Role, Tier};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
 use support::played::Played;
-use support::release_bench::{cell, table_of, ReleaseBench};
+use support::release_bench::{cell, table_of, ReleaseBench, SIGNING_PUBLIC_KEY};
 use support::table_bench::TableBench;
 
 const WINDOW: [&str; 2] = ["16.20", "16.21"];
@@ -33,6 +34,25 @@ fn stdout(output: &Output) -> String {
 
 fn assert_published(output: &Output) {
     assert!(output.status.success(), "{}", stderr(output));
+}
+
+// The app checks these exact bytes against the key compiled into it, and a manifest that
+// fails the check strands every install on its old table.
+fn assert_manifest_signs_table(bench: &ReleaseBench, version: u32) {
+    let body = std::fs::read(bench.asset_path(&format!("benchmark-table-{version}.json"))).unwrap();
+    let sha256 = format!("{:x}", Sha256::digest(body));
+    let manifest = bench.asset("manifest.json");
+    assert_eq!(manifest["version"], version);
+    assert_eq!(manifest["sha256"], sha256.as_str());
+    let mut key = [0; 32];
+    hex::decode_to_slice(SIGNING_PUBLIC_KEY, &mut key).unwrap();
+    let mut signature = [0; 64];
+    hex::decode_to_slice(manifest["signature"].as_str().unwrap(), &mut signature).unwrap();
+    let message = format!("lollipop-manifest\nv1\n{version}\n{sha256}");
+    VerifyingKey::from_bytes(&key)
+        .unwrap()
+        .verify_strict(message.as_bytes(), &Signature::from_bytes(&signature))
+        .unwrap();
 }
 
 fn bench_on_version_1(cells: usize) -> ReleaseBench {
@@ -69,11 +89,7 @@ fn a_first_publish_creates_the_release_with_a_table_and_its_manifest() {
         bench.asset_names(),
         ["benchmark-table-1.json", "manifest.json"]
     );
-    let body = std::fs::read(bench.asset_path("benchmark-table-1.json")).unwrap();
-    assert_eq!(
-        bench.asset("manifest.json"),
-        json!({"version": 1, "sha256": format!("{:x}", Sha256::digest(body))})
-    );
+    assert_manifest_signs_table(&bench, 1);
     assert!(bench.issues().is_empty());
 }
 
@@ -394,11 +410,7 @@ fn a_rollback_points_the_manifest_at_an_older_table_with_its_hash() {
     assert!(bench.rollback(1).status.success());
 
     assert_eq!(bench.asset_names(), before);
-    let body = std::fs::read(bench.asset_path("benchmark-table-1.json")).unwrap();
-    assert_eq!(
-        bench.asset("manifest.json"),
-        json!({"version": 1, "sha256": format!("{:x}", Sha256::digest(body))})
-    );
+    assert_manifest_signs_table(&bench, 1);
 }
 
 // The manifest is the truth: the gate reads the table it names, not the newest one. A
@@ -433,4 +445,94 @@ fn a_rollback_to_a_table_that_does_not_read_leaves_the_manifest() {
     bench.overwrite_asset("benchmark-table-1.json", "{ not json");
     assert!(!bench.rollback(1).status.success());
     assert_eq!(bench.manifest_version(), 2);
+}
+
+// A table signed by nobody would be thrown away by every app, so nothing goes up without it.
+#[test]
+fn a_signing_key_that_does_not_read_opens_an_issue_and_leaves_the_old_table() {
+    let mut bench = bench_on_version_1(5);
+    let assets = bench.asset_names();
+    bench.set_signing_key("not a key");
+
+    let output = bench.publish_table(&table_of(6, &WINDOW));
+
+    assert!(!output.status.success());
+    assert!(
+        stderr(&output).contains("manifest-key"),
+        "{}",
+        stderr(&output)
+    );
+    assert!(!stderr(&output).contains("not a key"));
+    assert_eq!(bench.asset_names(), assets);
+    assert_manifest_signs_table(&bench, 1);
+    assert!(bench.issues().last().unwrap().contains("publish failed"));
+}
+
+#[test]
+fn a_rollback_with_a_signing_key_that_does_not_read_leaves_the_manifest() {
+    let mut bench = ReleaseBench::new();
+    publish_versions(&mut bench, 2);
+    bench.set_signing_key("not a key");
+
+    assert!(!bench.rollback(1).status.success());
+
+    assert_manifest_signs_table(&bench, 2);
+}
+
+// The first deploy meets a manifest from before signing: publishing must still read it, and
+// a rollback to the live version is how it gets signed without waiting for a new table.
+#[test]
+fn a_manifest_from_before_signing_is_read_and_a_rollback_signs_it() {
+    let mut bench = bench_on_version_1(5);
+    let unsigned = bench.asset("manifest.json");
+    let unsigned = format!(r#"{{"version": 1, "sha256": {}}}"#, unsigned["sha256"]);
+    bench.overwrite_asset("manifest.json", &unsigned);
+
+    assert!(bench.rollback(1).status.success());
+    assert_manifest_signs_table(&bench, 1);
+
+    bench.overwrite_asset("manifest.json", &unsigned);
+    assert_published(&bench.publish_table(&table_of(6, &WINDOW)));
+    assert_manifest_signs_table(&bench, 2);
+}
+
+// What goes into the app is derived from the file on the host, so the two cannot disagree.
+#[test]
+fn the_public_key_of_the_signing_key_is_printed() {
+    let output = ReleaseBench::new().manifest_public_key();
+
+    assert_published(&output);
+    assert_eq!(stdout(&output).trim(), SIGNING_PUBLIC_KEY);
+}
+
+// After the first deploy or a change of key the table is usually the same, and an app rejects
+// the old signature for as long as the manifest stays as it was.
+#[test]
+fn an_identical_table_still_signs_a_manifest_this_key_did_not_sign() {
+    let mut bench = bench_on_version_1(5);
+    let manifest = bench.asset("manifest.json");
+    let unsigned = format!(r#"{{"version": 1, "sha256": {}}}"#, manifest["sha256"]);
+    let other_key = format!(
+        r#"{{"version": 1, "sha256": {}, "signature": "{}"}}"#,
+        manifest["sha256"],
+        "00".repeat(64)
+    );
+
+    for stale in [unsigned, other_key] {
+        bench.overwrite_asset("manifest.json", &stale);
+        assert_published(&bench.publish_table(&table_of(5, &WINDOW)));
+        assert_eq!(bench.asset_names().len(), 2);
+        assert_manifest_signs_table(&bench, 1);
+    }
+}
+
+// Each upload can lose the manifest, as `--clobber` deletes first: see the test on that loss.
+#[test]
+fn an_identical_table_leaves_a_signed_manifest_alone() {
+    let mut bench = bench_on_version_1(5);
+    bench.break_gh("release-upload");
+
+    assert_published(&bench.publish_table(&table_of(5, &WINDOW)));
+
+    assert_manifest_signs_table(&bench, 1);
 }

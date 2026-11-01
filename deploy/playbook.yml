@@ -73,6 +73,15 @@
         - { name: collector.env, content: 'LOLLIPOP_TIER={{ collector_tier }}' }
       notify: Restart the collector
 
+    - name: Write the manifest signing key
+      no_log: true
+      ansible.builtin.copy:
+        content: "{{ manifest_signing_key }}\n"
+        dest: /etc/lollipop/manifest-key
+        owner: root
+        group: lollipop
+        mode: '0640'
+
     - name: Write the publish token
       no_log: true
       ansible.builtin.copy:

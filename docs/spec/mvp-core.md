@@ -278,15 +278,16 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 
 ### Delivery to the app
 
-- **Manifest:** `v1/manifest.json` holds the table version and sha256, next to
-  the table. The path carries the schema version. In the private phase `v1` is the tag
-  of a GitHub Release, whose assets are `manifest.json` and
-  `benchmark-table-<version>.json`, and the version is an integer that only grows.
+- **Manifest:** `v1/manifest.json` holds the table version, its sha256 and an Ed25519
+  signature over both and the schema, next to the table. The path carries the schema
+  version. In the private phase `v1` is the tag of a GitHub Release, whose assets are
+  `manifest.json` and `benchmark-table-<version>.json`, and the version is an integer
+  that only grows.
 - **Checks:** at launch and after every game. Downloads run in the background and
   swap atomically, and the previous file stays until the new one succeeds. A file is
   current when its sha256 is the manifest's, so a lower version is followed like any
-  other. A download must match that sha256 and read as a table. A failed check waits
-  for the next one.
+  other. A manifest must carry a valid signature, and a download must match that sha256
+  and read as a table. A failed check waits for the next one.
 - **During a game:** never swap, even when Markers are hidden. A finished download waits
   until no game is held, and a failed poll does not release it. The app reads the table
   once, at game start, from `benchmark-table.json` in its data directory.
@@ -302,7 +303,7 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 | --- | --- | --- |
 | Hosting | Private GitHub Release | Object storage with a CDN |
 | Access | Fine-grained read-only token in the Keychain | Public |
-| Manifest | Token and TLS only | Signed, with the public key compiled into the app |
+| Manifest | Signed, with the public key compiled into the app | Signed, with the public key compiled into the app |
 | Key | Personal key | Production key |
 
 A schema change publishes in parallel only once other people have installs. A

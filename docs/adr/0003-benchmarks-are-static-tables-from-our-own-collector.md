@@ -15,4 +15,4 @@ Benchmarks are built offline by a Rust collector on a VPS and shipped as one ver
 ## Consequences
 
 - A table built on a personal key may not be public, so the private phase reads it with a token. Public tables need a production key.
-- The VPS holds the manifest signing key in the public phase, so signing protects against a compromised host, not a compromised VPS.
+- The VPS holds the manifest signing key, so signing protects against a compromised host, not a compromised VPS.

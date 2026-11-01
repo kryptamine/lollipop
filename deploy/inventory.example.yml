@@ -11,6 +11,8 @@ all:
       riot_api_key: RGAPI-00000000-0000-0000-0000-000000000000
       # Fine-grained, with contents and issues write on the repository.
       github_token: github_pat_00000000
+      # 32 bytes in hex, from: openssl rand -hex 32. The app compiles in its public half.
+      manifest_signing_key: '0000000000000000000000000000000000000000000000000000000000000000'
       r2_access_key_id: '00000000'
       r2_secret_access_key: '00000000'
       r2_endpoint: https://00000000.r2.cloudflarestorage.com

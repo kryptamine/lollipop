@@ -11,4 +11,5 @@ pub struct PublishConfig {
     pub max_patch: Option<Patch>,
     pub repo: String,
     pub work_dir: PathBuf,
+    pub signing_key: PathBuf,
 }

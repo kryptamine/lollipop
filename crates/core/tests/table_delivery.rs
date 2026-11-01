@@ -9,11 +9,12 @@
 #[allow(dead_code, reason = "each test crate uses only part of the harness")]
 mod support;
 
-use lollipop_core::delivery::{ReleaseChannel, ReleaseToken};
+use lollipop_core::delivery::{ManifestKey, ReleaseChannel, ReleaseToken};
 use lollipop_core::live::{status_line, Markers};
 
 use support::delivery_bench::{table_with_cs, until, DeliveryBench};
 use support::fake_lcu::SESSION;
+use support::fake_release::{manifest_body, message, sha256_of, sign, sign_with_this_release};
 use support::staged_game::Stage;
 
 const IN_GAME: Stage = Stage::Running { game_time: 100.0 };
@@ -134,6 +135,73 @@ async fn a_manifest_that_does_not_read_keeps_the_previous_file() {
 
     bench.start_polling();
     bench.start_downloads();
+    until("the manifest is fetched", || {
+        bench.release.manifest_downloads() == 1
+    })
+    .await;
+    bench.settle().await;
+
+    assert_eq!(bench.release.table_downloads(2), 0);
+    assert_eq!(bench.live(), Some(previous));
+}
+
+// Once the channel is public, anyone able to write to it must not be able to choose the table.
+#[tokio::test]
+async fn a_manifest_without_a_valid_signature_keeps_the_previous_file() {
+    let table = table_with_cs(200.0);
+    let sha256 = sha256_of(&table);
+    let genuine = message(1, 2, &sha256);
+    let not_signed = serde_json::json!({ "version": 2, "sha256": sha256 }).to_string();
+    let forged = [
+        (
+            "another key",
+            manifest_body(2, &sha256, &sign(&[9; 32], &genuine)),
+        ),
+        ("no signature", not_signed),
+        ("not hex", manifest_body(2, &sha256, "zz")),
+        (
+            "another table",
+            manifest_body(2, &sha256, &sign_with_this_release(&message(1, 2, "abc"))),
+        ),
+        (
+            "another version",
+            manifest_body(2, &sha256, &sign_with_this_release(&message(1, 3, &sha256))),
+        ),
+        (
+            "another schema",
+            manifest_body(2, &sha256, &sign_with_this_release(&message(2, 2, &sha256))),
+        ),
+    ];
+    for (case, manifest) in forged {
+        let mut bench = DeliveryBench::at(Stage::Unanswered).await;
+        let previous = table_with_cs(100.0);
+        bench.write_live(&previous);
+        bench.release.upload(2, &table);
+        bench.release.write_manifest(&manifest);
+
+        bench.start_polling();
+        bench.start_downloads();
+        until("the manifest is fetched", || {
+            bench.release.manifest_downloads() == 1
+        })
+        .await;
+        bench.settle().await;
+
+        assert_eq!(bench.release.table_downloads(2), 0, "{case}");
+        assert_eq!(bench.live(), Some(previous), "{case}");
+    }
+}
+
+// A constant that does not decode would mean no downloads at all, with nothing to show for it.
+#[tokio::test]
+async fn the_compiled_in_key_decodes_and_refuses_a_table_it_did_not_sign() {
+    let mut bench = DeliveryBench::at(Stage::Unanswered).await;
+    let previous = table_with_cs(100.0);
+    bench.write_live(&previous);
+    bench.release.publish(2, &table_with_cs(200.0));
+
+    bench.start_polling();
+    bench.start_downloads_with(bench.release.channel(), ManifestKey::compiled_in().unwrap());
     until("the manifest is fetched", || {
         bench.release.manifest_downloads() == 1
     })

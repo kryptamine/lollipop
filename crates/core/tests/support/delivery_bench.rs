@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use lollipop_core::delivery::{keep_table_current, ReleaseChannel, TableFile};
+use lollipop_core::delivery::{keep_table_current, ManifestKey, ReleaseChannel, TableFile};
 use lollipop_core::live::LiveGame;
 use tempfile::TempDir;
 use tokio::sync::mpsc;
 
 use super::benchmark_file::{cell, flat_minutes, table_of};
 use super::fake_lcu::FakeLcu;
-use super::fake_release::FakeRelease;
+use super::fake_release::{manifest_key, FakeRelease};
 use super::game_clock::GameClock;
 use super::marker_game::{CHAMPION, ROLE, TIER};
 use super::polling::start_playing_on;
@@ -67,8 +67,12 @@ impl DeliveryBench {
     }
 
     pub fn start_downloads_on(&self, channel: ReleaseChannel) {
+        self.start_downloads_with(channel, manifest_key());
+    }
+
+    pub fn start_downloads_with(&self, channel: ReleaseChannel, key: ManifestKey) {
         let table = Arc::clone(&self.table);
-        tokio::spawn(async move { keep_table_current(&table, &channel).await });
+        tokio::spawn(async move { keep_table_current(&table, &channel, &key).await });
     }
 
     /// The next update that shows a running game, so the table has been read for it.

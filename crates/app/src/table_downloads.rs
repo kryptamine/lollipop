@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use lollipop_core::delivery::{
-    keep_table_current, ReleaseChannel, ReleaseToken, TableFile, GITHUB_API, RELEASE_REPO,
+    keep_table_current, ManifestKey, ReleaseChannel, ReleaseToken, TableFile, GITHUB_API,
+    RELEASE_REPO,
 };
 
 /// With no token the app simply has no downloads: whatever table is on disk stays.
@@ -12,7 +13,7 @@ pub(crate) async fn run(table: Arc<TableFile>) {
         .ok()
         .flatten()
         .and_then(|token| ReleaseChannel::new(GITHUB_API, RELEASE_REPO, token).ok());
-    if let Some(channel) = channel {
-        keep_table_current(&table, &channel).await;
+    if let (Some(channel), Some(key)) = (channel, ManifestKey::compiled_in()) {
+        keep_table_current(&table, &channel, &key).await;
     }
 }

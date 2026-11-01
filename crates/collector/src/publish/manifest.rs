@@ -1,17 +1,21 @@
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use super::gh_release::GhRelease;
+use super::manifest_signer::ManifestSigner;
 use super::publish_error::PublishError;
 use super::release_assets::MANIFEST;
 
 /// The truth about which table is live: the app follows it, even to an older version.
-#[derive(Serialize, Deserialize)]
+/// A manifest with no signature still reads: it only needs signing.
+#[derive(Deserialize)]
 pub(super) struct Manifest {
     pub(super) version: u32,
     sha256: String,
+    signature: Option<String>,
 }
 
 impl Manifest {
@@ -21,6 +25,7 @@ impl Manifest {
         Ok(Self {
             version,
             sha256: format!("{:x}", Sha256::digest(body)),
+            signature: None,
         })
     }
 
@@ -32,11 +37,25 @@ impl Manifest {
         self.sha256 == other.sha256
     }
 
-    pub(super) fn upload(&self, release: &GhRelease, work_dir: &Path) -> Result<(), PublishError> {
+    // Ed25519 signatures are deterministic, so signing again gives the same bytes.
+    pub(super) fn signed_by(&self, signer: &ManifestSigner) -> bool {
+        self.signature.as_deref() == Some(signer.sign(self.version, &self.sha256).as_str())
+    }
+
+    pub(super) fn upload(
+        &self,
+        release: &GhRelease,
+        signer: &ManifestSigner,
+        work_dir: &Path,
+    ) -> Result<(), PublishError> {
         let path = work_dir.join(MANIFEST);
-        let body = serde_json::to_vec(self)
-            .map_err(|error| PublishError::Write(path.clone(), error.into()))?;
-        std::fs::write(&path, body).map_err(|error| PublishError::Write(path.clone(), error))?;
+        let body = json!({
+            "version": self.version,
+            "sha256": self.sha256,
+            "signature": signer.sign(self.version, &self.sha256),
+        });
+        std::fs::write(&path, body.to_string())
+            .map_err(|error| PublishError::Write(path.clone(), error))?;
         release.upload(&path)?;
         Ok(())
     }
