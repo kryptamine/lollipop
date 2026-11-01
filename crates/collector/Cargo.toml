@@ -7,3 +7,15 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
+fastrand = "2"
+lollipop-core = { path = "../core" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+rusqlite = { version = "0.41", features = ["bundled", "fallible_uint"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt", "time"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "sync", "time"] }

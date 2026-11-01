@@ -208,6 +208,17 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 - **Throughput:** about 3.1 calls per kept match, about 23,000 matches a day, and
   about 22 KB per match. That is about 14 GB for a four-week window at full rate.
 - **Retention:** raw matches outside the Patch window are deleted when it shifts.
+  The collector shifts it at the first kept match of a new patch, taking the window
+  as the two newest patches stored. The first build after that patch would shift it
+  to the same two anyway. A match below the window is dropped before its timeline call.
+- **Limits:** the application rate limit from `x-app-rate-limit`, held at 90%, plus
+  `Retry-After` on a 429. That is about 21,000 matches a day against the throughput
+  above. The calls made and any `Retry-After` are kept in SQLite, so a restart honours
+  them.
+- **Resume:** match ids wait in a queue in SQLite. A restart empties it before reading
+  new seeds, and takes the tier after the last one walked. Seeds stay in memory, as
+  they are PUUIDs. A rejected key, or an outage while reading seeds, ends the run for
+  the service manager to restart. A single match that keeps failing is dropped.
 - **Backup:** a daily copy to object storage, kept about 2 weeks. About 2.6 GB
   compressed at that size.
 
