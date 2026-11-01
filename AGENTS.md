@@ -8,7 +8,8 @@ Data API and shows the active player's CS, Gold earned and level.
 - `crates/core` (`lollipop-core`): domain and API polling. No Tauri.
 - `crates/app` (`lollipop`): the Tauri shell. `platform` is the only module
   allowed `unsafe`.
-- `crates/collector` (`lollipop-collector`): the Benchmark CLI, a stub so far.
+- `crates/collector` (`lollipop-collector`): the Benchmark CLI, which collects
+  ranked matches into SQLite.
 - `ui/`: the Preact view. It draws state it is given, and only `ui/src/bridge.ts`
   may import Tauri.
 
