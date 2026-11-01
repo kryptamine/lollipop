@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::clock::Clock;
+use super::game_hints::GameHints;
 use super::game_markers::GameMarkers;
 use super::gold_earned::GoldEarned;
 use super::inputs_of_game::InputsOfGame;
@@ -43,6 +44,7 @@ pub async fn poll(
         gold_earned: GoldEarned::default(),
         inputs: InputsOfGame::default(),
         markers: GameMarkers::default(),
+        hints: GameHints::default(),
     };
     loop {
         let update = match fetch(&http, url).await {
@@ -66,6 +68,7 @@ struct CurrentGame<'a> {
     gold_earned: GoldEarned,
     inputs: InputsOfGame,
     markers: GameMarkers,
+    hints: GameHints,
 }
 
 impl CurrentGame<'_> {
@@ -91,6 +94,7 @@ impl CurrentGame<'_> {
             snapshot,
             inputs,
             markers,
+            hints: self.hints.at(data),
         })
     }
 
@@ -106,6 +110,7 @@ impl CurrentGame<'_> {
         )
         .await;
         self.markers = GameMarkers::start(self.benchmark_table, &inputs, player.cell_champion());
+        self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)
     }
 }

@@ -5,7 +5,13 @@ pub struct Widget {
     pub label: &'static str,
 }
 
-pub const WIDGETS: [Widget; 1] = [Widget {
-    id: "markerStrip",
-    label: "Marker strip",
-}];
+pub const WIDGETS: [Widget; 2] = [
+    Widget {
+        id: "markerStrip",
+        label: "Marker strip",
+    },
+    Widget {
+        id: "timingHints",
+        label: "Timing hints",
+    },
+];

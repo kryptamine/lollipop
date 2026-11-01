@@ -47,6 +47,7 @@ async fn publish_live_client(
         store.publish_switches();
         if let Some(game) = &update {
             let _ = app.emit("markers", game.markers);
+            let _ = app.emit("timing-hints", &game.hints);
             let _ = app.emit("snapshot", &game.snapshot);
         }
         overlay.set_match_running(running);

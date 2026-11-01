@@ -27,6 +27,30 @@ body {
   white-space: nowrap;
 }
 
+#timing-hint-banner {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.timing-hint {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(10, 14, 20, 0.78);
+  color: #e8edf2;
+  font:
+    600 15px/1.4 -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .metric-label {
   color: #9aa6b2;
 }

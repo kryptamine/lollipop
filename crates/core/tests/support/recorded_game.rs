@@ -5,6 +5,15 @@ use serde_json::{json, Value};
 /// The Summoner's Rift game in the recording; the two before it are Practice Tool.
 const RECORDED_GAME_START: f64 = 2724.0;
 
+// The recording logs only the active player. Sides are worked out from who killed
+// whom in its `ChampionKill` events; which side is Order is not known, nor needed.
+const TEAMMATES: [&str; 4] = ["player-0", "player-2", "player-3", "player-4"];
+const OPPONENTS: [&str; 5] = ["player-5", "player-6", "player-7", "player-8", "player-9"];
+
+fn other_player(name: &str, team: &str) -> Value {
+    json!({ "riotId": name, "team": team, "level": 1, "items": [], "scores": { "creepScore": 0 } })
+}
+
 pub struct RecordedGame {
     states: Vec<Value>,
     events: Vec<Value>,
@@ -55,16 +64,20 @@ impl RecordedGame {
             .filter(|event| event["gameTime"].as_f64().unwrap() <= game_time)
             .map(|event| &event["event"])
             .collect();
+        let mut players = vec![json!({
+            "riotId": "self",
+            "team": "ORDER",
+            "championName": state["champion"],
+            "position": state["position"],
+            "level": state["level"],
+            "items": state["items"],
+            "scores": { "creepScore": state["cs"] },
+        })];
+        players.extend(TEAMMATES.iter().map(|name| other_player(name, "ORDER")));
+        players.extend(OPPONENTS.iter().map(|name| other_player(name, "CHAOS")));
         let payload = json!({
             "activePlayer": { "riotId": "self", "level": state["level"], "currentGold": state["gold"] },
-            "allPlayers": [{
-                "riotId": "self",
-                "championName": state["champion"],
-                "position": state["position"],
-                "level": state["level"],
-                "items": state["items"],
-                "scores": { "creepScore": state["cs"] },
-            }],
+            "allPlayers": players,
             "events": { "Events": events },
             "gameData": { "gameTime": state["gameTime"], "gameMode": state["gameMode"] },
         });
