@@ -160,6 +160,18 @@ async fn a_new_game_counts_from_500_again() {
     );
 }
 
+// The clock cannot show this new game: only GameEnd keeps the old total off it.
+#[tokio::test]
+async fn game_end_closes_the_count_when_the_clock_runs_on() {
+    let polls = vec![
+        running(10.0, 500.0, &[]),
+        running(300.0, 900.0, &[]),
+        ended(301.0, 900.0),
+        running(400.0, 1000.0, &[]),
+    ];
+    assert_eq!(gold_earned(polls).await, [Some(500), Some(900), None, None]);
+}
+
 // A game joined late must not leave its dash on the next one.
 #[tokio::test]
 async fn a_dash_ends_with_its_game() {
