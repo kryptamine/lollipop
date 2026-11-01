@@ -1,6 +1,5 @@
 // Fake Live Client Data API for developing without a running game.
-// Usage: node scripts/mock-live-client.mjs
-//        LOLLIPOP_LIVE_URL=http://127.0.0.1:2998/ pnpm tauri dev
+// Usage: make dev-mock
 import { createServer } from "node:http";
 
 const startedAt = Date.now();

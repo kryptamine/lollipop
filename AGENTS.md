@@ -108,20 +108,22 @@ Before writing or editing a comment, read
 
 ## Commands
 
-The gate before any commit, run from the repository root. CI runs the same on
-every pull request:
+Run from the repository root; `make` lists them all.
 
 ```sh
-pnpm install --frozen-lockfile
-pnpm lint
-pnpm build
-cargo fmt --check
-cargo clippy --workspace --all-targets -- -D warnings
-scripts/check-boundaries.sh
-cargo test --workspace
+make install   # install the view's dependencies
+make dev       # run the app against the real League client
+make dev-mock  # run the app against a fake Live Client Data API
+make build     # build the release bundle
+make format    # format the Rust and the view
+make lint      # run every linter
+make test      # run the tests
+make check     # lint, test and build the view
 ```
 
-Run the app with `pnpm tauri dev`, and format the view with `pnpm format`.
+**Run `make check` before every push, and do not push until it passes.** CI is off
+([ADR 0009](docs/adr/0009-ci-is-off-while-the-gate-runs-locally.md)), and the
+pre-push hook checks only the view. Never skip it with `--no-verify`.
 
 ## Working here
 
