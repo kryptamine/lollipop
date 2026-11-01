@@ -14,23 +14,14 @@ impl RecordedGame {
     pub fn load() -> Self {
         let path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../docs/research/data/live-game-probe/recorder.ndjson");
-        let records: Vec<Value> = std::fs::read_to_string(path)
+        let (states, events) = std::fs::read_to_string(path)
             .unwrap()
             .lines()
             .map(|line| serde_json::from_str::<Value>(line).unwrap())
             .filter(|record| record["t"].as_f64().unwrap() >= RECORDED_GAME_START)
-            .collect();
-        let of_kind = |kind: &str| -> Vec<Value> {
-            records
-                .iter()
-                .filter(|record| record["kind"] == kind)
-                .cloned()
-                .collect()
-        };
-        Self {
-            states: of_kind("state"),
-            events: of_kind("event"),
-        }
+            .filter(|record| record["kind"] == "state" || record["kind"] == "event")
+            .partition(|record| record["kind"] == "state");
+        Self { states, events }
     }
 
     pub fn first_game_time(&self) -> f64 {

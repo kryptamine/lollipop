@@ -70,6 +70,13 @@ returns its error with `?` to whoever can act on it. Where nothing can receive i
 in an AppKit callback, it goes to `log::error!`. `let _ =` never discards a `Result`.
 Tests may `unwrap`: a panic is how a test fails.
 
+## Memory rule (mandatory)
+
+**Allocate only where it is needed, above all on the 1 s poll path.** Borrow rather
+than clone, move rather than copy, and parse strings as borrows of the response body.
+A `clone` of an `Arc` or a Tauri handle is fine; a `clone` of data needs a reason.
+Clippy catches the redundant ones, and the rest is on review.
+
 ## Unsafe rule (mandatory)
 
 **`unsafe` lives only in `platform`, and only around the call that needs it.** One

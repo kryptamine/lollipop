@@ -46,7 +46,8 @@ impl LiveClient {
 
     async fn fetch(&self) -> Option<Snapshot> {
         let response = self.http.get(&self.url).send().await.ok()?;
-        let data: AllGameData = serde_json::from_str(&response.text().await.ok()?).ok()?;
+        let body = response.bytes().await.ok()?;
+        let data: AllGameData<'_> = serde_json::from_slice(&body).ok()?;
         if !data.match_running() {
             return None;
         }

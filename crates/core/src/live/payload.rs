@@ -1,27 +1,37 @@
-//! The `allgamedata` JSON document, one struct per nested object.
+//! The `allgamedata` JSON document, one struct per nested object. Polled every second,
+//! so strings borrow from the response body. `Cow` is for one with JSON escapes.
+
+use std::borrow::Cow;
 
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct AllGameData {
-    active_player: ActivePlayer,
-    all_players: Vec<Player>,
-    events: Events,
+pub(super) struct AllGameData<'a> {
+    #[serde(borrow)]
+    active_player: ActivePlayer<'a>,
+    #[serde(borrow)]
+    all_players: Vec<Player<'a>>,
+    #[serde(borrow)]
+    events: Events<'a>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ActivePlayer {
-    riot_id: Option<String>,
-    summoner_name: Option<String>,
+struct ActivePlayer<'a> {
+    #[serde(borrow)]
+    riot_id: Option<Cow<'a, str>>,
+    #[serde(borrow)]
+    summoner_name: Option<Cow<'a, str>>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct Player {
-    riot_id: Option<String>,
-    summoner_name: Option<String>,
+pub(super) struct Player<'a> {
+    #[serde(borrow)]
+    riot_id: Option<Cow<'a, str>>,
+    #[serde(borrow)]
+    summoner_name: Option<Cow<'a, str>>,
     pub(super) scores: Scores,
 }
 
@@ -33,18 +43,20 @@ pub(super) struct Scores {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
-struct Events {
-    events: Vec<Event>,
+struct Events<'a> {
+    #[serde(borrow)]
+    events: Vec<Event<'a>>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
-struct Event {
-    event_name: String,
+struct Event<'a> {
+    #[serde(borrow)]
+    event_name: Cow<'a, str>,
 }
 
-impl AllGameData {
-    pub(super) fn active_player(&self) -> Option<&Player> {
+impl AllGameData<'_> {
+    pub(super) fn active_player(&self) -> Option<&Player<'_>> {
         let active = &self.active_player;
         self.all_players.iter().find(|p| {
             let same_riot_id = active.riot_id.is_some() && p.riot_id == active.riot_id;

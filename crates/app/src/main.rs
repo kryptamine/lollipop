@@ -20,12 +20,17 @@ fn dev_setting(name: &str, default: &str) -> String {
 
 // Only a closing event loop fails the callback, so polling stops with the app.
 async fn publish_live_client(client: LiveClient, app: AppHandle, overlay: Overlay) {
+    let mut was_running = false;
     let on_update = move |update: Option<Snapshot>| -> tauri::Result<()> {
         let running = update.is_some();
         if let Some(snapshot) = update {
             app.emit("snapshot", &snapshot)?;
         }
-        overlay.set_match_running(running)
+        if running != was_running {
+            overlay.set_match_running(running)?;
+            was_running = running;
+        }
+        Ok(())
     };
     let error = client.poll(&SystemClock, on_update).await;
     log::error!("live client polling stopped: {error}");

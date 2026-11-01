@@ -89,6 +89,21 @@ async fn falls_back_to_the_summoner_name() {
     assert_eq!(update, Some(Snapshot { cs: 5 }));
 }
 
+// Payload strings borrow from the body, and an escaped one cannot: it must still match.
+#[tokio::test]
+async fn an_escaped_riot_id_still_matches() {
+    let update = update_for(
+        r#"{
+          "activePlayer": { "riotId": "M\u0065#EUW" },
+          "allPlayers": [{ "riotId": "M\u0065#EUW", "scores": { "creepScore": 5 } }],
+          "events": { "Events": [{ "EventName": "GameStart" }] },
+          "gameData": { "gameTime": 120.0 }
+        }"#,
+    )
+    .await;
+    assert_eq!(update, Some(Snapshot { cs: 5 }));
+}
+
 // A spectator payload has no ids, and two missing ids are not the same player.
 #[tokio::test]
 async fn missing_ids_never_match_each_other() {
