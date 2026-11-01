@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
 
-import { onSnapshot } from './bridge';
+import { MarkerStrip } from './MarkerStrip';
+import { onSnapshot, type Snapshot } from './bridge';
 
 export const App = () => {
-  const [cs, setCs] = useState(0);
+  const [snapshot, setSnapshot] = useState<Snapshot>();
 
-  useEffect(
-    () =>
-      onSnapshot(({ cs: nextCs }) => {
-        setCs(nextCs);
-      }),
-    [],
-  );
+  useEffect(() => onSnapshot(setSnapshot), []);
 
-  return <div id="pill">CS {cs}</div>;
+  return snapshot && <MarkerStrip snapshot={snapshot} />;
 };

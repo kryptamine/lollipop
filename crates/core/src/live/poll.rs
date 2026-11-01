@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use super::clock::Clock;
+use super::gold_earned::GoldEarned;
 use super::payload::AllGameData;
 use super::snapshot::Snapshot;
 
@@ -27,18 +28,32 @@ pub async fn poll(
         .build()
         .expect("HTTP client should build");
 
+    let mut gold_earned = GoldEarned::default();
     loop {
-        on_update(fetch(&client, url).await);
+        let data = fetch(&client, url).await;
+        on_update(data.and_then(|data| snapshot_of(&data, &mut gold_earned)));
         clock.sleep(POLL_INTERVAL).await;
     }
 }
 
-async fn fetch(client: &reqwest::Client, url: &str) -> Option<Snapshot> {
+async fn fetch(client: &reqwest::Client, url: &str) -> Option<AllGameData> {
     let body = client.get(url).send().await.ok()?.text().await.ok()?;
-    let data: AllGameData = serde_json::from_str(&body).ok()?;
+    serde_json::from_str(&body).ok()
+}
+
+fn snapshot_of(data: &AllGameData, gold_earned: &mut GoldEarned) -> Option<Snapshot> {
     if !data.match_running() {
+        gold_earned.end_game();
         return None;
     }
-    let cs = data.active_player()?.scores.creep_score;
-    Some(Snapshot { cs })
+    let player = data.active_player()?;
+    Some(Snapshot {
+        cs: player.scores.creep_score,
+        level: player.level,
+        gold_earned: gold_earned.observe(
+            data.game_time(),
+            data.current_gold(),
+            player.item_counts(),
+        ),
+    })
 }

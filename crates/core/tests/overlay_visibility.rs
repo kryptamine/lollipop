@@ -21,25 +21,25 @@ const LOLLIPOP_BUNDLE_ID: &str = "dev.lollipop.overlay";
 const OTHER_BUNDLE_ID: &str = "com.apple.finder";
 
 const LOADING: &str = r#"{
-  "activePlayer": { "riotId": "Me#EUW" },
-  "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 0 } }],
+  "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
+  "allPlayers": [{ "riotId": "Me#EUW", "level": 1, "items": [], "scores": { "creepScore": 0 } }],
   "events": { "Events": [] },
   "gameData": { "gameTime": 0.02 }
 }"#;
 const NO_ACTIVE_PLAYER: &str = r#"{
-  "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 0 } }],
+  "allPlayers": [{ "riotId": "Me#EUW", "level": 1, "items": [], "scores": { "creepScore": 0 } }],
   "events": { "Events": [{ "EventName": "GameStart" }] },
   "gameData": { "gameTime": 0.02 }
 }"#;
 const RUNNING: &str = r#"{
-  "activePlayer": { "riotId": "Me#EUW" },
-  "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 60 } }],
+  "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
+  "allPlayers": [{ "riotId": "Me#EUW", "level": 1, "items": [], "scores": { "creepScore": 60 } }],
   "events": { "Events": [{ "EventName": "GameStart" }] },
   "gameData": { "gameTime": 600.0 }
 }"#;
 const ENDED: &str = r#"{
-  "activePlayer": { "riotId": "Me#EUW" },
-  "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 220 } }],
+  "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
+  "allPlayers": [{ "riotId": "Me#EUW", "level": 1, "items": [], "scores": { "creepScore": 220 } }],
   "events": { "Events": [{ "EventName": "GameStart" }, { "EventName": "GameEnd" }] },
   "gameData": { "gameTime": 1995.2 }
 }"#;
