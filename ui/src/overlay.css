@@ -6,6 +6,9 @@ body {
 }
 
 #pill {
+  position: fixed;
+  top: 24px;
+  left: 24px;
   display: flex;
   gap: 12px;
   align-items: baseline;

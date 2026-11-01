@@ -14,6 +14,7 @@ createServer((_req, res) => {
       allPlayers: [
         { riotId: "Me#DEV", championName: "Ahri", scores: { creepScore: Math.floor((gameTime / 60) * 6) } },
       ],
+      events: { Events: [{ EventName: "GameStart" }] },
       gameData: { gameTime, gameMode: "CLASSIC" },
     }),
   );

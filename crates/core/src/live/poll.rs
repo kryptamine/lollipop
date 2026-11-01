@@ -7,7 +7,7 @@ use super::snapshot::Snapshot;
 pub const LIVE_CLIENT_URL: &str = "https://127.0.0.1:2999/liveclientdata/allgamedata";
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
 
-/// Never returns. `None` means the API has no running game the player is part of.
+/// Never returns. `None` means no match the player is part of is running.
 /// # Panics
 /// If the HTTP client cannot be built, which only a broken TLS backend causes.
 pub async fn poll(
@@ -36,6 +36,9 @@ pub async fn poll(
 async fn fetch(client: &reqwest::Client, url: &str) -> Option<Snapshot> {
     let body = client.get(url).send().await.ok()?.text().await.ok()?;
     let data: AllGameData = serde_json::from_str(&body).ok()?;
+    if !data.match_running() {
+        return None;
+    }
     let cs = data.active_player()?.scores.creep_score;
     Some(Snapshot { cs })
 }

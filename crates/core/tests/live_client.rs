@@ -6,38 +6,18 @@
     reason = "a failed test should panic, and a test crate has no public API"
 )]
 
+#[allow(dead_code, reason = "each test crate uses only part of the harness")]
 mod support;
 
 use std::sync::Arc;
 
-use lollipop_core::live::{poll, Snapshot};
+use lollipop_core::live::Snapshot;
 use tokio::net::TcpListener;
-use tokio::sync::mpsc;
 
 use support::game_clock::GameClock;
+use support::polling::{first_update, start_polling};
 use support::recorded_game::RecordedGame;
 use support::server::serve;
-
-/// Runs the poll loop on `clock` and returns updates, stamped with game time, as they arrive.
-fn start_polling(
-    url: String,
-    clock: GameClock,
-) -> mpsc::UnboundedReceiver<(f64, Option<Snapshot>)> {
-    let (updates, received) = mpsc::unbounded_channel();
-    tokio::spawn(async move {
-        let stamp = clock.clone();
-        poll(&url, &clock, move |update| {
-            let _ = updates.send((stamp.now(), update));
-        })
-        .await;
-    });
-    received
-}
-
-async fn first_update(url: String) -> Option<Snapshot> {
-    let mut updates = start_polling(url, GameClock::starting_at(0.0));
-    updates.recv().await.unwrap().1
-}
 
 async fn update_for(body: &'static str) -> Option<Snapshot> {
     first_update(serve(Box::new(|| Some(body.to_string()))).await).await
@@ -54,6 +34,9 @@ async fn replays_a_recorded_game_on_game_time() {
     let url = serve(Box::new(move || server_game.payload_at(server_clock.now()))).await;
 
     let mut updates = start_polling(url, clock);
+    // The recording opens on the loading screen, before GameStart.
+    assert_eq!(updates.recv().await.unwrap().1, None);
+
     let mut cs_at_minute = Vec::new();
     let mut last_cs = None;
     let mut next_minute = 5.0;
@@ -84,6 +67,7 @@ async fn reads_only_the_active_players_cs() {
             { "riotId": "Enemy#EUW", "scores": { "creepScore": 200 } },
             { "riotId": "Me#EUW", "scores": { "creepScore": 60 } }
           ],
+          "events": { "Events": [{ "EventName": "GameStart" }] },
           "gameData": { "gameTime": 600.0 }
         }"#,
     )
@@ -97,6 +81,7 @@ async fn falls_back_to_the_summoner_name() {
         r#"{
           "activePlayer": { "summonerName": "Me" },
           "allPlayers": [{ "summonerName": "Me", "scores": { "creepScore": 5 } }],
+          "events": { "Events": [{ "EventName": "GameStart" }] },
           "gameData": { "gameTime": 120.0 }
         }"#,
     )
@@ -111,7 +96,52 @@ async fn missing_ids_never_match_each_other() {
         r#"{
           "activePlayer": {},
           "allPlayers": [{ "scores": { "creepScore": 5 } }],
+          "events": { "Events": [{ "EventName": "GameStart" }] },
           "gameData": { "gameTime": 120.0 }
+        }"#,
+    )
+    .await;
+    assert_eq!(update, None);
+}
+
+// A 200 can come about 56 s before GameStart, with the player already in the payload.
+#[tokio::test]
+async fn a_game_before_game_start_has_no_snapshot() {
+    let update = update_for(
+        r#"{
+          "activePlayer": { "riotId": "Me#EUW" },
+          "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 0 } }],
+          "events": { "Events": [] },
+          "gameData": { "gameTime": 0.02 }
+        }"#,
+    )
+    .await;
+    assert_eq!(update, None);
+}
+
+// The API stays up for a moment after GameEnd, with the final scores still served.
+#[tokio::test]
+async fn a_game_after_game_end_has_no_snapshot() {
+    let update = update_for(
+        r#"{
+          "activePlayer": { "riotId": "Me#EUW" },
+          "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 220 } }],
+          "events": { "Events": [{ "EventName": "GameStart" }, { "EventName": "GameEnd" }] },
+          "gameData": { "gameTime": 1995.2 }
+        }"#,
+    )
+    .await;
+    assert_eq!(update, None);
+}
+
+// One load in three served a 200 about 0.25 s before the player could be matched.
+#[tokio::test]
+async fn a_game_with_no_active_player_has_no_snapshot() {
+    let update = update_for(
+        r#"{
+          "allPlayers": [{ "riotId": "Me#EUW", "scores": { "creepScore": 0 } }],
+          "events": { "Events": [{ "EventName": "GameStart" }] },
+          "gameData": { "gameTime": 0.02 }
         }"#,
     )
     .await;

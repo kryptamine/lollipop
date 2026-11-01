@@ -12,8 +12,8 @@ install: ## Install the view's dependencies
 dev: ## Run the app against the real League client
 	pnpm tauri dev
 
-dev-mock: ## Run the app against scripts/mock-live-client.mjs, no game needed
-	node scripts/mock-live-client.mjs & trap "kill $$!" EXIT; LOLLIPOP_LIVE_URL=$(MOCK_URL) pnpm tauri dev
+dev-mock: ## Run the app against scripts/mock-live-client.mjs, shown while this terminal is frontmost
+	node scripts/mock-live-client.mjs & trap "kill $$!" EXIT; LOLLIPOP_LIVE_URL=$(MOCK_URL) LOLLIPOP_GAME_BUNDLE=$$__CFBundleIdentifier pnpm tauri dev
 
 build: ## Build the release bundle
 	pnpm tauri build
