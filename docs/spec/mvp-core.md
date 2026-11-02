@@ -61,8 +61,8 @@ The overlay is shown only when the game is frontmost and the match is running:
 
 ## Marker strip
 
-One line at the top left: label, value, Marker and Benchmark for CS, Gold earned
-and level, such as `Gold earned 2000 ▼ 2450`. The gold label reads "Gold earned",
+A table at the top left, with a row each for CS, Gold earned and level and the
+columns Stat, Marker, Current and Benchmark, such as `Gold earned ▼ 2000 2450`. The gold label reads "Gold earned",
 so the value cannot pass for current gold or net worth. A neutral Marker is a muted
 dot in the same slot, so "on pace" differs from "no Benchmark" and a state change
 never shifts the layout. With no Benchmark the Marker and the Benchmark are hidden

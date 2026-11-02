@@ -16,16 +16,26 @@ export const MarkerStrip = ({
   notices,
 }: MarkerStripProps) => (
   <div id="marker-strip">
-    <div class="metrics">
-      <Metric label="CS" value={cs} marker={csMarker} benchmark={csBenchmark} />
-      <Metric
-        label="Gold earned"
-        value={goldEarned ?? '—'}
-        marker={goldMarker}
-        benchmark={goldBenchmark}
-      />
-      <Metric label="Level" value={level} marker={levelMarker} benchmark={levelBenchmark} />
-    </div>
+    <table class="metrics">
+      <thead>
+        <tr>
+          <th scope="col">Stat</th>
+          <td />
+          <th scope="col">Current</th>
+          <th scope="col">Benchmark</th>
+        </tr>
+      </thead>
+      <tbody>
+        <Metric label="CS" value={cs} marker={csMarker} benchmark={csBenchmark} />
+        <Metric
+          label="Gold earned"
+          value={goldEarned ?? '—'}
+          marker={goldMarker}
+          benchmark={goldBenchmark}
+        />
+        <Metric label="Level" value={level} marker={levelMarker} benchmark={levelBenchmark} />
+      </tbody>
+    </table>
     {notices.length > 0 && <Notices notices={notices} />}
   </div>
 );
