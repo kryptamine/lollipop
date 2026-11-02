@@ -72,10 +72,11 @@ impl ComparedGame {
             gold: self.gold.update(gold),
             level: self.level.update(level),
         };
+        let ahead = self.cell.at_minute_ahead(game_time);
         let shown = ShownBenchmarks {
-            cs: cs_benchmarks.map(|b| b.cs),
-            gold: gold_benchmarks.map(|b| b.gold),
-            level: benchmarks.map(|b| b.level),
+            cs: cs_benchmarks.and(ahead).map(|b| b.cs),
+            gold: gold_benchmarks.and(ahead).map(|b| b.gold),
+            level: benchmarks.and(ahead).map(|b| b.level),
         };
         (markers, shown)
     }

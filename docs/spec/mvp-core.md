@@ -76,8 +76,9 @@ and the value stays.
 
 - A Marker turns to a triangle on the first poll past the Neutral zone, and
   keeps it until the value is back within half of the zone or past the other edge.
-- The shown Benchmark is the one at the current game time, rounded to a whole
-  number.
+- The shown Benchmark is the one at the next whole minute, rounded to a whole
+  number, so it changes once a minute. The Marker compares against the
+  Benchmark interpolated to the current game time.
 - Benchmarks are read by linear interpolation between minutes.
 - A minute with n<100 has no Marker.
 - A support keeps the CS value and has no CS Marker.

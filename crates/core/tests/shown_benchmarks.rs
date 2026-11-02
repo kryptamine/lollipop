@@ -15,11 +15,8 @@ use serde_json::Value;
 use support::benchmark_file::{cell, flat_minutes, minute, table_of, ENOUGH_GAMES};
 use support::marker_game::{MarkerBench, Moment, Seat, CHAMPION, MASTER_YI_MID, ROLE, TIER};
 
-// At 10:30 the Cell reads 63 CS, 4700 gold and level 6.25, halfway between its minutes.
-#[tokio::test]
-async fn shows_the_benchmark_at_the_current_game_time() {
-    let bench = MarkerBench::new().await;
-    let minutes: Vec<Value> = (0..=20)
+fn growing_minutes() -> Vec<Value> {
+    (0..=20)
         .map(|at| {
             let time = f64::from(at);
             minute(
@@ -30,21 +27,33 @@ async fn shows_the_benchmark_at_the_current_game_time() {
                 ENOUGH_GAMES,
             )
         })
-        .collect();
-    bench.write_table(&table_of(&[cell(CHAMPION, ROLE, TIER, &minutes)]));
+        .collect()
+}
+
+// A Benchmark that crept up on every poll was noise to read. At 11:00 the Cell reads 66 CS,
+// 4900 gold and level 6.5, and the strip shows that through 10:01 to 11:00.
+#[tokio::test]
+async fn shows_the_benchmark_of_the_next_whole_minute() {
+    let bench = MarkerBench::new().await;
+    bench.write_table(&table_of(&[cell(CHAMPION, ROLE, TIER, &growing_minutes())]));
 
     let shown = bench
-        .benchmarks_for(&[Moment::at(1.0), Moment::at(630.0)])
+        .benchmarks_for(&[
+            Moment::at(1.0),
+            Moment::at(600.0),
+            Moment::at(601.0),
+            Moment::at(630.0),
+            Moment::at(660.0),
+        ])
         .await;
 
-    assert_eq!(
-        shown[1],
-        ShownBenchmarks {
-            cs: Some(63.0),
-            gold: Some(4700.0),
-            level: Some(6.25),
-        }
-    );
+    let at_eleven = ShownBenchmarks {
+        cs: Some(66.0),
+        gold: Some(4900.0),
+        level: Some(6.5),
+    };
+    assert_eq!(shown[1].cs, Some(60.0));
+    assert_eq!(&shown[2..], [at_eleven; 3]);
 }
 
 // A Benchmark with no Marker beside it would read as a comparison the strip does not make.

@@ -31,4 +31,11 @@ impl CellBenchmarks {
         let share = (game_time - before.second()) / SECONDS_PER_MINUTE;
         Some(before.blended_with(after, share))
     }
+
+    /// The Benchmarks at the next whole minute, which change once a minute rather than
+    /// on every poll. A whole minute reads as itself.
+    #[must_use]
+    pub fn at_minute_ahead(&self, game_time: f64) -> Option<BenchmarksAt> {
+        self.at((game_time / SECONDS_PER_MINUTE).ceil() * SECONDS_PER_MINUTE)
+    }
 }
