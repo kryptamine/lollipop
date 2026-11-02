@@ -317,9 +317,10 @@ if no new game is running. There is no minimum version: a too-old app ends up
 with a Stale table. Debug builds never update themselves.
 
 A release starts once from `scripts/release-setup.sh`, which makes the updater
-key, the Apple credentials and the GitHub secrets. After that, a `vX.Y.Z` tag
-matching `tauri.conf.json` runs `.github/workflows/release.yml`, which leaves a
-draft on `lollipop-releases`. The real-match checklist runs on that draft's DMG,
+key, the Apple credentials and the GitHub secrets. After that, release-please
+keeps a release pull request open on `main`, with the next version from the
+Conventional Commits and its `CHANGELOG.md`. Merging it tags the version and runs
+`.github/workflows/release.yml`, which leaves a draft on `lollipop-releases`. The real-match checklist runs on that draft's DMG,
 and the draft is published by hand: the updater sees only published releases.
 
 Before a public release: Riot registration and product audit, a production key,

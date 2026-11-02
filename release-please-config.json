@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "c764d8c383af3665f85d39837f8ae31204b43497",
+  "include-component-in-tag": false,
+  "bump-minor-pre-major": true,
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "lollipop",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        { "type": "json", "path": "crates/app/tauri.conf.json", "jsonpath": "$.version" },
+        { "type": "toml", "path": "Cargo.toml", "jsonpath": "$.workspace.package.version" },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value == 'lollipop' || @.name.value == 'lollipop-core' || @.name.value == 'lollipop-collector')].version"
+        }
+      ]
+    }
+  }
+}
