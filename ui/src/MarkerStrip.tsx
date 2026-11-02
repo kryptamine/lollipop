@@ -16,7 +16,7 @@ export const MarkerStrip = ({
   <div id="marker-strip">
     <div class="metrics">
       <Metric label="CS" value={cs} marker={csMarker} />
-      <Metric label="Gold" value={goldEarned ?? '—'} marker={goldMarker} />
+      <Metric label="Gold earned" value={goldEarned ?? '—'} marker={goldMarker} />
       <Metric label="Level" value={level} marker={levelMarker} />
     </div>
     {notices.length > 0 && <Notices notices={notices} />}
