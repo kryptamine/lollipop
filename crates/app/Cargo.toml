@@ -11,8 +11,11 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 lollipop-core = { path = "../core" }
+# generate_context! expands tauri.conf.json's plugin config into serde_json values.
+serde_json = "1"
 tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
 tauri-plugin-autostart = "2"
+tauri-plugin-updater = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 block2 = "0.6"

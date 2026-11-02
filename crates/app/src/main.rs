@@ -7,19 +7,21 @@ mod overlay;
 mod platform;
 mod settings_store;
 mod table_downloads;
+mod updates;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use lollipop_core::delivery::TableFile;
 use lollipop_core::game_inputs::LOCKFILE_PATH;
-use lollipop_core::live::{poll, status_line, LiveGame, SystemClock, LIVE_CLIENT_URL};
+use lollipop_core::live::{poll, status_line, LiveUpdate, SystemClock, LIVE_CLIENT_URL};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
 use overlay::Overlay;
 use settings_store::SettingsStore;
 use tauri::menu::MenuItem;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Wry};
 use tauri_plugin_autostart::MacosLauncher;
+use updates::Updates;
 
 // Debug builds can point at scripts/mock-live-client.mjs and stand in another app
 // for the game; release builds ignore the environment.
@@ -44,18 +46,25 @@ async fn publish_live_client(
     benchmark_table: Arc<TableFile>,
 ) {
     let mut shown_status = status_line(None);
-    let on_update = move |update: Option<LiveGame>| {
-        let running = update.is_some();
+    let on_update = move |update: LiveUpdate| {
+        let LiveUpdate {
+            game,
+            between_games,
+        } = update;
+        let running = game.is_some();
         // Before the snapshot: the view draws no Widget until it knows its switch.
         store.publish_switches();
-        if let Some(game) = &update {
+        if let Some(game) = &game {
             let _ = app.emit("markers", game.markers);
             let _ = app.emit("notices", game.shown_notices());
             let _ = app.emit("timing-hints", &game.hints);
             let _ = app.emit("snapshot", &game.snapshot);
         }
         overlay.set_match_running(running);
-        let next_status = status_line(update.as_ref());
+        if let Some(updates) = app.try_state::<Updates>() {
+            updates.set_between_games(between_games);
+        }
+        let next_status = status_line(game.as_ref());
         if next_status != shown_status {
             let _ = status.set_text(&next_status);
             shown_status = next_status;
@@ -90,6 +99,7 @@ fn main() {
             MacosLauncher::LaunchAgent,
             None,
         ))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let window = overlay_window(app.handle());
             let game_bundle_id = dev_setting("LOLLIPOP_GAME_BUNDLE", GAME_BUNDLE_ID);
@@ -109,6 +119,10 @@ fn main() {
             let launch_on_login = store.read(|settings| settings.launch_at_login);
             let _ = launch_at_login::apply(app.handle(), launch_on_login);
             let status = menu_bar::install(app.handle(), store.clone())?;
+            // A debug build would replace itself with the latest release.
+            if !cfg!(debug_assertions) {
+                app.manage(Updates::new(app.handle().clone()));
+            }
             let delivered = app.path().app_data_dir()?.join("benchmark-table.json");
             let table = dev_setting("LOLLIPOP_BENCHMARK_TABLE", &delivered.to_string_lossy());
             let benchmark_table = Arc::new(TableFile::new(PathBuf::from(table)));

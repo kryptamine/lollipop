@@ -39,5 +39,14 @@
     "icon": [
       "icons/icon.png"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "REPLACE_WITH_UPDATER_PUBLIC_KEY",
+      "endpoints": [
+        "https://github.com/kryptamine/lollipop-releases/releases/latest/download/latest.json"
+      ],
+      "requireSignedVersion": true
+    }
   }
 }
