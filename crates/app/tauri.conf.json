@@ -42,7 +42,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "REPLACE_WITH_UPDATER_PUBLIC_KEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ3OEREQjkyQjZERjM5ODkKUldTSk9kKzJrdHVOUjZhMzk0SExDREYxTHBvc3c5R1VocU00UmtXTERaNUw2aDNoMjdTYWxPdFoK",
       "endpoints": [
         "https://github.com/kryptamine/lollipop-releases/releases/latest/download/latest.json"
       ],
