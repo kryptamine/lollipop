@@ -2,6 +2,7 @@
 
 mod clock;
 mod compared_game;
+mod comparison;
 mod dragon_pit;
 mod game_hints;
 mod game_markers;

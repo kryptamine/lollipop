@@ -1,5 +1,5 @@
+use super::comparison::Comparison;
 use super::held_marker::HeldMarker;
-use super::marker::Marker;
 use super::markers::Markers;
 use super::shown_benchmarks::ShownBenchmarks;
 use super::snapshot::Snapshot;
@@ -58,15 +58,19 @@ impl ComparedGame {
         let benchmarks = self.cell.at(game_time);
         let cs_benchmarks = benchmarks.filter(|_| self.has_cs_marker);
         let gold_benchmarks = benchmarks.filter(|_| snapshot.gold_earned.is_some());
-        let cs = cs_benchmarks.map(|b| cs_marker(snapshot.cs, &b));
+        let cs = cs_benchmarks.map(|b| cs_comparison(snapshot.cs, &b));
         let gold = gold_benchmarks
             .zip(snapshot.gold_earned)
-            .map(|(b, gold)| gold_marker(gold, &b));
-        let level = benchmarks.map(|b| Marker::of(f64::from(snapshot.level), b.level, LEVEL_ZONE));
+            .map(|(b, gold)| gold_comparison(gold, &b));
+        let level = benchmarks.map(|b| Comparison {
+            value: f64::from(snapshot.level),
+            benchmark: b.level,
+            neutral_zone: LEVEL_ZONE,
+        });
         let markers = Markers {
-            cs: self.cs.update(game_time, cs),
-            gold: self.gold.update(game_time, gold),
-            level: self.level.update(game_time, level),
+            cs: self.cs.update(cs),
+            gold: self.gold.update(gold),
+            level: self.level.update(level),
         };
         let shown = ShownBenchmarks {
             cs: cs_benchmarks.map(|b| b.cs),
@@ -77,12 +81,18 @@ impl ComparedGame {
     }
 }
 
-fn cs_marker(cs: u32, benchmarks: &BenchmarksAt) -> Marker {
-    let zone = (benchmarks.cs * ZONE_SHARE).max(CS_ZONE_FLOOR);
-    Marker::of(f64::from(cs) + CS_OFFSET, benchmarks.cs, zone)
+fn cs_comparison(cs: u32, benchmarks: &BenchmarksAt) -> Comparison {
+    Comparison {
+        value: f64::from(cs) + CS_OFFSET,
+        benchmark: benchmarks.cs,
+        neutral_zone: (benchmarks.cs * ZONE_SHARE).max(CS_ZONE_FLOOR),
+    }
 }
 
-fn gold_marker(gold: u32, benchmarks: &BenchmarksAt) -> Marker {
-    let zone = (benchmarks.gold * ZONE_SHARE).max(GOLD_ZONE_FLOOR);
-    Marker::of(f64::from(gold), benchmarks.gold, zone)
+fn gold_comparison(gold: u32, benchmarks: &BenchmarksAt) -> Comparison {
+    Comparison {
+        value: f64::from(gold),
+        benchmark: benchmarks.gold,
+        neutral_zone: (benchmarks.gold * ZONE_SHARE).max(GOLD_ZONE_FLOOR),
+    }
 }
