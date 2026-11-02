@@ -9,7 +9,8 @@ permissions:
 
 jobs:
   lint-and-test:
-    runs-on: macos-latest
+    # Pinned: jobs on macos-latest sat queued with no runner.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
