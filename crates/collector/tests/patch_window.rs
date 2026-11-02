@@ -39,7 +39,7 @@ fn ids(names: &[&str]) -> Vec<String> {
 }
 
 // The window is the last two patches. Everything of the old patch goes, child rows too:
-// the size estimate of about 14 GB rests on this.
+// the spec's size estimate rests on this.
 #[tokio::test]
 async fn a_new_patch_deletes_the_matches_it_pushes_out() {
     let scenario = scenario_on_patches(&[
