@@ -26,11 +26,11 @@ All gold a player has received in a game, starting gold included. Spending never
 _Avoid_: Net worth, total gold
 
 **Marker**:
-The glyph beside a metric: a green or red triangle when the player is above or below its Benchmark by more than the Neutral zone, and a muted dot within the Neutral zone.
+The glyph beside a metric: a green or red triangle when the player is above or below its Benchmark by more than the Neutral zone, and nothing within it.
 _Avoid_: Arrow, indicator, delta
 
 **Neutral zone**:
-The distance from a Benchmark within which a metric shows the muted neutral Marker in place of a triangle.
+The distance from a Benchmark within which a metric shows no triangle.
 _Avoid_: Threshold, tolerance
 
 **Objective schedule**:
