@@ -14,3 +14,4 @@ The repository is private on the free plan, so GitHub refuses branch protection 
 - The pre-push hook runs only `pnpm lint`, so Rust linters and tests depend on running `make check`.
 - The criterion in issue #30 that linters block a pull request stays unmet.
 - The workflow stays in the repository. Turning it back on means restoring its `pull_request` and `push` triggers, which should happen when a second person starts contributing or before the public phase in [ADR 0007](0007-two-release-phases.md). Required checks also need GitHub Pro or a public repository.
+- The release workflow is separate: a `v*` tag starts it, and it runs no checks, so a tag goes only on a commit that passed `make check`.
