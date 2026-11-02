@@ -185,10 +185,19 @@ RELEASES_REPO=kryptamine/lollipop-releases
 UPDATER_KEY="$HOME/.tauri/lollipop-updater.key"
 CONFIG=crates/app/tauri.conf.json
 
-if ! gh auth status >/dev/null 2>&1; then
-  printf "  %s✗ gh is not logged in: run gh auth login first%s\n" "$RED" "$RESET"
+fail() {
+  printf '  %s✗ %s%s\n' "$RED" "$1" "$RESET"
   exit 1
-fi
+}
+
+# need NAME stops the wizard before an empty value reaches a secret.
+need() { [[ -n "${!1}" ]] || fail "$1 is empty, run the wizard again"; }
+
+# A file read inside $(...) would not trip set -e, so read it here first.
+read_file() { [[ -f "$1" ]] || fail "no file at $1"; cat "$1"; }
+
+[[ -t 0 ]] || fail "run this in a terminal: it reads your answers"
+gh auth status >/dev/null 2>&1 || fail "gh is not logged in: run gh auth login first"
 
 banner "Lollipop public release setup"
 
@@ -202,7 +211,10 @@ elif confirm "Generate a new key pair at $UPDATER_KEY?"; then
   pnpm tauri signer generate --write-keys "$UPDATER_KEY"
 fi
 ask_secret TAURI_SIGNING_PRIVATE_KEY_PASSWORD "Type the key's password:"
-set_secret TAURI_SIGNING_PRIVATE_KEY "$(cat "$UPDATER_KEY")"
+UPDATER_PRIVATE_KEY=$(read_file "$UPDATER_KEY")
+read_file "$UPDATER_KEY.pub" >/dev/null
+need TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+set_secret TAURI_SIGNING_PRIVATE_KEY "$UPDATER_PRIVATE_KEY"
 set_secret TAURI_SIGNING_PRIVATE_KEY_PASSWORD "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
 node -e '
   const fs = require("fs");
@@ -234,11 +246,15 @@ step "Download the .cer and double-click it to add it to the login keychain."
 step "Keychain Access → My Certificates → right-click it → Export → .p12, set a password."
 ask CERTIFICATE_P12 "Path to the exported .p12:"
 ask_secret APPLE_CERTIFICATE_PASSWORD "The .p12 password:"
-set_secret APPLE_CERTIFICATE "$(base64 -i "${CERTIFICATE_P12/#\~/$HOME}")"
+CERTIFICATE_P12=${CERTIFICATE_P12/#\~/$HOME}
+read_file "$CERTIFICATE_P12" >/dev/null
+need APPLE_CERTIFICATE_PASSWORD
+set_secret APPLE_CERTIFICATE "$(base64 -i "$CERTIFICATE_P12")"
 set_secret APPLE_CERTIFICATE_PASSWORD "$APPLE_CERTIFICATE_PASSWORD"
 say "Identities in your keychain:"
 security find-identity -v -p codesigning | grep "Developer ID Application" || true
 ask APPLE_SIGNING_IDENTITY "Paste the quoted name, e.g. Developer ID Application: Name (TEAMID):"
+need APPLE_SIGNING_IDENTITY
 set_secret APPLE_SIGNING_IDENTITY "$APPLE_SIGNING_IDENTITY"
 pause
 
@@ -251,9 +267,12 @@ step "Copy the new key's Key ID."
 ask APPLE_API_KEY "Key ID:"
 step "Download the .p8: Apple offers it only once."
 ask API_KEY_P8 "Path to the downloaded AuthKey_*.p8:"
+API_KEY_P8_CONTENT=$(read_file "${API_KEY_P8/#\~/$HOME}")
+need APPLE_API_ISSUER
+need APPLE_API_KEY
 set_secret APPLE_API_ISSUER "$APPLE_API_ISSUER"
 set_secret APPLE_API_KEY "$APPLE_API_KEY"
-set_secret APPLE_API_KEY_P8 "$(cat "${API_KEY_P8/#\~/$HOME}")"
+set_secret APPLE_API_KEY_P8 "$API_KEY_P8_CONTENT"
 pause
 
 stage "Token to publish into $RELEASES_REPO"
@@ -262,6 +281,7 @@ step "Fine-grained token, resource owner kryptamine, expiry as you like."
 step "Repository access: Only select repositories → lollipop-releases."
 step "Permissions → Repository → Contents: Read and write. Generate and copy."
 ask_secret RELEASES_TOKEN "Paste the token:"
+need RELEASES_TOKEN
 set_secret RELEASES_TOKEN "$RELEASES_TOKEN"
 pause
 
