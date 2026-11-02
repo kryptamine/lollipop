@@ -238,8 +238,9 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   per-frame stats removed ([ADR 0015](../adr/0015-collector-archives-match-payloads.md)).
   PUUIDs are never stored.
 - **Throughput:** about 3.1 calls per kept match, about 23,000 matches a day, and
-  about 8 KB per match without the archive. That is about 5 GB for a four-week
-  window at full rate, and an estimated 10 to 15 GB with it.
+  about 8 KB per match without the archive and 34 KB more with it, measured on the
+  VPS. That is about 5 GB for a four-week window at full rate, and about 27 GB
+  with the archive.
 - **Retention:** raw matches outside the Patch window are deleted when it shifts.
   The collector shifts it at the first kept match of a new patch, taking the window
   as the two newest patches stored. The first build after that patch would shift it
