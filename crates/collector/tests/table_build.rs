@@ -13,7 +13,7 @@ mod support;
 use std::path::Path;
 
 use lollipop_collector::SeedTier;
-use lollipop_core::benchmarks::{BenchmarkTable, BenchmarksAt};
+use lollipop_core::benchmarks::{BenchmarkTable, BenchmarksAt, ScoresAt};
 use lollipop_core::game_inputs::{Role, Tier};
 use serde_json::json;
 use tempfile::TempDir;
@@ -54,6 +54,32 @@ fn the_app_reads_a_built_table() {
         Tier::Challenger,
     );
     assert!(master_plus.is_some());
+}
+
+// The scores fields are optional on both sides, so a name only one side uses would drop
+// every K/D/A Benchmark in silence rather than fail to read.
+#[test]
+fn the_app_reads_kills_deaths_and_assists_from_a_built_table() {
+    let mut bench = TableBench::new();
+    bench.add(
+        100,
+        &Played {
+            scores_per_minute: Some([1, 1, 2]),
+            ..AHRI
+        },
+    );
+    assert!(bench.build(&[]).output.status.success());
+
+    let ahri = BenchmarkTable::read(&bench.output())
+        .unwrap()
+        .into_cell("Ahri", Role::Top, Tier::Gold)
+        .unwrap();
+    let scores = ScoresAt {
+        kills: 1.5,
+        deaths: 1.5,
+        assists: 3.0,
+    };
+    assert_eq!(ahri.at(90.0).unwrap().scores, Some(scores));
 }
 
 // Frames run late, and the lag grows. Taking the nearest frame as the minute would put
