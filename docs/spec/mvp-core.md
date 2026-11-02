@@ -306,7 +306,7 @@ See [ADR 0007](../adr/0007-two-release-phases.md).
 
 | | Private phase (owner only) | Public phase (anyone else) |
 | --- | --- | --- |
-| Signature | Ad-hoc | Developer ID, notarized |
+| Signature | Ad-hoc | Developer ID, notarized; ad-hoc until the Apple account exists ([ADR 0012](../adr/0012-ad-hoc-releases-until-the-apple-account-exists.md)) |
 | Package | Local DMG | Universal DMG on `lollipop-releases` |
 | Update | `git pull` and rebuild | Tauri updater |
 | Build | Local | GitHub Actions on a tag |

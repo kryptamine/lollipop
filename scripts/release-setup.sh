@@ -180,7 +180,7 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 cd "$(dirname "$0")/.."
-TOTAL_STAGES=6
+TOTAL_STAGES=7
 RELEASES_REPO=kryptamine/lollipop-releases
 UPDATER_KEY="$HOME/.tauri/lollipop-updater.key"
 CONFIG=crates/app/tauri.conf.json
@@ -236,43 +236,62 @@ elif confirm "Create the public repository $RELEASES_REPO?"; then
 fi
 pause
 
+# Without the Apple Developer Program, builds go out ad-hoc signed (ADR 0012).
+stage "Apple Developer Program"
+APPLE_ENROLLED=no
+if confirm "Is your Apple ID enrolled in the paid Apple Developer Program?"; then
+  APPLE_ENROLLED=yes
+else
+  note "Skipping the certificate and notarization: releases will be ad-hoc signed."
+  note "Enroll at https://developer.apple.com/programs/enroll/ and run this again."
+fi
+pause
+
 stage "Developer ID Application certificate"
-note "Needs the Account Holder role on the Apple Developer account."
-step "Keychain Access → Certificate Assistant → Request a Certificate From a Certificate Authority."
-step "Enter your email, pick 'Saved to disk', save the .certSigningRequest."
-open_url "https://developer.apple.com/account/resources/certificates/add"
-step "Pick 'Developer ID Application', then the G2 Sub-CA, upload the request."
-step "Download the .cer and double-click it to add it to the login keychain."
-step "Keychain Access → My Certificates → right-click it → Export → .p12, set a password."
-ask CERTIFICATE_P12 "Path to the exported .p12:"
-ask_secret APPLE_CERTIFICATE_PASSWORD "The .p12 password:"
-CERTIFICATE_P12=${CERTIFICATE_P12/#\~/$HOME}
-read_file "$CERTIFICATE_P12" >/dev/null
-need APPLE_CERTIFICATE_PASSWORD
-set_secret APPLE_CERTIFICATE "$(base64 -i "$CERTIFICATE_P12")"
-set_secret APPLE_CERTIFICATE_PASSWORD "$APPLE_CERTIFICATE_PASSWORD"
-say "Identities in your keychain:"
-security find-identity -v -p codesigning | grep "Developer ID Application" || true
-ask APPLE_SIGNING_IDENTITY "Paste the quoted name, e.g. Developer ID Application: Name (TEAMID):"
-need APPLE_SIGNING_IDENTITY
-set_secret APPLE_SIGNING_IDENTITY "$APPLE_SIGNING_IDENTITY"
+if [[ $APPLE_ENROLLED == yes ]]; then
+  note "Needs the Account Holder role on the Apple Developer account."
+  step "Keychain Access → Certificate Assistant → Request a Certificate From a Certificate Authority."
+  step "Enter your email, pick 'Saved to disk', save the .certSigningRequest."
+  open_url "https://developer.apple.com/account/resources/certificates/add"
+  step "Pick 'Developer ID Application', then the G2 Sub-CA, upload the request."
+  step "Download the .cer and double-click it to add it to the login keychain."
+  step "Keychain Access → My Certificates → right-click it → Export → .p12, set a password."
+  ask CERTIFICATE_P12 "Path to the exported .p12:"
+  ask_secret APPLE_CERTIFICATE_PASSWORD "The .p12 password:"
+  CERTIFICATE_P12=${CERTIFICATE_P12/#\~/$HOME}
+  read_file "$CERTIFICATE_P12" >/dev/null
+  need APPLE_CERTIFICATE_PASSWORD
+  set_secret APPLE_CERTIFICATE "$(base64 -i "$CERTIFICATE_P12")"
+  set_secret APPLE_CERTIFICATE_PASSWORD "$APPLE_CERTIFICATE_PASSWORD"
+  say "Identities in your keychain:"
+  security find-identity -v -p codesigning | grep "Developer ID Application" || true
+  ask APPLE_SIGNING_IDENTITY "Paste the quoted name, e.g. Developer ID Application: Name (TEAMID):"
+  need APPLE_SIGNING_IDENTITY
+  set_secret APPLE_SIGNING_IDENTITY "$APPLE_SIGNING_IDENTITY"
+else
+  note "skipped: no Apple Developer Program"
+fi
 pause
 
 stage "App Store Connect API key for notarization"
-open_url "https://appstoreconnect.apple.com/access/integrations/api"
-step "Team Keys → Generate API Key (+), name it 'lollipop-notary', access 'Developer'."
-step "Copy the Issuer ID shown above the table."
-ask APPLE_API_ISSUER "Issuer ID:"
-step "Copy the new key's Key ID."
-ask APPLE_API_KEY "Key ID:"
-step "Download the .p8: Apple offers it only once."
-ask API_KEY_P8 "Path to the downloaded AuthKey_*.p8:"
-API_KEY_P8_CONTENT=$(read_file "${API_KEY_P8/#\~/$HOME}")
-need APPLE_API_ISSUER
-need APPLE_API_KEY
-set_secret APPLE_API_ISSUER "$APPLE_API_ISSUER"
-set_secret APPLE_API_KEY "$APPLE_API_KEY"
-set_secret APPLE_API_KEY_P8 "$API_KEY_P8_CONTENT"
+if [[ $APPLE_ENROLLED == yes ]]; then
+  open_url "https://appstoreconnect.apple.com/access/integrations/api"
+  step "Team Keys → Generate API Key (+), name it 'lollipop-notary', access 'Developer'."
+  step "Copy the Issuer ID shown above the table."
+  ask APPLE_API_ISSUER "Issuer ID:"
+  step "Copy the new key's Key ID."
+  ask APPLE_API_KEY "Key ID:"
+  step "Download the .p8: Apple offers it only once."
+  ask API_KEY_P8 "Path to the downloaded AuthKey_*.p8:"
+  API_KEY_P8_CONTENT=$(read_file "${API_KEY_P8/#\~/$HOME}")
+  need APPLE_API_ISSUER
+  need APPLE_API_KEY
+  set_secret APPLE_API_ISSUER "$APPLE_API_ISSUER"
+  set_secret APPLE_API_KEY "$APPLE_API_KEY"
+  set_secret APPLE_API_KEY_P8 "$API_KEY_P8_CONTENT"
+else
+  note "skipped: no Apple Developer Program"
+fi
 pause
 
 stage "Token to publish into $RELEASES_REPO"
