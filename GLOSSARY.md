@@ -5,6 +5,10 @@ compares, minute by minute, to how similar games usually go.
 
 ## Language
 
+**Advice**:
+A recommendation a model writes for the active player, such as a game plan or an item to buy.
+_Avoid_: Hint, tip, suggestion
+
 **Benchmark**:
 The expected value of a metric at a given game minute, derived from match statistics.
 _Avoid_: Target, goal, norm
@@ -43,6 +47,14 @@ _Avoid_: Outdated, expired
 **Timing hint**:
 A pop-up shown shortly before an objective spawns.
 _Avoid_: Timer, alert, notification
+
+**Trigger**:
+A moment in a game that asks for Advice, such as the loading screen or the player's death.
+_Avoid_: Event, hook
+
+**Voiceover**:
+Advice read aloud.
+_Avoid_: TTS, narration
 
 **Widget**:
 A self-contained element of the overlay, such as the strip of Markers or the Timing hint banner.

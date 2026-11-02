@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded in part by ADR 0013
 ---
 
 # Public and local Riot APIs only
