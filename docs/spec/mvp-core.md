@@ -229,7 +229,7 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 - **Stored per match:** per-participant minute values and the first kill time per
   objective. PUUIDs are never stored.
 - **Throughput:** about 3.1 calls per kept match, about 23,000 matches a day, and
-  about 22 KB per match. That is about 14 GB for a four-week window at full rate.
+  about 8 KB per match. That is about 5 GB for a four-week window at full rate.
 - **Retention:** raw matches outside the Patch window are deleted when it shifts.
   The collector shifts it at the first kept match of a new patch, taking the window
   as the two newest patches stored. The first build after that patch would shift it
@@ -243,7 +243,7 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
   they are PUUIDs. A rejected key, or an outage while reading seeds, ends the run for
   the service manager to restart. A single match that keeps failing is dropped.
 - **Backup:** a daily copy to object storage, kept 2 weeks, which a new host restores
-  before its first collection. About 2.6 GB
+  before its first collection. About 1 GB
   compressed at that size.
 
 ### Build and publish
@@ -357,14 +357,33 @@ These were not tested and can reopen a decision.
 
 ## Provisional values
 
-Recheck these on the first real collection. The pilot had 529 matches, pooled by
-role, on one region.
+Rechecked on the first real collection: 12,293 ranked solo matches from Silver,
+Gold and Platinum, patches 16.20 and 16.21, on one region. The pilot had 529
+matches, pooled by role.
 
-- Minimum n=100 and target n=300.
-- Neutral zones and the 30 s hold. The hold has never been measured.
-- The 20% publish gate.
-- The drift report's bar, set to the Neutral zone with no measurement behind it.
-- The 15 minute duration filter.
+Kept after the recheck:
+
+- **Minimum n=100 and target n=300.** At n=100, 601 Cells cover 91% of player
+  games, and the median at minute 20 varies by about 0.2 of the Neutral zone between
+  resamples. At n=300 that falls to 0.07, with 70% coverage.
+- **CS and gold Neutral zones.** From minute 15 on, 38–42% of players fall inside
+  them. At minute 5 the ±8 floor puts 67% inside for CS.
+- **The 15 minute filter.** Games of 15 to 20 minutes are 6% of those kept, and
+  dropping them would move the median at minutes 5 and 10 by under 0.01 of the zone.
+- **The drift report's bar.** At the full Neutral zone, 0 of 116 Cells with n≥100 on
+  both patches shift. At half the zone, 11 do.
+- **Stored size:** about 8 KB per match against the 22 KB estimate.
+
+Still open:
+
+- **The 30 s hold.** Over interpolated minute frames it cuts Marker changes from
+  1.4 to 1.1 per 10 minutes. Frames are a minute apart, so jitter within a minute is
+  not in that, and the hold needs a real match.
+- **The level Neutral zone.** ±1 holds 76% of players at minute 20 and 97% at
+  minute 5, so the level Marker is almost always neutral.
+- **The 20% publish gate.** Dropping 16.20 from the window now would lose 18% of
+  Cells, close to the gate. A build right after a patch ships may be refused while
+  the newer patch is thin.
 
 ## Out of scope
 
