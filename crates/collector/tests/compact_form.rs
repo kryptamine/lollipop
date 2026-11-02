@@ -58,6 +58,30 @@ async fn keeps_per_participant_values_for_every_frame() {
     assert_eq!(scenario.count("SELECT count(*) FROM participants"), 10);
 }
 
+// K/D/A Benchmarks read each frame's running count. A tower's kill credits nobody, and an
+// assist list missing from an event is no assists.
+#[tokio::test]
+async fn keeps_kills_deaths_and_assists_up_to_every_frame() {
+    let scenario = one_stored_game().await;
+    let connection = Connection::open(scenario.database()).unwrap();
+    let scores = |participant: u32, at_ms: u64| -> (i64, i64, i64) {
+        connection
+            .query_row(
+                "SELECT kills, deaths, assists FROM minute_scores
+                 WHERE participant = ? AND at_ms = ?",
+                [u64::from(participant), at_ms],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap()
+    };
+    assert_eq!(scores(4, 0), (0, 0, 0));
+    assert_eq!(scores(4, 60_011), (1, 1, 0));
+    assert_eq!(scores(3, 120_050), (0, 1, 0));
+    assert_eq!(scores(5, 120_050), (0, 0, 1));
+    assert_eq!(scores(7, 120_050), (0, 0, 0));
+    assert_eq!(scenario.count("SELECT count(*) FROM minute_scores"), 30);
+}
+
 // These get compared with the Objective schedule, where Elder runs on its own timer.
 #[tokio::test]
 async fn keeps_the_first_kill_time_per_objective() {

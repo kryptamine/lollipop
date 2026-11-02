@@ -66,6 +66,7 @@ fn late_frames_are_interpolated_to_the_exact_minute() {
             cs: index * 61,
             total_gold: 500 + index * 610,
             level: 1 + index,
+            scores: None,
         })
         .collect();
     for _ in 0..100 {
@@ -133,6 +134,37 @@ fn a_minute_holds_median_cs_and_gold_mean_level_and_n() {
             "n": 100,
         })
     );
+}
+
+// Counts this small have whole-number medians, so K/D/A is a mean. Games kept before
+// scores were count towards n and not towards scores_n, or they would drag the mean to 0.
+#[test]
+fn a_minute_holds_mean_kills_deaths_and_assists_of_games_with_scores() {
+    let mut bench = TableBench::new();
+    bench.add(
+        100,
+        &Played {
+            scores_per_minute: Some([1, 1, 2]),
+            ..AHRI
+        },
+    );
+    bench.add(
+        50,
+        &Played {
+            scores_per_minute: Some([3, 1, 0]),
+            ..AHRI
+        },
+    );
+    bench.add(20, &AHRI);
+
+    let build = bench.build(&[]);
+
+    let minute = build.minute("Ahri", "GOLD", 10).unwrap();
+    assert_eq!(minute["n"], json!(170));
+    assert_eq!(minute["kills"], json!(16.67));
+    assert_eq!(minute["deaths"], json!(10.0));
+    assert_eq!(minute["assists"], json!(13.33));
+    assert_eq!(minute["scores_n"], json!(150));
 }
 
 // A game ended at 20:30 says nothing about minute 21. Counting it would inflate n, and
@@ -628,6 +660,10 @@ async fn a_table_builds_from_what_the_collector_stored() {
             "total_gold": 8493.34,
             "level": 20.98,
             "n": 100,
+            "kills": 1.0,
+            "deaths": 1.0,
+            "assists": 0.0,
+            "scores_n": 100,
         })
     );
     let support = build.cell("Champion5", "GOLD").unwrap();

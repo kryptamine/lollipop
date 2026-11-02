@@ -57,6 +57,10 @@ fn insert(transaction: &Transaction<'_>, kept: &KeptMatch) -> rusqlite::Result<(
         "INSERT OR REPLACE INTO minute_values (match, participant, at_ms, cs, total_gold, level)
          VALUES (?, ?, ?, ?, ?, ?)",
     )?;
+    let mut scores = transaction.prepare(
+        "INSERT OR REPLACE INTO minute_scores (match, participant, at_ms, kills, deaths, assists)
+         VALUES (?, ?, ?, ?, ?, ?)",
+    )?;
     for row in &kept.minute_values {
         minute.execute(params![
             id,
@@ -66,6 +70,16 @@ fn insert(transaction: &Transaction<'_>, kept: &KeptMatch) -> rusqlite::Result<(
             row.total_gold,
             row.level
         ])?;
+        if let Some(score) = row.scores {
+            scores.execute(params![
+                id,
+                row.participant,
+                row.at_ms,
+                score.kills,
+                score.deaths,
+                score.assists
+            ])?;
+        }
     }
     let mut kill = transaction
         .prepare("INSERT INTO first_kills (match, objective, at_ms) VALUES (?, ?, ?)")?;

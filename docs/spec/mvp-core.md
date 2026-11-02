@@ -207,6 +207,9 @@ Built offline and shipped as one versioned file
 - **Contents per minute:** median CS, median `totalGold`, mean level and n. Timeline
   frames are aligned to the minute by linear interpolation, and a game counts only
   towards the minutes it reached.
+- **Optional per minute:** mean kills, deaths and assists, and `scores_n`, the games
+  kept with scores that they come from. Left out where no game has scores. Adding
+  them kept `schema_version` at 1, as the app ignores fields it does not read.
 - **Thin Cells:** the source (Cell or adjacent tiers) is chosen once per Cell at
   minute 20, so a Benchmark does not jump when its source changes. Adjacent tiers
   are pooled with the Cell's own games, and a Cell with no source has no entry. There
@@ -233,8 +236,8 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 - **Tier label:** the seed player's tier applies to all 10 participants.
 - **Private phase:** collects only the owner's tier and its neighbours, for about
   three times the games per Cell for the same calls.
-- **Stored per match:** per-participant minute values, the first kill time per
-  objective, and an archive of the Match-V5 bodies with player identity and
+- **Stored per match:** per-participant minute values with kills, deaths and assists
+  counted from `CHAMPION_KILL` events, the first kill time per objective, and an archive of the Match-V5 bodies with player identity and
   per-frame stats removed ([ADR 0015](../adr/0015-collector-archives-match-payloads.md)).
   PUUIDs are never stored.
 - **Throughput:** about 3.1 calls per kept match, about 23,000 matches a day, and

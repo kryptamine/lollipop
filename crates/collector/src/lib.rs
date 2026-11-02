@@ -12,6 +12,7 @@ mod clock;
 mod collect;
 mod collect_error;
 mod config;
+mod frame_scores;
 mod kept_match;
 mod kept_participant;
 mod league_entries;

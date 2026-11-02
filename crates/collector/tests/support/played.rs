@@ -10,6 +10,8 @@ pub struct Played {
     pub cs_per_minute: u32,
     pub gold_per_minute: u32,
     pub level: u32,
+    /// Kills, deaths and assists gained each minute, `None` for a game with no scores.
+    pub scores_per_minute: Option<[u32; 3]>,
 }
 
 impl Played {
@@ -23,6 +25,7 @@ impl Played {
             cs_per_minute: 7,
             gold_per_minute: 400,
             level: 10,
+            scores_per_minute: None,
         }
     }
 
@@ -33,6 +36,9 @@ impl Played {
                 cs: self.cs_per_minute * minute,
                 total_gold: self.gold_per_minute * minute,
                 level: self.level,
+                scores: self
+                    .scores_per_minute
+                    .map(|rates| rates.map(|rate| rate * minute)),
             })
             .collect()
     }

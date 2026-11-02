@@ -8,6 +8,8 @@ pub(super) struct AlignedMinute {
     pub(super) cs: f64,
     pub(super) total_gold: f64,
     pub(super) level: f64,
+    /// Kills, deaths and assists, when both frames around the minute have them.
+    pub(super) scores: Option<[f64; 3]>,
 }
 
 /// Interpolates to each whole minute the frames span. No minute follows the last frame,
@@ -47,11 +49,19 @@ fn between(
         let (from, to) = (f64::from(from), f64::from(to));
         (to - from).mul_add(share, from)
     };
+    let scores = before.scores.zip(after.scores).map(|(from, to)| {
+        [
+            blend(from.kills, to.kills),
+            blend(from.deaths, to.deaths),
+            blend(from.assists, to.assists),
+        ]
+    });
     AlignedMinute {
         minute,
         cs: blend(before.cs, after.cs),
         total_gold: blend(before.total_gold, after.total_gold),
         level: blend(before.level, after.level),
+        scores,
     }
 }
 

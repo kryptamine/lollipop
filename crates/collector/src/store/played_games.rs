@@ -2,6 +2,7 @@ use lollipop_core::game_inputs::Patch;
 use rusqlite::Row;
 
 use super::Store;
+use crate::frame_scores::FrameScores;
 use crate::minute_values::MinuteValues;
 use crate::table::PlayedGame;
 
@@ -9,10 +10,13 @@ use crate::table::PlayedGame;
 // `participants_by_champion` index gives this order with no sort spilling to disk. Riot
 // leaves `teamPosition` empty on a game with no role, and no Cell has that.
 const PLAYED_FRAMES: &str = "SELECT p.champion, p.role, m.tier, m.patch_major, m.patch_minor,
-        p.match, v.participant, v.at_ms, v.cs, v.total_gold, v.level
+        p.match, v.participant, v.at_ms, v.cs, v.total_gold, v.level,
+        s.kills, s.deaths, s.assists
     FROM participants p
     JOIN matches m ON m.id = p.match
     JOIN minute_values v ON v.match = p.match AND v.participant = p.participant
+    LEFT JOIN minute_scores s
+        ON s.match = v.match AND s.participant = v.participant AND s.at_ms = v.at_ms
     WHERE p.role IN ('TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY')
     ORDER BY p.champion, p.role, p.match, p.participant, v.at_ms";
 
@@ -88,5 +92,18 @@ fn frame_of(row: &Row<'_>) -> rusqlite::Result<MinuteValues> {
         cs: row.get(8)?,
         total_gold: row.get(9)?,
         level: row.get(10)?,
+        scores: scores_of(row)?,
     })
+}
+
+fn scores_of(row: &Row<'_>) -> rusqlite::Result<Option<FrameScores>> {
+    let kills: Option<u32> = row.get(11)?;
+    let Some(kills) = kills else {
+        return Ok(None);
+    };
+    Ok(Some(FrameScores {
+        kills,
+        deaths: row.get(12)?,
+        assists: row.get(13)?,
+    }))
 }

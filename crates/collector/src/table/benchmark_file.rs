@@ -43,4 +43,15 @@ pub(super) struct MinuteEntry {
     pub(super) total_gold: f64,
     pub(super) level: f64,
     pub(super) n: usize,
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    pub(super) scores: Option<ScoresEntry>,
+}
+
+/// Means over the games kept with scores, which `scores_n` counts.
+#[derive(Serialize)]
+pub(super) struct ScoresEntry {
+    pub(super) kills: f64,
+    pub(super) deaths: f64,
+    pub(super) assists: f64,
+    pub(super) scores_n: usize,
 }

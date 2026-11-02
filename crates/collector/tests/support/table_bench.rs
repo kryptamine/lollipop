@@ -74,6 +74,15 @@ impl TableBench {
                     params![id, frame.at_ms, frame.cs, frame.total_gold, frame.level],
                 )
                 .unwrap();
+            if let Some([kills, deaths, assists]) = frame.scores {
+                self.connection
+                    .execute(
+                        "INSERT INTO minute_scores (match, participant, at_ms, kills, deaths, assists)
+                         VALUES (?, 1, ?, ?, ?, ?)",
+                        params![id, frame.at_ms, kills, deaths, assists],
+                    )
+                    .unwrap();
+            }
         }
     }
 
