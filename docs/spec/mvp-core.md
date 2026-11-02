@@ -306,7 +306,7 @@ See [ADR 0007](../adr/0007-two-release-phases.md).
 
 | | Private phase (owner only) | Public phase (anyone else) |
 | --- | --- | --- |
-| Signature | Ad-hoc | Developer ID, notarized |
+| Signature | Ad-hoc | Developer ID, notarized; ad-hoc until the Apple account exists ([ADR 0012](../adr/0012-ad-hoc-releases-until-the-apple-account-exists.md)) |
 | Package | Local DMG | Universal DMG on `lollipop-releases` |
 | Update | `git pull` and rebuild | Tauri updater |
 | Build | Local | GitHub Actions on a tag |
@@ -314,7 +314,13 @@ See [ADR 0007](../adr/0007-two-release-phases.md).
 The updater checks at launch and after each game, never during one, and downloads
 in the background. A downloaded update installs with a relaunch after `GameEnd`
 if no new game is running. There is no minimum version: a too-old app ends up
-with a Stale table.
+with a Stale table. Debug builds never update themselves.
+
+A release starts once from `scripts/release-setup.sh`, which makes the updater
+key, the Apple credentials and the GitHub secrets. After that, a `vX.Y.Z` tag
+matching `tauri.conf.json` runs `.github/workflows/release.yml`, which leaves a
+draft on `lollipop-releases`. The real-match checklist runs on that draft's DMG,
+and the draft is published by hand: the updater sees only published releases.
 
 Before a public release: Riot registration and product audit, a production key,
 and a recheck of the seed's tier label against a lookup per participant.

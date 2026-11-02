@@ -1,0 +1,130 @@
+name: Release
+
+# A universal DMG and the signed updater manifest, left as a draft until the
+# real-match checklist passes. Ad-hoc signed until the Apple secrets exist (ADR 0012).
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  RELEASES_REPO: kryptamine/lollipop-releases
+  BUNDLE_DIR: target/universal-apple-darwin/release/bundle
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the tag and the updater key
+        run: |
+          version=$(node -p 'require("./crates/app/tauri.conf.json").version')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match version $version in tauri.conf.json"
+            exit 1
+          fi
+          pubkey=$(node -p 'require("./crates/app/tauri.conf.json").plugins.updater.pubkey')
+          if [ "$pubkey" = "REPLACE_WITH_UPDATER_PUBLIC_KEY" ]; then
+            echo "::error::the updater public key is a placeholder, run scripts/release-setup.sh"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - run: pnpm install --frozen-lockfile
+      - name: Choose the signature
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then signed=true; else signed=false; fi
+          echo "SIGNED=$signed" >> "$GITHUB_ENV"
+          echo "DMG=$BUNDLE_DIR/dmg/Lollipop_${VERSION}_universal.dmg" >> "$GITHUB_ENV"
+      - name: Write the App Store Connect key
+        if: env.SIGNED == 'true'
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          key_path="$RUNNER_TEMP/AuthKey.p8"
+          printf '%s' "$APPLE_API_KEY_P8" > "$key_path"
+          echo "APPLE_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+      # Tauri signs with the Developer ID, then notarizes and staples the app.
+      - name: Build the universal app and DMG, notarized
+        if: env.SIGNED == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: >-
+          pnpm tauri build --target universal-apple-darwin --bundles app,dmg
+          --config '{"bundle":{"createUpdaterArtifacts":true}}'
+      # "-" is codesign's ad-hoc identity. Empty Apple variables would make Tauri
+      # try a Developer ID, so this step sets none.
+      - name: Build the universal app and DMG, ad-hoc signed
+        if: env.SIGNED != 'true'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: >-
+          pnpm tauri build --target universal-apple-darwin --bundles app,dmg
+          --config '{"bundle":{"createUpdaterArtifacts":true,"macOS":{"signingIdentity":"-"}}}'
+      # The DMG is a download of its own, so Gatekeeper checks it too.
+      - name: Notarize and staple the DMG
+        if: env.SIGNED == 'true'
+        env:
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          dmg="$DMG"
+          xcrun notarytool submit "$dmg" --wait \
+            --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER"
+          xcrun stapler staple "$dmg"
+          xcrun stapler validate "$dmg"
+          image_dir=$(mktemp -d)
+          hdiutil attach -nobrowse -readonly -mountpoint "$image_dir" "$dmg"
+          spctl --assess --type execute --verbose=2 "$image_dir/Lollipop.app"
+          hdiutil detach "$image_dir"
+      # A universal build serves both architectures from one archive.
+      - name: Write the updater manifest
+        run: |
+          archive="$BUNDLE_DIR/macos/Lollipop.app.tar.gz"
+          url="https://github.com/$RELEASES_REPO/releases/download/v$VERSION/Lollipop.app.tar.gz"
+          node -e '
+            const [version, signature, url] = process.argv.slice(1);
+            const platform = { signature, url };
+            const manifest = {
+              version,
+              pub_date: new Date().toISOString(),
+              platforms: { "darwin-aarch64": platform, "darwin-x86_64": platform },
+            };
+            require("fs").writeFileSync("latest.json", JSON.stringify(manifest, null, 2));
+          ' "$VERSION" "$(cat "$archive.sig")" "$url"
+          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
+      # The updater reads only published releases, so a draft reaches no one.
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          notes=""
+          if [ "$SIGNED" != true ]; then
+            notes='Ad-hoc signed: after copying the app to Applications, run `xattr -dr com.apple.quarantine /Applications/Lollipop.app` once.'
+          fi
+          gh release create "v$VERSION" --repo "$RELEASES_REPO" --draft \
+            --title "Lollipop $VERSION" --notes "$notes" \
+            "$DMG" "$ARCHIVE" latest.json

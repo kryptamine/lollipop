@@ -9,6 +9,7 @@ use super::game_notices::notices_of;
 use super::gold_earned::GoldEarned;
 use super::inputs_of_game::InputsOfGame;
 use super::live_game::LiveGame;
+use super::live_update::LiveUpdate;
 use super::notice::Notice;
 use super::payload::{AllGameData, Player};
 use super::snapshot::Snapshot;
@@ -19,7 +20,7 @@ use crate::game_inputs::GameInputs;
 pub const LIVE_CLIENT_URL: &str = "https://127.0.0.1:2999/liveclientdata/allgamedata";
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
 
-/// Never returns. `None` means no match the player is part of is running.
+/// Never returns.
 /// # Panics
 /// If the HTTP client cannot be built, which only a broken TLS backend causes.
 pub async fn poll(
@@ -27,7 +28,7 @@ pub async fn poll(
     lockfile: &Path,
     benchmark_table: &TableFile,
     clock: &impl Clock,
-    mut on_update: impl FnMut(Option<LiveGame>) + Send,
+    mut on_update: impl FnMut(LiveUpdate) + Send,
 ) {
     // League serves loopback HTTPS with a self-signed certificate, and this client
     // only ever talks to the fixed loopback URL and the lockfile's loopback port.
@@ -57,7 +58,11 @@ pub async fn poll(
             Some(data) => game.update(data).await,
             None => None,
         };
-        on_update(update);
+        let between_games = data.is_none() && !game.inputs.holds_game();
+        on_update(LiveUpdate {
+            game: update,
+            between_games,
+        });
         // A failed poll does not end a game, so a game still held rules out a swap too.
         if !data.is_some_and(|data| data.match_running()) && !game.inputs.holds_game() {
             benchmark_table.swap_staged();

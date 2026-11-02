@@ -10,6 +10,7 @@ mod gold_earned;
 mod held_marker;
 mod inputs_of_game;
 mod live_game;
+mod live_update;
 mod marker;
 mod markers;
 mod notice;
@@ -24,6 +25,7 @@ mod timing_hint;
 
 pub use clock::{Clock, SystemClock};
 pub use live_game::LiveGame;
+pub use live_update::LiveUpdate;
 pub use marker::Marker;
 pub use markers::Markers;
 pub use objective_schedule::ObjectiveSchedule;

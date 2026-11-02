@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use lollipop_core::delivery::TableFile;
-use lollipop_core::live::{poll, LiveGame, Snapshot};
+use lollipop_core::live::{poll, LiveGame, LiveUpdate, Snapshot};
 use tokio::sync::mpsc;
 
 use super::game_clock::GameClock;
@@ -24,8 +24,8 @@ pub fn start_polling(
             &no_client,
             &TableFile::new(NO_TABLE.into()),
             &clock,
-            move |update| {
-                let snapshot = update.map(|game| game.snapshot);
+            move |update: LiveUpdate| {
+                let snapshot = update.game.map(|game| game.snapshot);
                 let _ = updates.send((stamp.now(), snapshot));
             },
         )
@@ -56,8 +56,8 @@ pub fn start_watching(url: String, lockfile: &Path) -> mpsc::UnboundedReceiver<O
             &lockfile,
             &TableFile::new(NO_TABLE.into()),
             &clock,
-            move |update| {
-                let _ = updates.send(update);
+            move |update: LiveUpdate| {
+                let _ = updates.send(update.game);
             },
         )
         .await;
@@ -87,10 +87,41 @@ pub fn start_playing_on(
     let lockfile = lockfile.to_path_buf();
     tokio::spawn(async move {
         let stamp = clock.clone();
-        poll(&url, &lockfile, &table, &clock, move |update| {
-            let _ = updates.send((stamp.now(), update));
-        })
+        poll(
+            &url,
+            &lockfile,
+            &table,
+            &clock,
+            move |update: LiveUpdate| {
+                let _ = updates.send((stamp.now(), update.game));
+            },
+        )
         .await;
     });
     received
+}
+
+/// Serves `bodies` in order and returns, poll by poll, whether each saw League
+/// between games.
+pub async fn between_games_over(bodies: Vec<Option<&str>>) -> Vec<bool> {
+    let polls = bodies.len();
+    let url = serve_in_order(bodies.into_iter().map(|b| b.map(String::from)).collect()).await;
+    let (updates, mut received) = mpsc::unbounded_channel();
+    tokio::spawn(async move {
+        poll(
+            &url,
+            Path::new("/nonexistent/lockfile"),
+            &TableFile::new(NO_TABLE.into()),
+            &GameClock::starting_at(0.0),
+            move |update: LiveUpdate| {
+                let _ = updates.send(update.between_games);
+            },
+        )
+        .await;
+    });
+    let mut seen = Vec::new();
+    for _ in 0..polls {
+        seen.push(received.recv().await.unwrap());
+    }
+    seen
 }
