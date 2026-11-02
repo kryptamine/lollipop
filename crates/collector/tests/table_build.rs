@@ -45,6 +45,7 @@ fn the_app_reads_a_built_table() {
             cs: 10.5,
             gold: 600.0,
             level: 10.0,
+            scores: None,
         })
     );
     let master_plus = BenchmarkTable::read(&bench.output()).unwrap().into_cell(

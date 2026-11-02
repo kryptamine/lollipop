@@ -8,4 +8,5 @@ pub struct Markers {
     pub cs: Option<Marker>,
     pub gold: Option<Marker>,
     pub level: Option<Marker>,
+    pub scores: Option<Marker>,
 }

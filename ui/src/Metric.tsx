@@ -5,7 +5,7 @@ type MetricProps = {
   label: string;
   value: number | string;
   marker: MarkerState | null;
-  benchmark: number | null;
+  benchmark: string | undefined;
 };
 
 export const Metric = ({ label, value, marker, benchmark }: MetricProps) => (
@@ -17,6 +17,6 @@ export const Metric = ({ label, value, marker, benchmark }: MetricProps) => (
       <Marker state={marker} />
     </td>
     <td>{value}</td>
-    <td class="metric-benchmark">{benchmark !== null && Math.round(benchmark)}</td>
+    <td class="metric-benchmark">{benchmark}</td>
   </tr>
 );

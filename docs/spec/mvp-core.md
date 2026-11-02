@@ -61,9 +61,10 @@ The overlay is shown only when the game is frontmost and the match is running:
 
 ## Marker strip
 
-A table at the top left, with a row each for CS, Gold earned and level and the
-columns Stat, Marker, Current and Benchmark, such as `Gold earned ▼ 2000 2450`. The gold label reads "Gold earned",
-so the value cannot pass for current gold or net worth. A neutral Marker is a muted
+A table at the top left, with a row each for K/D/A, CS, Gold earned and level and
+the columns Stat, Marker, Current and Benchmark, such as `Gold earned ▼ 2000 2450`.
+The gold label reads "Gold earned", so the value cannot pass for current gold or
+net worth. A neutral Marker is a muted
 dot in the same slot, so "on pace" differs from "no Benchmark" and a state change
 never shifts the layout. With no Benchmark the Marker and the Benchmark are hidden
 and the value stays.
@@ -73,6 +74,7 @@ and the value stays.
 | CS | API value, floored to 10 | API value + 5 | Median | ±8% of Benchmark, at least ±8 |
 | Gold | Gold earned, counted live | Same | Median of `totalGold` | ±8% of Benchmark, at least ±150 |
 | Level | API value | Same | Mean | ±1 |
+| K/D/A | API values, as `3 / 1 / 4` | Kills + assists − deaths | Mean of each, shown whole | ±2 |
 
 - A Marker turns to a triangle on the first poll past the Neutral zone, and
   keeps it until the value is back within half of the zone or past the other edge.
@@ -82,6 +84,9 @@ and the value stays.
 - Benchmarks are read by linear interpolation between minutes.
 - A minute with n<100 has no Marker.
 - A support keeps the CS value and has no CS Marker.
+- K/D/A counts only games kept with scores, as `scores_n`, and a minute where that
+  is below 100 has no K/D/A Marker. A payload without scores has no K/D/A row.
+  The ±2 zone is untested against real spread.
 
 ### Counting Gold earned
 

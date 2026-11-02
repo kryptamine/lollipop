@@ -50,6 +50,19 @@ struct Item {
 #[serde(rename_all = "camelCase")]
 pub(super) struct Scores {
     pub(super) creep_score: u32,
+    kills: Option<u32>,
+    deaths: Option<u32>,
+    assists: Option<u32>,
+}
+
+impl Scores {
+    pub(super) fn player_scores(&self) -> Option<super::scores::Scores> {
+        Some(super::scores::Scores {
+            kills: self.kills?,
+            deaths: self.deaths?,
+            assists: self.assists?,
+        })
+    }
 }
 
 #[derive(Deserialize)]
