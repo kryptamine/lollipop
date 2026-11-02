@@ -15,6 +15,12 @@ export type Markers = {
   level: MarkerState | null;
 };
 
+export type Benchmarks = {
+  cs: number | null;
+  gold: number | null;
+  level: number | null;
+};
+
 export type TimingHintState = {
   objective: string;
   countdown: string;
@@ -49,6 +55,13 @@ export const onSnapshot = (handler: (snapshot: Snapshot) => void): (() => void) 
 export const onMarkers = (handler: (markers: Markers) => void): (() => void) =>
   stopWith(
     listen<Markers>('markers', ({ payload }) => {
+      handler(payload);
+    }),
+  );
+
+export const onBenchmarks = (handler: (benchmarks: Benchmarks) => void): (() => void) =>
+  stopWith(
+    listen<Benchmarks>('benchmarks', ({ payload }) => {
       handler(payload);
     }),
   );

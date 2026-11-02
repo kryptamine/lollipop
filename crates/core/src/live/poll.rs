@@ -111,11 +111,12 @@ impl CurrentGame<'_> {
                 player.item_counts(),
             ),
         };
-        let markers = self.markers.at(data.game_time(), &snapshot);
+        let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
         Some(LiveGame {
             snapshot,
             inputs,
             markers,
+            benchmarks,
             hints: self.hints.at(data),
             notices: Arc::clone(&self.notices),
             game_time: data.game_time(),

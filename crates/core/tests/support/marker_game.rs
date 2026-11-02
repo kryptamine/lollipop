@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use lollipop_core::live::Markers;
+use lollipop_core::live::{LiveGame, Markers, ShownBenchmarks};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 
@@ -139,6 +139,21 @@ impl MarkerBench {
         beats: Vec<Beat>,
         before_serving: impl Fn(usize) + Send + 'static,
     ) -> Vec<Markers> {
+        self.over(beats, before_serving, |game| game.markers).await
+    }
+
+    /// The Benchmarks shown beside the Markers at each moment.
+    pub async fn benchmarks_for(&self, moments: &[Moment]) -> Vec<ShownBenchmarks> {
+        let beats = moments.iter().copied().map(Beat::Running).collect();
+        self.over(beats, |_| {}, |game| game.benchmarks).await
+    }
+
+    async fn over<T: Default>(
+        &self,
+        beats: Vec<Beat>,
+        before_serving: impl Fn(usize) + Send + 'static,
+        read: impl Fn(&LiveGame) -> T,
+    ) -> Vec<T> {
         let seat = self.seat;
         let in_order = beats.clone();
         let served = Mutex::new(beats.into_iter().enumerate());
@@ -159,7 +174,7 @@ impl MarkerBench {
             // Without this, "no Markers" would also pass when the whole game went missing,
             // and the spec keeps the values on screen when there is nothing to compare.
             assert_eq!(update.is_some(), matches!(beat, Beat::Running(_)));
-            received.push(update.map_or_else(Markers::default, |game| game.markers));
+            received.push(update.as_ref().map_or_else(T::default, &read));
         }
         received
     }

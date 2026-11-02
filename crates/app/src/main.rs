@@ -56,6 +56,7 @@ async fn publish_live_client(
         store.publish_switches();
         if let Some(game) = &game {
             let _ = app.emit("markers", game.markers);
+            let _ = app.emit("benchmarks", game.benchmarks);
             let _ = app.emit("notices", game.shown_notices());
             let _ = app.emit("timing-hints", &game.hints);
             let _ = app.emit("snapshot", &game.snapshot);
