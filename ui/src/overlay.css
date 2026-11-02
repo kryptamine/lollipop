@@ -107,9 +107,3 @@ body {
   color: #ff5c5c;
   content: '▼';
 }
-
-.marker-neutral::before {
-  color: #9aa6b2;
-  content: '●';
-  font-size: 0.7em;
-}
