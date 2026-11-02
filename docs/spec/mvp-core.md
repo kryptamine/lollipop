@@ -61,11 +61,12 @@ The overlay is shown only when the game is frontmost and the match is running:
 
 ## Marker strip
 
-One line at the top left: label, value and Marker for CS, Gold earned and level.
-The gold label reads "Gold earned", so the value cannot pass for current gold or
-net worth. A neutral Marker is a muted dot in the same slot, so "on pace" differs
-from "no Benchmark" and a state change never shifts the layout. With
-no Benchmark the Marker is hidden and the value stays.
+One line at the top left: label, value, Marker and Benchmark for CS, Gold earned
+and level, such as `Gold earned 2000 ▼ 2450`. The gold label reads "Gold earned",
+so the value cannot pass for current gold or net worth. A neutral Marker is a muted
+dot in the same slot, so "on pace" differs from "no Benchmark" and a state change
+never shifts the layout. With no Benchmark the Marker and the Benchmark are hidden
+and the value stays.
 
 | Metric | Shown value | Compared value | Benchmark | Neutral zone |
 | --- | --- | --- | --- | --- |
@@ -74,6 +75,8 @@ no Benchmark the Marker is hidden and the value stays.
 | Level | API value | Same | Mean | ±1 |
 
 - A new Marker state shows only after holding for 30 s of game time.
+- The shown Benchmark is the one at the current game time, rounded to a whole
+  number. It does not wait out the hold.
 - Benchmarks are read by linear interpolation between minutes.
 - A minute with n<100 has no Marker.
 - A support keeps the CS value and has no CS Marker.

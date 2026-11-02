@@ -1,6 +1,7 @@
 use super::held_marker::HeldMarker;
 use super::marker::Marker;
 use super::markers::Markers;
+use super::shown_benchmarks::ShownBenchmarks;
 use super::snapshot::Snapshot;
 use crate::benchmarks::{BenchmarkTable, BenchmarksAt, CellBenchmarks};
 use crate::game_inputs::{ClientInputs, GameInputs, Role, TierReading};
@@ -53,20 +54,26 @@ impl ComparedGame {
         })
     }
 
-    pub(super) fn at(&mut self, game_time: f64, snapshot: &Snapshot) -> Markers {
+    pub(super) fn at(&mut self, game_time: f64, snapshot: &Snapshot) -> (Markers, ShownBenchmarks) {
         let benchmarks = self.cell.at(game_time);
-        let cs = benchmarks
-            .filter(|_| self.has_cs_marker)
-            .map(|b| cs_marker(snapshot.cs, &b));
-        let gold = benchmarks
+        let cs_benchmarks = benchmarks.filter(|_| self.has_cs_marker);
+        let gold_benchmarks = benchmarks.filter(|_| snapshot.gold_earned.is_some());
+        let cs = cs_benchmarks.map(|b| cs_marker(snapshot.cs, &b));
+        let gold = gold_benchmarks
             .zip(snapshot.gold_earned)
             .map(|(b, gold)| gold_marker(gold, &b));
         let level = benchmarks.map(|b| Marker::of(f64::from(snapshot.level), b.level, LEVEL_ZONE));
-        Markers {
+        let markers = Markers {
             cs: self.cs.update(game_time, cs),
             gold: self.gold.update(game_time, gold),
             level: self.level.update(game_time, level),
-        }
+        };
+        let shown = ShownBenchmarks {
+            cs: cs_benchmarks.map(|b| b.cs),
+            gold: gold_benchmarks.map(|b| b.gold),
+            level: benchmarks.map(|b| b.level),
+        };
+        (markers, shown)
     }
 }
 

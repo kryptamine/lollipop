@@ -68,6 +68,11 @@ body {
   color: #9aa6b2;
 }
 
+.metric-benchmark {
+  color: #9aa6b2;
+  font-weight: 500;
+}
+
 .marker {
   display: inline-block;
   width: 1em;
