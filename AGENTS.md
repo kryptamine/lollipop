@@ -118,6 +118,7 @@ make install   # install the view's dependencies
 make dev       # run the app against the real League client
 make dev-mock  # run the app against a fake Live Client Data API
 make build     # build the release bundle
+make dmg       # package an ad-hoc signed DMG for this Mac
 make format    # format the Rust and the view
 make lint      # run every linter
 make test      # run the tests
