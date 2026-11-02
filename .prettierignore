@@ -6,3 +6,5 @@ docs/
 pnpm-lock.yaml
 scripts/
 target/
+# release-please rewrites it in its own format on every release.
+.release-please-manifest.json
