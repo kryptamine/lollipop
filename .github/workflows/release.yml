@@ -5,6 +5,11 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,17 +21,20 @@ concurrency:
 env:
   RELEASES_REPO: kryptamine/lollipop-releases
   BUNDLE_DIR: target/universal-apple-darwin/release/bundle
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   release:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - name: Check the tag and the updater key
         run: |
           version=$(node -p 'require("./crates/app/tauri.conf.json").version')
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::tag $GITHUB_REF_NAME does not match version $version in tauri.conf.json"
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::tag $TAG does not match version $version in tauri.conf.json"
             exit 1
           fi
           pubkey=$(node -p 'require("./crates/app/tauri.conf.json").plugins.updater.pubkey')
