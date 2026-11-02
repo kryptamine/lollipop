@@ -33,6 +33,13 @@ CREATE TABLE IF NOT EXISTS first_kills (
   PRIMARY KEY (match, objective)
 ) WITHOUT ROWID;
 
+-- zstd JSON as Match-V5 answered it, less player identity and per-frame stats.
+CREATE TABLE IF NOT EXISTS match_payloads (
+  match INTEGER PRIMARY KEY REFERENCES matches (id) ON DELETE CASCADE,
+  game BLOB NOT NULL,
+  timeline BLOB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS pending_matches (
   id INTEGER PRIMARY KEY,
   match_id TEXT NOT NULL UNIQUE,

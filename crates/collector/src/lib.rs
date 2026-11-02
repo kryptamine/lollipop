@@ -7,6 +7,7 @@
 )]
 
 mod app_rate_limit;
+mod archived_payloads;
 mod clock;
 mod collect;
 mod collect_error;

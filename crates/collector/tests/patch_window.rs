@@ -61,6 +61,7 @@ async fn a_new_patch_deletes_the_matches_it_pushes_out() {
     assert_eq!(scenario.count("SELECT count(*) FROM participants"), 20);
     assert_eq!(scenario.count("SELECT count(*) FROM minute_values"), 60);
     assert_eq!(scenario.count("SELECT count(*) FROM first_kills"), 10);
+    assert_eq!(scenario.count("SELECT count(*) FROM match_payloads"), 2);
 }
 
 // A hotfix keeps the patch number, so it must not read as a new patch.
