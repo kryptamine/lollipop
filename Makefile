@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-mock build format lint test check deploy
+.PHONY: help install dev dev-mock build dmg format lint test check deploy
 
 MOCK_URL := http://127.0.0.1:2998/
 MOCK_LOCKFILE := /tmp/lollipop-mock-lockfile
@@ -20,6 +20,9 @@ dev-mock: ## Run the app against scripts/mock-live-client.mjs, shown while this 
 build: ## Build the release bundle
 	pnpm tauri build
 
+dmg: ## Package an ad-hoc signed DMG for this Mac
+	scripts/package-dmg.sh
+
 format: ## Format the Rust and the view
 	cargo fmt
 	pnpm format
@@ -30,7 +33,7 @@ lint: ## Run every linter, Rust and view
 	cargo clippy --workspace --all-targets -- -D warnings
 	scripts/check-boundaries.sh
 	uvx --python 3.14 ansible-lint==26.10.1 deploy/playbook.yml
-	uvx --from shellcheck-py==0.11.0.1 shellcheck deploy/scripts/*
+	uvx --from shellcheck-py==0.11.0.1 shellcheck scripts/*.sh deploy/scripts/*
 
 test: ## Run the tests
 	cargo test --workspace
