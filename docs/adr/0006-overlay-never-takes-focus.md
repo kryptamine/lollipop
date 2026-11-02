@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded in part by ADR 0014
 ---
 
 # The overlay never takes focus
