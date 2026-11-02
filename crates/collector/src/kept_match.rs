@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use lollipop_core::game_inputs::Patch;
 
+use crate::archived_payloads::ArchivedPayloads;
 use crate::kept_participant::KeptParticipant;
 use crate::match_payload::MatchPayload;
 use crate::minute_values::MinuteValues;
@@ -10,7 +11,7 @@ use crate::timeline_payload::{Event, TimelinePayload};
 
 pub(crate) const ELDER_DRAGON: &str = "ELDER_DRAGON";
 
-/// The compact form of a match. It has no field for a PUUID, which is never stored.
+/// The compact form of a match. No field holds a PUUID, which is never stored.
 pub(crate) struct KeptMatch {
     pub(crate) match_id: String,
     pub(crate) tier: String,
@@ -18,6 +19,7 @@ pub(crate) struct KeptMatch {
     pub(crate) participants: Vec<KeptParticipant>,
     pub(crate) minute_values: Vec<MinuteValues>,
     pub(crate) first_kills: BTreeMap<String, u64>,
+    pub(crate) archived: ArchivedPayloads,
 }
 
 impl KeptMatch {
@@ -26,6 +28,7 @@ impl KeptMatch {
         patch: Patch,
         game: MatchPayload,
         timeline: &TimelinePayload,
+        archived: ArchivedPayloads,
     ) -> Self {
         let participants = game
             .info
@@ -43,6 +46,7 @@ impl KeptMatch {
             participants: participants.collect(),
             minute_values: minute_values(timeline),
             first_kills: first_kills(timeline),
+            archived,
         }
     }
 }

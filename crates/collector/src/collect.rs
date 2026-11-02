@@ -1,5 +1,9 @@
 use std::convert::Infallible;
 
+use serde::Deserialize;
+use serde_json::Value;
+
+use crate::archived_payloads::ArchivedPayloads;
 use crate::kept_match::KeptMatch;
 use crate::match_payload::{MatchPayload, RANKED_SOLO_QUEUE};
 use crate::riot_api::RiotApi;
@@ -9,6 +13,8 @@ use crate::timeline_payload::TimelinePayload;
 use crate::{Clock, CollectError, Config};
 
 const MATCHES_PER_SEED: usize = 3;
+const MATCH_CALL: &str = "match-v5:match";
+const TIMELINE_CALL: &str = "match-v5:timeline";
 const IDS_PER_SEED: u32 = 20;
 // About the Patch window: 35 days spent 17% of fetches on patches already out of it.
 const LOOKBACK_MS: u64 = 28 * 24 * 60 * 60 * 1000;
@@ -88,16 +94,27 @@ async fn fetch_kept(
 ) -> Result<Option<KeptMatch>, CollectError> {
     let id = &pending.match_id;
     let game_path = format!("/lol/match/v5/matches/{id}");
-    let game: Option<MatchPayload> = api.regional(store, "match-v5:match", &game_path).await?;
-    let Some(game) = game else {
+    let game_body: Option<Value> = api.regional(store, MATCH_CALL, &game_path).await?;
+    let Some(game_body) = game_body else {
         return Ok(None);
     };
+    let game: MatchPayload = parsed(&game_body, MATCH_CALL)?;
     let Some(patch) = game.patch_if_kept(store.patch_window_floor()?) else {
         return Ok(None);
     };
     let timeline_path = format!("/lol/match/v5/matches/{id}/timeline");
-    let timeline: Option<TimelinePayload> = api
-        .regional(store, "match-v5:timeline", &timeline_path)
-        .await?;
-    Ok(timeline.map(|timeline| KeptMatch::new(pending, patch, game, &timeline)))
+    let timeline_body: Option<Value> = api.regional(store, TIMELINE_CALL, &timeline_path).await?;
+    let Some(timeline_body) = timeline_body else {
+        return Ok(None);
+    };
+    let timeline: TimelinePayload = parsed(&timeline_body, TIMELINE_CALL)?;
+    let archived =
+        ArchivedPayloads::new(game_body, timeline_body).map_err(CollectError::Archive)?;
+    Ok(Some(KeptMatch::new(
+        pending, patch, game, &timeline, archived,
+    )))
+}
+
+fn parsed<'a, T: Deserialize<'a>>(body: &'a Value, call: &'static str) -> Result<T, CollectError> {
+    T::deserialize(body).map_err(|_| CollectError::Unreadable(call))
 }

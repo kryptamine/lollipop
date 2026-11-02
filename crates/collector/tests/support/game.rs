@@ -141,6 +141,8 @@ fn frame(timestamp: u32, index: u32, events: &[Value]) -> Value {
                 "totalGold": 500 + 100 * id * index,
                 "currentGold": 1,
                 "level": 1 + index,
+                "championStats": { "armor": 30 + index },
+                "damageStats": { "totalDamageDone": 1000 * index },
             });
             (id.to_string(), body)
         })

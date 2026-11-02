@@ -233,10 +233,13 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 - **Tier label:** the seed player's tier applies to all 10 participants.
 - **Private phase:** collects only the owner's tier and its neighbours, for about
   three times the games per Cell for the same calls.
-- **Stored per match:** per-participant minute values and the first kill time per
-  objective. PUUIDs are never stored.
+- **Stored per match:** per-participant minute values, the first kill time per
+  objective, and an archive of the Match-V5 bodies with player identity and
+  per-frame stats removed ([ADR 0015](../adr/0015-collector-archives-match-payloads.md)).
+  PUUIDs are never stored.
 - **Throughput:** about 3.1 calls per kept match, about 23,000 matches a day, and
-  about 8 KB per match. That is about 5 GB for a four-week window at full rate.
+  about 8 KB per match without the archive. That is about 5 GB for a four-week
+  window at full rate, and an estimated 10 to 15 GB with it.
 - **Retention:** raw matches outside the Patch window are deleted when it shifts.
   The collector shifts it at the first kept match of a new patch, taking the window
   as the two newest patches stored. The first build after that patch would shift it

@@ -7,6 +7,7 @@ pub enum CollectError {
     KeyRejected(u16),
     CallFailed(&'static str),
     Unreadable(&'static str),
+    Archive(std::io::Error),
     Client(reqwest::Error),
     Database(rusqlite::Error),
 }
@@ -14,7 +15,10 @@ pub enum CollectError {
 impl CollectError {
     /// A match that keeps failing is given up on, so that it cannot stall the walk.
     pub(crate) const fn only_costs_the_match(&self) -> bool {
-        matches!(self, Self::CallFailed(_) | Self::Unreadable(_))
+        matches!(
+            self,
+            Self::CallFailed(_) | Self::Unreadable(_) | Self::Archive(_)
+        )
     }
 }
 
@@ -30,6 +34,9 @@ impl fmt::Display for CollectError {
             }
             Self::CallFailed(call) => write!(formatter, "{call} kept failing"),
             Self::Unreadable(call) => write!(formatter, "{call} answered an unreadable body"),
+            Self::Archive(error) => {
+                write!(formatter, "cannot compress a match to archive: {error}")
+            }
             Self::Client(error) => write!(formatter, "cannot build the HTTP client: {error}"),
             Self::Database(error) => write!(formatter, "database: {error}"),
         }

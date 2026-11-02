@@ -14,6 +14,7 @@ use std::path::Path;
 
 use lollipop_collector::SeedTier;
 use rusqlite::Connection;
+use serde_json::{json, Value};
 
 use support::game::Game;
 use support::scenario::Scenario;
@@ -79,6 +80,59 @@ async fn keeps_the_first_kill_time_per_objective() {
     ];
     let expected = expected.map(|(objective, at_ms)| (objective.to_string(), at_ms));
     assert_eq!(kills, expected);
+}
+
+fn archived(scenario: &Scenario) -> (Value, Value) {
+    let connection = Connection::open(scenario.database()).unwrap();
+    let (game, timeline): (Vec<u8>, Vec<u8>) = connection
+        .query_row("SELECT game, timeline FROM match_payloads", [], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })
+        .unwrap();
+    let body = |bytes: Vec<u8>| -> Value {
+        serde_json::from_slice(&zstd::decode_all(bytes.as_slice()).unwrap()).unwrap()
+    };
+    (body(game), body(timeline))
+}
+
+// Without the bodies, every statistic a later table reads would wait a Patch window of
+// new matches. A field no code reads yet, such as an item bought, must survive.
+#[tokio::test]
+async fn archives_the_match_and_timeline_bodies() {
+    let scenario = one_stored_game().await;
+    let (game, timeline) = archived(&scenario);
+    assert_eq!(game["metadata"]["matchId"], "EUW1_1");
+    assert_eq!(game["info"]["participants"][3]["goldEarned"], 12000);
+    let frames = &timeline["info"]["frames"];
+    assert_eq!(frames[1]["events"][0]["itemId"], 1055);
+    assert_eq!(frames[2]["participantFrames"]["4"]["totalGold"], 1300);
+}
+
+// Per-minute champion and damage stats would take the archive several times past the disk.
+#[tokio::test]
+async fn archives_no_per_frame_champion_or_damage_stats() {
+    let scenario = one_stored_game().await;
+    let (_, timeline) = archived(&scenario);
+    let participant = &timeline["info"]["frames"][2]["participantFrames"]["4"];
+    assert_eq!(participant["championStats"], Value::Null);
+    assert_eq!(participant["damageStats"], Value::Null);
+}
+
+// The archive is compressed, so reading the raw files cannot see a PUUID inside it.
+#[tokio::test]
+async fn the_archive_holds_no_puuid_or_player_name() {
+    let scenario = one_stored_game().await;
+    let (game, timeline) = archived(&scenario);
+    for body in [&game, &timeline] {
+        let text = body.to_string();
+        assert!(!text.contains("puuid"), "{text}");
+        assert!(!text.contains("name-of"), "{text}");
+    }
+    assert_eq!(game["metadata"], json!({ "matchId": "EUW1_1" }));
+    assert_eq!(
+        timeline["info"]["participants"][0],
+        json!({ "participantId": 1 })
+    );
 }
 
 fn assert_no_identity_on_disk(dir: &Path) {

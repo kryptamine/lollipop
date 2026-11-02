@@ -72,5 +72,9 @@ fn insert(transaction: &Transaction<'_>, kept: &KeptMatch) -> rusqlite::Result<(
     for (objective, at_ms) in &kept.first_kills {
         kill.execute(params![id, objective, at_ms])?;
     }
+    transaction.execute(
+        "INSERT INTO match_payloads (match, game, timeline) VALUES (?, ?, ?)",
+        params![id, kept.archived.game, kept.archived.timeline],
+    )?;
     Ok(())
 }
