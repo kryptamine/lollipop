@@ -16,7 +16,6 @@ use support::benchmark_file::{cell, flat_minutes, minute, table_of, ENOUGH_GAMES
 use support::marker_game::{MarkerBench, Moment, Seat, CHAMPION, MASTER_YI_MID, ROLE, TIER};
 
 // At 10:30 the Cell reads 63 CS, 4700 gold and level 6.25, halfway between its minutes.
-// The Marker waits out its hold, so the Benchmark must not wait with it.
 #[tokio::test]
 async fn shows_the_benchmark_at_the_current_game_time() {
     let bench = MarkerBench::new().await;

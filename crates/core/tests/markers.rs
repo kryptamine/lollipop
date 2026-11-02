@@ -32,10 +32,16 @@ fn minutes_of(benchmark_at: impl Fn(f64) -> (f64, f64, f64)) -> Vec<Value> {
         .collect()
 }
 
-/// Two polls 30 s apart are enough for a measured state to show.
-async fn cs_marker_held_at(bench: &MarkerBench, cs: u32) -> Option<Marker> {
-    let moments = [Moment::at(100.0).cs(cs), Moment::at(130.0).cs(cs)];
-    bench.markers_for(&moments).await[1].cs
+async fn cs_marker_at(bench: &MarkerBench, cs: u32) -> Option<Marker> {
+    bench.markers_for(&[Moment::at(100.0).cs(cs)]).await[0].cs
+}
+
+/// Flat at `gold` from minute 1, and at the starting 500 at minute 0, so the poll a gold
+/// count needs before 1:00 enters no state of its own.
+fn gold_cell(gold: f64) -> String {
+    let mut minutes = flat_minutes(50.0, gold, 10.0);
+    minutes[0] = minute(0, 50.0, 500.0, 10.0, ENOUGH_GAMES);
+    table_of(&[cell(CHAMPION, ROLE, TIER, &minutes)])
 }
 
 fn cs_of(markers: &[Markers]) -> Vec<Option<Marker>> {
@@ -88,15 +94,15 @@ async fn replays_a_recorded_game_against_the_table() {
     }
 
     // CS + 5 is 35, 75, 105, 145, 185, 205. Gold earned is 1738, 4125, 6858, 9217, 13098,
-    // 15411. Level is 4, 8, 10, 13, 16, 17. Two marks show the hold: at 20:00 gold crossed
-    // only at 19:35, and at 30:00 level has just reached the edge of the zone.
+    // 15411. Level is 4, 8, 10, 13, 16, 17. Two marks keep a state inside the zone: level 4
+    // went 1.35 ahead at 3:18, and at 30:00 level is on the edge of the zone.
     assert_eq!(
         at_mark,
         [
-            (Some(Neutral), Some(Below), Some(Neutral)),
+            (Some(Neutral), Some(Below), Some(Above)),
             (Some(Above), Some(Below), Some(Above)),
             (Some(Above), Some(Neutral), Some(Above)),
-            (Some(Above), Some(Neutral), Some(Above)),
+            (Some(Above), Some(Above), Some(Above)),
             (Some(Above), Some(Above), Some(Above)),
             (Some(Above), Some(Above), Some(Above)),
         ]
@@ -114,26 +120,26 @@ async fn compares_cs_plus_five_against_the_interpolated_benchmark() {
         .collect();
     bench.write_table(&table_of(&[cell(CHAMPION, ROLE, TIER, &minutes)]));
 
-    let on_the_edge = [Moment::at(600.0).cs(63), Moment::at(630.0).cs(63)];
-    let past_the_edge = [Moment::at(600.0).cs(64), Moment::at(630.0).cs(64)];
+    let on_the_edge = [Moment::at(630.0).cs(63)];
+    let past_the_edge = [Moment::at(630.0).cs(64)];
 
-    assert_eq!(bench.markers_for(&on_the_edge).await[1].cs, Some(Neutral));
-    assert_eq!(bench.markers_for(&past_the_edge).await[1].cs, Some(Above));
+    assert_eq!(bench.markers_for(&on_the_edge).await[0].cs, Some(Neutral));
+    assert_eq!(bench.markers_for(&past_the_edge).await[0].cs, Some(Above));
 }
 
 // Benchmarks at 0:00 and 1:00 give 1000 gold and level 6 at 0:30. Reading either minute
-// alone would flip one of these. Both polls are above minute 0, so a state holds from 0:00.
+// alone would flip one of these. The poll at 0:00 sits on minute 0 and enters no state.
 #[tokio::test]
 async fn interpolates_gold_and_level_too() {
     let bench = MarkerBench::new().await;
     let minutes = [
-        minute(0, 0.0, 0.0, 1.0, ENOUGH_GAMES),
-        minute(1, 0.0, 2000.0, 11.0, ENOUGH_GAMES),
+        minute(0, 0.0, 500.0, 1.0, ENOUGH_GAMES),
+        minute(1, 0.0, 1500.0, 11.0, ENOUGH_GAMES),
     ];
     bench.write_table(&table_of(&[cell(CHAMPION, ROLE, TIER, &minutes)]));
     let polls = |gold, level| {
         [
-            Moment::at(0.0).level(level),
+            Moment::at(0.0).level(1),
             Moment::at(30.0).gold(gold).level(level),
         ]
     };
@@ -161,7 +167,7 @@ async fn cs_neutral_zone_is_8_percent_with_a_floor_of_8() {
     ];
     for (benchmark, cs, expected) in cases {
         let bench = MarkerBench::with_flat_cell(benchmark, 1000.0, 10.0).await;
-        let marker = cs_marker_held_at(&bench, cs).await;
+        let marker = cs_marker_at(&bench, cs).await;
         assert_eq!(marker, Some(expected), "{cs} against {benchmark}");
     }
 }
@@ -179,13 +185,10 @@ async fn gold_neutral_zone_is_8_percent_with_a_floor_of_150() {
         (5000.0, 4599.0, Below),
     ];
     for (benchmark, earned, expected) in cases {
-        let bench = MarkerBench::with_flat_cell(50.0, benchmark, 10.0).await;
-        let moments = [
-            Moment::at(1.0),
-            Moment::at(100.0).gold(earned),
-            Moment::at(130.0).gold(earned),
-        ];
-        let marker = bench.markers_for(&moments).await[2].gold;
+        let bench = MarkerBench::new().await;
+        bench.write_table(&gold_cell(benchmark));
+        let moments = [Moment::at(1.0), Moment::at(100.0).gold(earned)];
+        let marker = bench.markers_for(&moments).await[1].gold;
         assert_eq!(marker, Some(expected), "{earned} against {benchmark}");
     }
 }
@@ -202,38 +205,31 @@ async fn level_neutral_zone_is_one_level() {
     ];
     for (benchmark, level, expected) in cases {
         let bench = MarkerBench::with_flat_cell(50.0, 1000.0, benchmark).await;
-        let moments = [
-            Moment::at(100.0).level(level),
-            Moment::at(130.0).level(level),
-        ];
-        let marker = bench.markers_for(&moments).await[1].level;
+        let marker = bench.markers_for(&[Moment::at(100.0).level(level)]).await[0].level;
         assert_eq!(marker, Some(expected), "{level} against {benchmark}");
     }
 }
 
-// A Marker that flips on every wave would be noise, so a state waits out its 30 s.
+// Gold 2000 against 1000 showed a neutral dot for 30 s: a lead past the zone shows at once.
 #[tokio::test]
-async fn a_new_state_shows_only_after_holding_for_30_seconds() {
+async fn a_state_shows_on_the_first_poll_past_the_zone() {
     let bench = MarkerBench::with_flat_cell(100.0, 1000.0, 10.0).await;
-    let moments = [
-        Moment::at(100.0).cs(200),
-        Moment::at(129.0).cs(200),
-        Moment::at(130.0).cs(200),
-    ];
+    let moments = [Moment::at(100.0).cs(95), Moment::at(101.0).cs(104)];
     let markers = bench.markers_for(&moments).await;
-    assert_eq!(cs_of(&markers), [Some(Neutral), Some(Neutral), Some(Above)]);
+    assert_eq!(cs_of(&markers), [Some(Neutral), Some(Above)]);
 }
 
-// Going back to neutral is a new state as well, or one quiet wave would wipe the Marker.
+// CS + 5 against 100 has a zone of 8. A wave on the edge must not flicker the triangle, so
+// it stays until the value is back within 4, and neutral needs the whole 8 to leave.
 #[tokio::test]
-async fn leaving_a_state_holds_for_30_seconds_too() {
+async fn a_state_stays_until_the_value_is_back_within_half_the_zone() {
     let bench = MarkerBench::with_flat_cell(100.0, 1000.0, 10.0).await;
     let moments = [
-        Moment::at(100.0).cs(200),
-        Moment::at(130.0).cs(200),
-        Moment::at(131.0).cs(95),
-        Moment::at(160.0).cs(95),
-        Moment::at(161.0).cs(95),
+        Moment::at(100.0).cs(100),
+        Moment::at(101.0).cs(104),
+        Moment::at(102.0).cs(100),
+        Moment::at(103.0).cs(99),
+        Moment::at(104.0).cs(100),
     ];
     let markers = bench.markers_for(&moments).await;
     assert_eq!(
@@ -242,65 +238,32 @@ async fn leaving_a_state_holds_for_30_seconds_too() {
             Some(Neutral),
             Some(Above),
             Some(Above),
-            Some(Above),
+            Some(Neutral),
             Some(Neutral)
         ]
     );
 }
 
 #[tokio::test]
-async fn a_blip_starts_the_hold_over() {
+async fn crossing_from_above_to_below_shows_at_once() {
     let bench = MarkerBench::with_flat_cell(100.0, 1000.0, 10.0).await;
-    let moments = [
-        Moment::at(100.0).cs(200),
-        Moment::at(120.0).cs(95),
-        Moment::at(125.0).cs(200),
-        Moment::at(154.0).cs(200),
-        Moment::at(155.0).cs(200),
-    ];
+    let moments = [Moment::at(100.0).cs(200), Moment::at(101.0).cs(10)];
     let markers = bench.markers_for(&moments).await;
-    assert_eq!(
-        cs_of(&markers),
-        [
-            Some(Neutral),
-            Some(Neutral),
-            Some(Neutral),
-            Some(Neutral),
-            Some(Above)
-        ]
-    );
+    assert_eq!(cs_of(&markers), [Some(Above), Some(Below)]);
 }
 
-// Swinging from one side to the other is a different state, not the same hold.
+// A state from one game must not keep the next game's Marker coloured.
 #[tokio::test]
-async fn crossing_from_above_to_below_starts_the_hold_over() {
-    let bench = MarkerBench::with_flat_cell(100.0, 1000.0, 10.0).await;
-    let moments = [
-        Moment::at(100.0).cs(200),
-        Moment::at(129.0).cs(10),
-        Moment::at(158.0).cs(10),
-        Moment::at(159.0).cs(10),
-    ];
-    let markers = bench.markers_for(&moments).await;
-    assert_eq!(
-        cs_of(&markers),
-        [Some(Neutral), Some(Neutral), Some(Neutral), Some(Below)]
-    );
-}
-
-// A state held in one game must not colour the first 30 s of the next.
-#[tokio::test]
-async fn a_new_game_starts_neutral() {
+async fn a_new_game_starts_afresh() {
     let bench = MarkerBench::with_flat_cell(100.0, 1000.0, 10.0).await;
     let beats = [
         Beat::Running(Moment::at(100.0).cs(200)),
-        Beat::Running(Moment::at(130.0).cs(200)),
-        Beat::Ended(Moment::at(131.0).cs(200)),
-        Beat::Running(Moment::at(1.0).cs(200)),
+        Beat::Ended(Moment::at(101.0).cs(200)),
+        Beat::Running(Moment::at(1.0).cs(100)),
     ];
     let markers = bench.markers_over(beats.to_vec(), |_| {}).await;
-    assert_eq!(markers[1].cs, Some(Above));
-    assert_eq!(markers[3].cs, Some(Neutral));
+    assert_eq!(markers[0].cs, Some(Above));
+    assert_eq!(markers[2].cs, Some(Neutral));
 }
 
 // ADR 0003: a Marker cannot change meaning mid-match, so a new file waits for the next game.
@@ -357,7 +320,7 @@ async fn a_support_has_no_cs_marker() {
         CHAMPION,
         "UTILITY",
         TIER,
-        &flat_minutes(100.0, 1000.0, 10.0),
+        &flat_minutes(100.0, 500.0, 10.0),
     )]));
 
     let markers = bench.markers_for(&[Moment::at(1.0)]).await;
@@ -408,16 +371,12 @@ async fn a_marker_comes_back_neutral_after_a_thin_minute() {
 
     let moments = [
         Moment::at(60.0).cs(200),
-        Moment::at(90.0).cs(200),
         Moment::at(180.0).cs(200),
-        Moment::at(240.0).cs(200),
+        Moment::at(240.0).cs(100),
     ];
     let markers = bench.markers_for(&moments).await;
 
-    assert_eq!(
-        cs_of(&markers),
-        [Some(Neutral), Some(Above), None, Some(Neutral)]
-    );
+    assert_eq!(cs_of(&markers), [Some(Above), None, Some(Neutral)]);
 }
 
 // A game counts only towards the minutes it reached, so a long game runs off the table.

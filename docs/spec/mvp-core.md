@@ -74,9 +74,10 @@ and the value stays.
 | Gold | Gold earned, counted live | Same | Median of `totalGold` | ±8% of Benchmark, at least ±150 |
 | Level | API value | Same | Mean | ±1 |
 
-- A new Marker state shows only after holding for 30 s of game time.
+- A Marker turns to a triangle on the first poll past the Neutral zone, and
+  keeps it until the value is back within half of the zone or past the other edge.
 - The shown Benchmark is the one at the current game time, rounded to a whole
-  number. It does not wait out the hold.
+  number.
 - Benchmarks are read by linear interpolation between minutes.
 - A minute with n<100 has no Marker.
 - A support keeps the CS value and has no CS Marker.
@@ -388,9 +389,6 @@ Kept after the recheck:
 
 Still open:
 
-- **The 30 s hold.** Over interpolated minute frames it cuts Marker changes from
-  1.4 to 1.1 per 10 minutes. Frames are a minute apart, so jitter within a minute is
-  not in that, and the hold needs a real match.
 - **The level Neutral zone.** ±1 holds 76% of players at minute 20 and 97% at
   minute 5, so the level Marker is almost always neutral.
 - **The 20% publish gate.** Dropping 16.20 from the window now would lose 18% of
