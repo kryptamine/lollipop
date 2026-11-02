@@ -1,10 +1,17 @@
 // The only module that may import Tauri; components stay unaware of it.
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
+export type Scores = {
+  kills: number;
+  deaths: number;
+  assists: number;
+};
+
 export type Snapshot = {
   cs: number;
   level: number;
   goldEarned: number | null;
+  scores: Scores | null;
 };
 
 export type MarkerState = 'above' | 'below' | 'neutral';
@@ -13,12 +20,14 @@ export type Markers = {
   cs: MarkerState | null;
   gold: MarkerState | null;
   level: MarkerState | null;
+  scores: MarkerState | null;
 };
 
 export type Benchmarks = {
   cs: number | null;
   gold: number | null;
   level: number | null;
+  scores: Scores | null;
 };
 
 export type TimingHintState = {

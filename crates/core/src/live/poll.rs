@@ -110,6 +110,7 @@ impl CurrentGame<'_> {
                 data.current_gold(),
                 player.item_counts(),
             ),
+            scores: player.scores.player_scores(),
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
         Some(LiveGame {

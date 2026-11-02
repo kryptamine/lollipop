@@ -5,8 +5,10 @@ mod benchmarks_at;
 mod cell_benchmarks;
 mod champion_key;
 mod minute_entry;
+mod scores_at;
 
 pub use benchmark_table::BenchmarkTable;
 pub(crate) use benchmark_table::SCHEMA_VERSION;
 pub use benchmarks_at::BenchmarksAt;
 pub use cell_benchmarks::CellBenchmarks;
+pub use scores_at::ScoresAt;

@@ -1,5 +1,6 @@
 import { Metric } from './Metric';
 import { Notices } from './Notices';
+import { scoreLine, whole } from './format';
 import type { Benchmarks, Markers, Notices as NoticesState, Snapshot } from './bridge';
 
 type MarkerStripProps = {
@@ -10,9 +11,14 @@ type MarkerStripProps = {
 };
 
 export const MarkerStrip = ({
-  snapshot: { cs, goldEarned, level },
-  markers: { cs: csMarker, gold: goldMarker, level: levelMarker },
-  benchmarks: { cs: csBenchmark, gold: goldBenchmark, level: levelBenchmark },
+  snapshot: { cs, goldEarned, level, scores },
+  markers: { cs: csMarker, gold: goldMarker, level: levelMarker, scores: scoresMarker },
+  benchmarks: {
+    cs: csBenchmark,
+    gold: goldBenchmark,
+    level: levelBenchmark,
+    scores: scoresBenchmark,
+  },
   notices,
 }: MarkerStripProps) => (
   <div id="marker-strip">
@@ -26,14 +32,27 @@ export const MarkerStrip = ({
         </tr>
       </thead>
       <tbody>
-        <Metric label="CS" value={cs} marker={csMarker} benchmark={csBenchmark} />
+        {scores && (
+          <Metric
+            label="K / D / A"
+            value={scoreLine(scores)}
+            marker={scoresMarker}
+            benchmark={scoresBenchmark ? scoreLine(scoresBenchmark) : undefined}
+          />
+        )}
+        <Metric label="CS" value={cs} marker={csMarker} benchmark={whole(csBenchmark)} />
         <Metric
           label="Gold earned"
           value={goldEarned ?? '—'}
           marker={goldMarker}
-          benchmark={goldBenchmark}
+          benchmark={whole(goldBenchmark)}
         />
-        <Metric label="Level" value={level} marker={levelMarker} benchmark={levelBenchmark} />
+        <Metric
+          label="Level"
+          value={level}
+          marker={levelMarker}
+          benchmark={whole(levelBenchmark)}
+        />
       </tbody>
     </table>
     {notices.length > 0 && <Notices notices={notices} />}

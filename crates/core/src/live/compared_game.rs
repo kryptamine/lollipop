@@ -16,6 +16,8 @@ const ZONE_SHARE: f64 = 0.08;
 const CS_ZONE_FLOOR: f64 = 8.0;
 const GOLD_ZONE_FLOOR: f64 = 150.0;
 const LEVEL_ZONE: f64 = 1.0;
+// On kills and assists less deaths; not yet tested against real spread.
+const SCORES_ZONE: f64 = 2.0;
 
 pub(super) struct ComparedGame {
     cell: CellBenchmarks,
@@ -23,6 +25,7 @@ pub(super) struct ComparedGame {
     cs: HeldMarker,
     gold: HeldMarker,
     level: HeldMarker,
+    scores: HeldMarker,
 }
 
 impl ComparedGame {
@@ -51,6 +54,7 @@ impl ComparedGame {
             cs: HeldMarker::default(),
             gold: HeldMarker::default(),
             level: HeldMarker::default(),
+            scores: HeldMarker::default(),
         })
     }
 
@@ -67,16 +71,29 @@ impl ComparedGame {
             benchmark: b.level,
             neutral_zone: LEVEL_ZONE,
         });
+        let score_benchmarks = benchmarks.and_then(|b| b.scores);
+        let scores = score_benchmarks
+            .zip(snapshot.scores)
+            .map(|(b, scores)| Comparison {
+                value: scores.net(),
+                benchmark: b.net(),
+                neutral_zone: SCORES_ZONE,
+            });
         let markers = Markers {
             cs: self.cs.update(cs),
             gold: self.gold.update(gold),
             level: self.level.update(level),
+            scores: self.scores.update(scores),
         };
         let ahead = self.cell.at_minute_ahead(game_time);
         let shown = ShownBenchmarks {
             cs: cs_benchmarks.and(ahead).map(|b| b.cs),
             gold: gold_benchmarks.and(ahead).map(|b| b.gold),
             level: benchmarks.and(ahead).map(|b| b.level),
+            scores: score_benchmarks
+                .and(snapshot.scores)
+                .and(ahead)
+                .and_then(|b| b.scores),
         };
         (markers, shown)
     }

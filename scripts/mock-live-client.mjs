@@ -22,6 +22,10 @@ function mockTable() {
     total_gold: 500 + minute * 120,
     level: Math.min(18, 1 + minute),
     n: 300,
+    kills: minute * 0.2,
+    deaths: minute * 0.2,
+    assists: minute * 0.3,
+    scores_n: 300,
   }));
   return {
     schema_version: 1,
@@ -44,7 +48,12 @@ function liveClientData() {
         level: Math.min(18, 1 + Math.floor(minutes)),
         items: [],
         // The API floors CS to 10.
-        scores: { creepScore: Math.floor(minutes * 0.6) * 10 },
+        scores: {
+          creepScore: Math.floor(minutes * 0.6) * 10,
+          kills: Math.floor(minutes / 4),
+          deaths: Math.floor(minutes / 8),
+          assists: Math.floor(minutes / 3),
+        },
       },
     ],
     events: { Events: [{ EventName: "GameStart" }] },

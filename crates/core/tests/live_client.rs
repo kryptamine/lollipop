@@ -14,6 +14,7 @@ use std::sync::Arc;
 use lollipop_core::live::Snapshot;
 use tokio::net::TcpListener;
 
+use lollipop_core::live::Scores;
 use support::game_clock::GameClock;
 use support::polling::{first_update, start_polling};
 use support::recorded_game::RecordedGame;
@@ -28,6 +29,7 @@ const fn strip(cs: u32, level: u32, gold_earned: u32) -> Snapshot {
         cs,
         level,
         gold_earned: Some(gold_earned),
+        scores: None,
     }
 }
 
@@ -109,6 +111,31 @@ async fn falls_back_to_the_summoner_name() {
     )
     .await;
     assert_eq!(update, Some(strip(5, 2, 500)));
+}
+
+// The enemy's scores sit beside the player's, and K/D/A must read the player's own.
+#[tokio::test]
+async fn reads_the_active_players_kills_deaths_and_assists() {
+    let update = update_for(
+        r#"{
+          "activePlayer": { "riotId": "Me#EUW", "currentGold": 500.0 },
+          "allPlayers": [
+            { "riotId": "Enemy#EUW", "level": 7, "items": [],
+              "scores": { "creepScore": 60, "kills": 9, "deaths": 0, "assists": 9 } },
+            { "riotId": "Me#EUW", "level": 7, "items": [],
+              "scores": { "creepScore": 60, "kills": 3, "deaths": 1, "assists": 4 } }
+          ],
+          "events": { "Events": [{ "EventName": "GameStart" }] },
+          "gameData": { "gameTime": 30.0 }
+        }"#,
+    )
+    .await;
+    let scores = Scores {
+        kills: 3,
+        deaths: 1,
+        assists: 4,
+    };
+    assert_eq!(update.unwrap().scores, Some(scores));
 }
 
 // A spectator payload has no ids, and two missing ids are not the same player.

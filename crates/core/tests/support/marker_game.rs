@@ -22,6 +22,8 @@ pub struct Moment {
     pub cs: u32,
     pub gold: f64,
     pub level: u32,
+    /// Kills, deaths and assists, left out of the payload when `None`.
+    pub scores: Option<[u32; 3]>,
 }
 
 impl Moment {
@@ -31,6 +33,7 @@ impl Moment {
             cs: 95,
             gold: 500.0,
             level: 10,
+            scores: None,
         }
     }
 
@@ -44,6 +47,13 @@ impl Moment {
 
     pub const fn level(self, level: u32) -> Self {
         Self { level, ..self }
+    }
+
+    pub const fn scores(self, kills: u32, deaths: u32, assists: u32) -> Self {
+        Self {
+            scores: Some([kills, deaths, assists]),
+            ..self
+        }
     }
 }
 
@@ -71,6 +81,11 @@ pub fn body(seat: Seat, moment: Moment, events: &[&str]) -> String {
         "items": [],
         "scores": { "creepScore": moment.cs },
     });
+    if let Some([kills, deaths, assists]) = moment.scores {
+        player["scores"]["kills"] = json!(kills);
+        player["scores"]["deaths"] = json!(deaths);
+        player["scores"]["assists"] = json!(assists);
+    }
     if let Some(raw) = seat.raw_champion {
         player["rawChampionName"] = json!(raw);
     }

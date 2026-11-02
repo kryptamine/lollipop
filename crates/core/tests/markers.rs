@@ -15,7 +15,7 @@ use lollipop_core::live::Marker::{Above, Below, Neutral};
 use lollipop_core::live::{Marker, Markers};
 use serde_json::Value;
 
-use support::benchmark_file::{cell, flat_minutes, minute, table_of, ENOUGH_GAMES};
+use support::benchmark_file::{cell, flat_minutes, minute, table_of, with_scores, ENOUGH_GAMES};
 use support::fake_lcu::{ranked, RANKED, SESSION, VERSION};
 use support::game_clock::GameClock;
 use support::marker_game::{Beat, MarkerBench, Moment, Seat, CHAMPION, MASTER_YI_MID, ROLE, TIER};
@@ -52,6 +52,7 @@ const NO_MARKERS: Markers = Markers {
     cs: None,
     gold: None,
     level: None,
+    scores: None,
 };
 
 // Protects the whole path on real data. The expected states are worked out by hand from
@@ -264,6 +265,62 @@ async fn a_new_game_starts_afresh() {
     let markers = bench.markers_over(beats.to_vec(), |_| {}).await;
     assert_eq!(markers[0].cs, Some(Above));
     assert_eq!(markers[2].cs, Some(Neutral));
+}
+
+/// Flat at 2 kills, 1 death and 3 assists, so kills and assists less deaths is 4.
+fn scored_cell(scores_n: u32) -> String {
+    let minutes: Vec<Value> = flat_minutes(100.0, 1000.0, 10.0)
+        .into_iter()
+        .map(|minute| with_scores(minute, [2.0, 1.0, 3.0], scores_n))
+        .collect();
+    table_of(&[cell(CHAMPION, ROLE, TIER, &minutes)])
+}
+
+// One Marker reads kills and assists less deaths against the Cell's, with a zone of 2.
+#[tokio::test]
+async fn the_scores_marker_compares_kills_and_assists_less_deaths() {
+    let cases = [
+        ([4, 1, 3], Neutral),
+        ([4, 1, 4], Above),
+        ([1, 2, 3], Neutral),
+        ([1, 3, 3], Below),
+        ([0, 0, 7], Above),
+    ];
+    for ([kills, deaths, assists], expected) in cases {
+        let bench = MarkerBench::new().await;
+        bench.write_table(&scored_cell(ENOUGH_GAMES));
+        let moment = Moment::at(100.0).scores(kills, deaths, assists);
+        let marker = bench.markers_for(&[moment]).await[0].scores;
+        assert_eq!(marker, Some(expected), "{kills}/{deaths}/{assists}");
+    }
+}
+
+// Scores come only from games kept since they were counted, so they thin out on their
+// own. A thin score must cost the scores Marker alone.
+#[tokio::test]
+async fn thin_scores_hide_only_the_scores_marker() {
+    let bench = MarkerBench::new().await;
+    bench.write_table(&scored_cell(99));
+    let markers = bench
+        .markers_for(&[Moment::at(100.0).scores(9, 0, 9)])
+        .await;
+    assert_eq!(markers[0].scores, None);
+    assert_eq!(markers[0].cs, Some(Neutral));
+}
+
+#[tokio::test]
+async fn a_table_or_payload_without_scores_has_no_scores_marker() {
+    let no_scores_in_table = MarkerBench::with_flat_cell(100.0, 1000.0, 10.0).await;
+    let moment = Moment::at(100.0).scores(9, 0, 9);
+    assert_eq!(
+        no_scores_in_table.markers_for(&[moment]).await[0].scores,
+        None
+    );
+
+    let no_scores_in_payload = MarkerBench::new().await;
+    no_scores_in_payload.write_table(&scored_cell(ENOUGH_GAMES));
+    let markers = no_scores_in_payload.markers_for(&[Moment::at(100.0)]).await;
+    assert_eq!(markers[0].scores, None);
 }
 
 // ADR 0003: a Marker cannot change meaning mid-match, so a new file waits for the next game.
