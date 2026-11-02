@@ -62,7 +62,8 @@ The overlay is shown only when the game is frontmost and the match is running:
 ## Marker strip
 
 One line at the top left: label, value and Marker for CS, gold and level. A
-neutral Marker keeps its space, so a state change never shifts the layout. With
+neutral Marker is a muted dot in the same slot, so "on pace" differs
+from "no Benchmark" and a state change never shifts the layout. With
 no Benchmark the Marker is hidden and the value stays.
 
 | Metric | Shown value | Compared value | Benchmark | Neutral zone |
