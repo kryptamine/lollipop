@@ -9,8 +9,14 @@ type MetricProps = {
 };
 
 export const Metric = ({ label, value, marker, benchmark }: MetricProps) => (
-  <span class="metric">
-    <span class="metric-label">{label}</span> {value} <Marker state={marker} />
-    {benchmark !== null && <span class="metric-benchmark"> {Math.round(benchmark)}</span>}
-  </span>
+  <tr>
+    <th class="metric-label" scope="row">
+      {label}
+    </th>
+    <td>
+      <Marker state={marker} />
+    </td>
+    <td>{value}</td>
+    <td class="metric-benchmark">{benchmark !== null && Math.round(benchmark)}</td>
+  </tr>
 );
