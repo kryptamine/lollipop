@@ -4,7 +4,7 @@ use lollipop_core::game_inputs::Patch;
 
 use super::aligned_minute::align_to_minutes;
 use super::average::{mean, median};
-use super::benchmark_file::{CellEntry, MinuteEntry};
+use super::benchmark_file::{CellEntry, MinuteEntry, ScoresEntry};
 use super::cell_drift::CellDrift;
 use super::drift_comparison::DriftComparison;
 use super::minute_samples::MinuteSamples;
@@ -138,6 +138,20 @@ fn minute_entry(minute: usize, pooled: &MinuteSamples) -> Option<MinuteEntry> {
         total_gold: rounded(median(&pooled.total_gold)?),
         level: rounded(mean(&pooled.level)),
         n: pooled.n(),
+        scores: scores_entry(pooled),
+    })
+}
+
+// Means, as medians of counts this small would only ever read whole numbers.
+fn scores_entry(pooled: &MinuteSamples) -> Option<ScoresEntry> {
+    if pooled.kills.is_empty() {
+        return None;
+    }
+    Some(ScoresEntry {
+        kills: rounded(mean(&pooled.kills)),
+        deaths: rounded(mean(&pooled.deaths)),
+        assists: rounded(mean(&pooled.assists)),
+        scores_n: pooled.kills.len(),
     })
 }
 

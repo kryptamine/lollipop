@@ -26,6 +26,17 @@ CREATE TABLE IF NOT EXISTS minute_values (
   PRIMARY KEY (match, participant, at_ms)
 ) WITHOUT ROWID;
 
+-- Apart from minute_values, so a database from before it needs no migration.
+CREATE TABLE IF NOT EXISTS minute_scores (
+  match INTEGER NOT NULL REFERENCES matches (id) ON DELETE CASCADE,
+  participant INTEGER NOT NULL,
+  at_ms INTEGER NOT NULL,
+  kills INTEGER NOT NULL,
+  deaths INTEGER NOT NULL,
+  assists INTEGER NOT NULL,
+  PRIMARY KEY (match, participant, at_ms)
+) WITHOUT ROWID;
+
 CREATE TABLE IF NOT EXISTS first_kills (
   match INTEGER NOT NULL REFERENCES matches (id) ON DELETE CASCADE,
   objective TEXT NOT NULL,

@@ -41,6 +41,14 @@ pub(crate) enum Event {
         monster_type: String,
         monster_sub_type: Option<String>,
     },
+    #[serde(rename = "CHAMPION_KILL", rename_all = "camelCase")]
+    ChampionKill {
+        timestamp: u64,
+        killer_id: u32,
+        victim_id: u32,
+        #[serde(default)]
+        assisting_participant_ids: Vec<u32>,
+    },
     #[serde(other)]
     Other,
 }

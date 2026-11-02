@@ -93,7 +93,7 @@ impl Game {
         let kills = self.kills.as_ref().map_or_else(default_kills, Clone::clone);
         let (first, second) = kills.split_at(kills.iter().filter(|kill| kill.0 < 60_000).count());
         let purchase = json!({ "type": "ITEM_PURCHASED", "timestamp": 30_000, "itemId": 1055 });
-        let first = [vec![purchase], elites(first)].concat();
+        let first = [vec![purchase], champion_kills(), elites(first)].concat();
         let mut frames = vec![
             frame(0, 0, &[json!({ "type": "PAUSE_END", "realTimestamp": 5 })]),
             frame(60_011, 1, &first),
@@ -111,6 +111,21 @@ impl Game {
             },
         })
     }
+}
+
+/// 4 kills 3 at 0:20 with 2 and 5 assisting, then a tower executes 4 at 0:40.
+fn champion_kills() -> Vec<Value> {
+    vec![
+        json!({
+            "type": "CHAMPION_KILL",
+            "timestamp": 20_000,
+            "killerId": 4,
+            "victimId": 3,
+            "assistingParticipantIds": [2, 5],
+            "bounty": 300,
+        }),
+        json!({ "type": "CHAMPION_KILL", "timestamp": 40_000, "killerId": 0, "victimId": 4 }),
+    ]
 }
 
 fn default_kills() -> Vec<Kill> {

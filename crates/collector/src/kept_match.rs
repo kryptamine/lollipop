@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use lollipop_core::game_inputs::Patch;
 
 use crate::archived_payloads::ArchivedPayloads;
+use crate::frame_scores::FrameScores;
 use crate::kept_participant::KeptParticipant;
 use crate::match_payload::MatchPayload;
 use crate::minute_values::MinuteValues;
@@ -52,6 +53,7 @@ impl KeptMatch {
 }
 
 fn minute_values(timeline: &TimelinePayload) -> Vec<MinuteValues> {
+    let kills = champion_kills(timeline);
     let mut values = Vec::new();
     for frame in &timeline.info.frames {
         values.extend(
@@ -64,10 +66,51 @@ fn minute_values(timeline: &TimelinePayload) -> Vec<MinuteValues> {
                     cs: participant.minions_killed + participant.jungle_minions_killed,
                     total_gold: participant.total_gold,
                     level: participant.level,
+                    scores: Some(scores_by(
+                        &kills,
+                        participant.participant_id,
+                        frame.timestamp,
+                    )),
                 }),
         );
     }
     values
+}
+
+/// When, the killer, the victim and the assists. A killer of 0 is a minion or a tower.
+type ChampionKill<'a> = (u64, u32, u32, &'a [u32]);
+
+fn champion_kills(timeline: &TimelinePayload) -> Vec<ChampionKill<'_>> {
+    let events = timeline.info.frames.iter().flat_map(|frame| &frame.events);
+    events
+        .filter_map(|event| match event {
+            Event::ChampionKill {
+                timestamp,
+                killer_id,
+                victim_id,
+                assisting_participant_ids,
+            } => Some((
+                *timestamp,
+                *killer_id,
+                *victim_id,
+                assisting_participant_ids.as_slice(),
+            )),
+            _ => None,
+        })
+        .collect()
+}
+
+fn scores_by(kills: &[ChampionKill<'_>], participant: u32, at_ms: u64) -> FrameScores {
+    let until = kills.iter().filter(|kill| kill.0 <= at_ms);
+    let count = |of: fn(&ChampionKill<'_>, u32) -> bool| {
+        let total = until.clone().filter(|kill| of(kill, participant)).count();
+        u32::try_from(total).unwrap_or(u32::MAX)
+    };
+    FrameScores {
+        kills: count(|kill, id| kill.1 == id),
+        deaths: count(|kill, id| kill.2 == id),
+        assists: count(|kill, id| kill.3.contains(&id)),
+    }
 }
 
 /// Elder has a schedule of its own, so it counts apart from the elemental drakes.
