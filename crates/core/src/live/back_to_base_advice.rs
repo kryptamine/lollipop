@@ -45,7 +45,7 @@ impl BackToBaseAdvice {
             };
             self.ask(&visit, advisor, widget.items);
         }
-        self.collect(data, widget).await;
+        self.collect(data, player, widget).await;
     }
 
     pub(super) fn end_game(&mut self) {
@@ -81,7 +81,7 @@ impl BackToBaseAdvice {
         });
     }
 
-    async fn collect(&mut self, data: &AllGameData, widget: &mut ItemWidget<'_>) {
+    async fn collect(&mut self, data: &AllGameData, player: &Player, widget: &mut ItemWidget<'_>) {
         let Some(asking) = self.asking.take_if(|asking| asking.answer.is_finished()) else {
             return;
         };
@@ -89,7 +89,7 @@ impl BackToBaseAdvice {
             return;
         }
         if let Some(answered) = asking.answer.await.ok().flatten() {
-            widget.offer(answered, Trigger::BackToBase, data.game_time());
+            widget.offer(answered, Trigger::BackToBase, data.game_time(), player);
         }
     }
 }

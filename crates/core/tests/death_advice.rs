@@ -176,23 +176,65 @@ async fn the_item_most_held_components_build_into_leads() {
     assert!(input.contains("Item to build: 3157 Песочные часы Жони"));
 }
 
-// A death never swaps an item still being built for a new one.
-#[tokio::test]
-async fn an_item_shown_and_not_bought_stays_the_item_to_build() {
-    let openai = FakeOpenAi::advising(&answer(TIP, Some(3102))).await;
+/// The inputs of two deaths to Zed, holding `before` at the first, whose Advice names
+/// `shown`, and `after` at the second.
+async fn inputs_of_two_deaths(
+    shown: u32,
+    before: &[(u32, &str)],
+    after: &[(u32, &str)],
+) -> [String; 2] {
+    let openai = FakeOpenAi::advising(&answer(TIP, Some(shown))).await;
     let (game, mut updates) = game_at_five_minutes(&item_table(&magic_heavy()), &openai).await;
+    game.give_items(ME, before);
     game.die_to(KILLER, &[], RESPAWN);
     settle(&mut updates, &openai).await;
     game.respawn();
-    game.give_items(ME, &[(1058, "Огромный жезл")]);
+    game.give_items(ME, after);
     game.set_time(400.0);
     settle(&mut updates, &openai).await;
     game.die_to(KILLER, &[], RESPAWN);
     settle(&mut updates, &openai).await;
-
     let bodies = openai.bodies();
-    let input = bodies[1]["input"].as_str().unwrap();
-    assert!(input.contains("Item to build: 3102 Покров банши"));
+    [0, 1].map(|index| bodies[index]["input"].as_str().unwrap().to_string())
+}
+
+// A death never swaps an item still being built for a new one, even on a tie.
+#[tokio::test]
+async fn an_item_shown_and_not_bought_wins_a_tie_in_components() {
+    let [first, second] = inputs_of_two_deaths(
+        3157,
+        &[(1058, "Огромный жезл")],
+        &[(1058, "Огромный жезл"), (1033, "Плащ отрицания")],
+    )
+    .await;
+
+    assert!(first.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(second.contains("Item to build: 3157 Песочные часы Жони"));
+}
+
+// The inventory beats the plan: a player who started another item is not told to
+// switch back to the one shown.
+#[tokio::test]
+async fn components_of_another_item_outrank_the_item_shown() {
+    let [first, second] = inputs_of_two_deaths(3102, &[], &[(1058, "Огромный жезл")]).await;
+
+    assert!(first.contains("Item to build: 3102 Покров банши"));
+    assert!(second.contains("Item to build: 3157 Песочные часы Жони"));
+}
+
+// A player who finished another item has left the plan: the item shown before would
+// otherwise stay the Item to build for the rest of the game.
+#[tokio::test]
+async fn finishing_another_item_releases_the_item_shown() {
+    let [first, second] = inputs_of_two_deaths(
+        3157,
+        &[(1058, "Огромный жезл")],
+        &[(3089, "Смертельная шляпа Рабадона")],
+    )
+    .await;
+
+    assert!(first.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(second.contains("Item to build: 3102 Покров банши"));
 }
 
 // A player holds one pair of boots: boots shown and then passed over for another pair

@@ -254,6 +254,7 @@ pub fn item_table(magic_share: &Value) -> Value {
             "3003": { "en": "Archangel's Staff", "ru": "Посох архангела" },
         },
         "boots": [3006, 3020, 3047, 3111],
+        "completed": [3003, 3089, 3102, 3157],
     })
 }
 

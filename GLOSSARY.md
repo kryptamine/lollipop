@@ -38,7 +38,7 @@ A completed item or boots that players of a champion and role commonly buy again
 _Avoid_: Recommended item, suggestion
 
 **Item to build**:
-The one Item candidate a Trigger's Advice may name, chosen by code: the item in progress, shown by earlier Advice and not bought or built from components the player holds, else the earliest by median minute.
+The one Item candidate a Trigger's Advice may name, chosen by code: the one the player's components build into most, then the item in progress (shown by earlier Advice, not bought, and not left for another finished item), else the earliest by median minute.
 _Avoid_: Next item, target item
 
 **Lane opponent**:
