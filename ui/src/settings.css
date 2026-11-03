@@ -165,3 +165,35 @@ main {
   color: #ff7b72;
   font-size: 11px;
 }
+
+.row .subtitle {
+  color: #8d8d92;
+  font-size: 11px;
+}
+
+.switch:disabled {
+  opacity: 0.45;
+}
+
+/* Greyed rows stay readable: what they do is still worth knowing. */
+.group.dim .row > :first-child {
+  opacity: 0.45;
+}
+
+.banner {
+  margin-top: 12px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: #3a3220;
+  color: #e9c46a;
+  font-size: 12px;
+}
+
+.row select {
+  padding: 2px 4px;
+  border: 1px solid #48494e;
+  border-radius: 5px;
+  background: #1f2023;
+  color: inherit;
+  font: inherit;
+}

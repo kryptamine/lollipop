@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
 
 import { MarkerStrip } from './MarkerStrip';
+import { AdviceWidget } from './AdviceWidget';
 import { TimingHintBanner } from './TimingHintBanner';
 import {
+  onAdvice,
   onBenchmarks,
   onMarkers,
   onNotices,
@@ -12,6 +14,7 @@ import {
   type Benchmarks,
   type Markers,
   type Notices,
+  type ShownAdvice,
   type Snapshot,
   type TimingHintState,
   type WidgetSwitches,
@@ -23,6 +26,7 @@ export const App = () => {
   const [benchmarks, setBenchmarks] = useState<Benchmarks>();
   const [notices, setNotices] = useState<Notices>([]);
   const [hints, setHints] = useState<TimingHintState[]>([]);
+  const [advice, setAdvice] = useState<ShownAdvice>();
   const [switches, setSwitches] = useState<WidgetSwitches>();
 
   useEffect(() => onSnapshot(setSnapshot), []);
@@ -30,6 +34,7 @@ export const App = () => {
   useEffect(() => onBenchmarks(setBenchmarks), []);
   useEffect(() => onNotices(setNotices), []);
   useEffect(() => onTimingHints(setHints), []);
+  useEffect(() => onAdvice(setAdvice), []);
   useEffect(() => onWidgetSwitches(setSwitches), []);
 
   return (
@@ -43,6 +48,7 @@ export const App = () => {
         />
       )}
       {switches?.timingHints && <TimingHintBanner hints={hints} />}
+      {switches?.adviceWidget && <AdviceWidget advice={advice} />}
     </>
   );
 };

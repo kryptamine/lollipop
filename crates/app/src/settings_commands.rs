@@ -5,7 +5,7 @@
     reason = "a Tauri command receives its arguments by value"
 )]
 
-use lollipop_core::settings::{Settings, Switches};
+use lollipop_core::settings::{AdviceLanguage, Settings, Switches};
 use tauri::{AppHandle, State};
 
 use crate::launch_at_login;
@@ -19,6 +19,21 @@ pub(crate) fn read_switches(store: State<'_, SettingsStore>) -> Switches {
 #[tauri::command]
 pub(crate) fn set_widget(store: State<'_, SettingsStore>, id: &str, is_on: bool) -> Switches {
     store.change(|settings| settings.set_widget(id, is_on));
+    store.read(Settings::switches)
+}
+
+#[tauri::command]
+pub(crate) fn set_trigger(store: State<'_, SettingsStore>, id: &str, is_on: bool) -> Switches {
+    store.change(|settings| settings.set_trigger(id, is_on));
+    store.read(Settings::switches)
+}
+
+#[tauri::command]
+pub(crate) fn set_advice_language(
+    store: State<'_, SettingsStore>,
+    language: AdviceLanguage,
+) -> Switches {
+    store.change(|settings| settings.advice_language = language);
     store.read(Settings::switches)
 }
 

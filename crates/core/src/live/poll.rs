@@ -8,11 +8,14 @@ use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
 use super::gold_earned::GoldEarned;
 use super::inputs_of_game::InputsOfGame;
+use super::league::League;
 use super::live_game::LiveGame;
 use super::live_update::LiveUpdate;
+use super::loading_screen_advice::LoadingScreenAdvice;
 use super::notice::Notice;
 use super::payload::{AllGameData, Player};
 use super::snapshot::Snapshot;
+use crate::advice::Advisor;
 use crate::benchmarks::BenchmarkTable;
 use crate::delivery::TableFile;
 use crate::game_inputs::GameInputs;
@@ -24,9 +27,9 @@ const POLL_INTERVAL: Duration = Duration::from_secs(1);
 /// # Panics
 /// If the HTTP client cannot be built, which only a broken TLS backend causes.
 pub async fn poll(
-    url: &str,
-    lockfile: &Path,
+    league: League<'_>,
     benchmark_table: &TableFile,
+    advisor: &Advisor,
     clock: &impl Clock,
     mut on_update: impl FnMut(LiveUpdate) + Send,
 ) {
@@ -44,16 +47,18 @@ pub async fn poll(
 
     let mut game = CurrentGame {
         http: &http,
-        lockfile,
+        lockfile: league.lockfile,
         benchmark_table,
+        advisor,
         gold_earned: GoldEarned::default(),
         inputs: InputsOfGame::default(),
         markers: GameMarkers::default(),
         hints: GameHints::default(),
+        advice: LoadingScreenAdvice::default(),
         notices: Arc::from([]),
     };
     loop {
-        let data = fetch(&http, url).await;
+        let data = fetch(&http, league.live_client_url).await;
         let update = match &data {
             Some(data) => game.update(data).await,
             None => None,
@@ -80,10 +85,12 @@ struct CurrentGame<'a> {
     http: &'a reqwest::Client,
     lockfile: &'a Path,
     benchmark_table: &'a TableFile,
+    advisor: &'a Advisor,
     gold_earned: GoldEarned,
     inputs: InputsOfGame,
     markers: GameMarkers,
     hints: GameHints,
+    advice: LoadingScreenAdvice,
     notices: Arc<[Notice]>,
 }
 
@@ -95,7 +102,15 @@ impl CurrentGame<'_> {
     }
 
     async fn update(&mut self, data: &AllGameData) -> Option<LiveGame> {
+        if data.at_loading_screen() {
+            self.advice
+                .at_loading_screen(data, self.advisor, self.http, self.lockfile)
+                .await;
+        }
         if !data.match_running() {
+            if data.game_ended() {
+                self.advice.end_game();
+            }
             self.gold_earned.end_game();
             self.end_held_game();
             return None;
@@ -119,6 +134,7 @@ impl CurrentGame<'_> {
             markers,
             benchmarks,
             hints: self.hints.at(data),
+            advice: self.advice.at(data).await,
             notices: Arc::clone(&self.notices),
             game_time: data.game_time(),
         })

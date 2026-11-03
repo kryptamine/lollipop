@@ -6,10 +6,12 @@
 
 use std::process::Command;
 
+use lollipop_core::settings::ADVICE_WIDGET;
 use tauri::{AppHandle, Manager, State};
 
 use crate::key_save::KeySave;
 use crate::openai_key::OpenAiKey;
+use crate::settings_store::SettingsStore;
 
 const USAGE_URL: &str = "https://platform.openai.com/usage";
 
@@ -25,8 +27,14 @@ pub(crate) async fn save_openai_key(app: AppHandle, key: String) -> KeySave {
     openai_key.save(key.trim()).await
 }
 
+/// Also turns the Advice Widget off, so a key saved later does not bring Advice back
+/// unasked.
 #[tauri::command]
-pub(crate) fn remove_openai_key(key: State<'_, OpenAiKey>) -> Option<String> {
+pub(crate) fn remove_openai_key(
+    key: State<'_, OpenAiKey>,
+    store: State<'_, SettingsStore>,
+) -> Option<String> {
+    store.change(|settings| settings.set_widget(ADVICE_WIDGET, false));
     key.remove()
 }
 

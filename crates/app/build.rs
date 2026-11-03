@@ -3,6 +3,8 @@ fn main() {
     let commands = &[
         "read_switches",
         "set_widget",
+        "set_trigger",
+        "set_advice_language",
         "set_launch_at_login",
         "read_openai_key",
         "save_openai_key",
