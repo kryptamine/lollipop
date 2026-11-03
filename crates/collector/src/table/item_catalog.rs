@@ -10,5 +10,7 @@ pub(super) struct ItemCatalog {
     /// The transforms each purchasable item becomes with no purchase, such as Seraph's
     /// Embrace of Archangel's Staff, in id order.
     pub(super) owned_as: HashMap<u32, Vec<u32>>,
+    /// Every component down each item's `from` tree, in id order.
+    pub(super) builds_from: HashMap<u32, Vec<u32>>,
     pub(super) names: HashMap<u32, ItemNameEntry>,
 }

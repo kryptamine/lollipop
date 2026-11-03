@@ -1,9 +1,10 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use super::benchmark_file::ItemCandidatesEntry;
 use super::candidate_list::candidate_list;
 use super::damage_profile::DamageProfile;
 use super::first_purchase::FirstPurchase;
+use super::item_catalog::ItemCatalog;
 use super::match_items::MatchItems;
 use super::profile_bucket::ProfileBucket;
 use super::reworks::Reworks;
@@ -19,7 +20,7 @@ pub(super) fn item_candidates(
     matches: &[MatchItems],
     profile: &DamageProfile,
     reworks: &Reworks,
-    owned_as: &HashMap<u32, Vec<u32>>,
+    catalog: &ItemCatalog,
     min_games: usize,
 ) -> Vec<ItemCandidatesEntry> {
     let mut groups: BTreeMap<(&str, &str), BucketGames<'_>> = BTreeMap::new();
@@ -46,7 +47,7 @@ pub(super) fn item_candidates(
                 let own = buckets
                     .get(bucket.index())
                     .filter(|own| own.len() >= min_games);
-                candidate_list(own.unwrap_or(&pooled), owned_as)
+                candidate_list(own.unwrap_or(&pooled), catalog)
             });
             Some(ItemCandidatesEntry {
                 champion: champion.to_string(),

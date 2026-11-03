@@ -22,6 +22,10 @@ pub const QUEST_ITEM_STEP_1: u32 = 6801;
 pub const QUEST_ITEM_STEP_2: u32 = 6802;
 /// Over 2200 gold, and still a component of Infinity Edge.
 pub const COSTLY_COMPONENT: u32 = 6632;
+/// Builds into the costly component, so Infinity Edge holds it two levels down.
+pub const LONG_SWORD: u32 = 1036;
+/// Builds straight into Infinity Edge.
+pub const BF_SWORD: u32 = 1038;
 pub const HEALTH_POTION: u32 = 2003;
 pub const ARENA_ITEM: u32 = 443_054;
 /// Completed on 16.20 only, as an item that left the game with 16.21.
@@ -110,17 +114,28 @@ fn items(older_patch: bool) -> Value {
         item["name"] = json!(format!("Item {id}"));
         data.insert(id.to_string(), item);
     };
-    add(INFINITY_EDGE, item(3450, &["CriticalStrike"], &[], None));
+    add(
+        INFINITY_EDGE,
+        built_from(
+            item(3450, &["CriticalStrike"], &[], None),
+            &["6632", "1038"],
+        ),
+    );
     add(RABADONS, item(3600, &["SpellDamage"], &[], None));
     add(ZHONYAS, item(3250, &["SpellDamage", "Armor"], &[], None));
-    add(MERCURYS_TREADS, item(1250, &["Boots"], &["3172"], Some(2)));
+    add(
+        MERCURYS_TREADS,
+        built_from(item(1250, &["Boots"], &["3172"], Some(2)), &["1001"]),
+    );
     add(PLATED_STEELCAPS, item(1200, &["Boots"], &["3174"], Some(2)));
     add(BOOTS, item(300, &["Boots"], &["3111", "3047"], None));
     add(DORANS_BLADE, item(450, &["Lane"], &[], None));
     add(
         COSTLY_COMPONENT,
-        item(2300, &["Damage"], &["3031"], Some(2)),
+        built_from(item(2300, &["Damage"], &["3031"], Some(2)), &["1036"]),
     );
+    add(LONG_SWORD, item(350, &["Damage"], &["6632"], Some(1)));
+    add(BF_SWORD, item(1300, &["Damage"], &["3031"], Some(1)));
     add(
         ARCHANGELS_STAFF,
         item(2900, &["SpellDamage"], &["3040"], Some(3)),
@@ -168,6 +183,11 @@ fn item(total: u32, tags: &[&str], into: &[&str], depth: Option<u32>) -> Value {
     if let Some(depth) = depth {
         item["depth"] = json!(depth);
     }
+    item
+}
+
+fn built_from(mut item: Value, from: &[&str]) -> Value {
+    item["from"] = json!(from);
     item
 }
 

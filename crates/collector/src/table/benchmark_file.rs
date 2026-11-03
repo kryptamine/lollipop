@@ -107,6 +107,9 @@ pub(super) struct CandidateEntry {
     /// The transforms that hold `item`, so a player owning one is not advised it again.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub(super) owned_as: Vec<u32>,
+    /// Every component down the item's Data Dragon `from` tree, which a player is building.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(super) builds_from: Vec<u32>,
 }
 
 #[derive(Clone, Serialize)]

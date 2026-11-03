@@ -90,7 +90,7 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
             &matches,
             profile,
             &reworks,
-            &catalog.owned_as,
+            &catalog,
             config.min_candidate_games,
         )
     });
