@@ -78,6 +78,31 @@ async fn advice_without_an_item_shows_no_icon() {
     assert_eq!(shown.icon, None);
 }
 
+// A death that teaches nothing is answered null, and a weak idea never fills the Widget.
+#[tokio::test]
+async fn null_advice_shows_nothing() {
+    let null = json!({ "advice": null, "item": null }).to_string();
+
+    assert_eq!(shown_after_death(&null).await, None);
+}
+
+// Every Trigger may stay silent, and generic tips are named so the model avoids them.
+#[tokio::test]
+async fn the_instructions_prefer_silence_to_a_generic_tip() {
+    let openai = FakeOpenAi::advising(&answer(TIP, None)).await;
+    let (game, mut updates) = game_at_five_minutes(&item_table(&magic_heavy()), &openai).await;
+    game.die_to(KILLER, &[], RESPAWN);
+    settle(&mut updates, &openai).await;
+
+    let instructions = openai.bodies()[0]["instructions"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    assert!(instructions.contains("Never a tip that fits any game"));
+    assert!(instructions.contains("silence beats a weak idea"));
+    assert!(instructions.contains("When the death teaches nothing"));
+}
+
 // Plated Steelcaps is a candidate only against a physical-heavy team.
 #[tokio::test]
 async fn an_item_outside_the_candidates_drops_the_whole_advice() {
@@ -113,6 +138,30 @@ async fn the_prompt_describes_the_death_without_names() {
     for name in ["#EUW", "Foe", "Friend", "Me,"] {
         assert!(!input.contains(name), "{name} is in the prompt");
     }
+}
+
+// The model reads who is ahead from the score; an execution would inflate it.
+#[tokio::test]
+async fn the_prompt_carries_the_kill_score_without_executions() {
+    let input = input_of_death(&item_table(&magic_heavy()), |game| {
+        game.log_event(json!({
+            "EventName": "ChampionKill",
+            "EventTime": 200.0,
+            "KillerName": "Friend1#EUW",
+            "VictimName": ASSISTER,
+            "Assisters": [],
+        }));
+        game.log_event(json!({
+            "EventName": "ChampionKill",
+            "EventTime": 250.0,
+            "KillerName": "Turret_T2_C_05_A",
+            "VictimName": "Friend1#EUW",
+            "Assisters": [],
+        }));
+    })
+    .await;
+
+    assert!(input.contains("Kills: player's team 1, enemy team 1\n"));
 }
 
 #[tokio::test]

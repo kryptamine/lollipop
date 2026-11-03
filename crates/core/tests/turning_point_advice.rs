@@ -109,6 +109,7 @@ async fn the_prompt_carries_the_moment_the_score_and_both_teams_without_names() 
     assert_eq!(input.matches("Enemy: ").count(), 5);
     assert!(input.contains("Ally: Vi, JUNGLE"));
     assert!(input.contains("Enemy: Zed, MIDDLE, level 1, KDA 1/2/3, no items\n"));
+    assert!(input.contains("Kills: player's team 0, enemy team 0\n"));
     assert!(input.contains(
         "Player's team has taken: dragons Water, Air, Earth; Herald 1; Baron 0; turrets 1; inhibitors 0\n"
     ));

@@ -4,6 +4,7 @@ use std::fmt::Write;
 
 use super::death::Death;
 use super::item_prompt::{clock, describe, item_lines};
+use super::kill_score::KillScore;
 use super::recommended_item::RecommendedItem;
 use crate::advice::{instructions, Language};
 use crate::benchmarks::ItemCandidate;
@@ -11,7 +12,8 @@ use crate::benchmarks::ItemCandidate;
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player has just died to an enemy champion: `advice` says why and what to \
 change, and names the Item to build when the input gives one. `item` is that item's id, \
-or null when the input gives none. Never advise another item."
+or null when the input gives none. Never advise another item. When the death teaches \
+nothing, as in a fair trade, `advice` and `item` are null."
 );
 
 pub(super) fn input(
@@ -40,6 +42,9 @@ pub(super) fn input(
         "Deaths to this killer this game: {}",
         death.kills_by_killer()
     );
+    if let Some(score) = KillScore::of(data, death.player) {
+        let _ = writeln!(lines, "Kills: {score}");
+    }
     for assister in death.assisters() {
         let _ = writeln!(lines, "Assister: {}", describe(assister));
     }

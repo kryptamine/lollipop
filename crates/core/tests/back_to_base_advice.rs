@@ -91,6 +91,7 @@ async fn the_prompt_describes_the_visit_without_names() {
         "Player: Ahri, MIDDLE, level 1, KDA 1/2/3, items Кольцо Дорана, Огромный жезл, gold 50\n"
     ));
     assert!(input.contains("Bought in this visit: Огромный жезл\n"));
+    assert!(input.contains("Kills: player's team 0, enemy team 0\n"));
     assert_eq!(input.matches("Enemy: ").count(), 5);
     assert!(input.contains("Enemy: Zed, MIDDLE"));
     // The Rod just bought builds into Zhonya's, which takes over from Banshee's minute.
