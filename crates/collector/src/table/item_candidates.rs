@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use super::benchmark_file::ItemCandidatesEntry;
 use super::candidate_list::candidate_list;
@@ -19,6 +19,7 @@ pub(super) fn item_candidates(
     matches: &[MatchItems],
     profile: &DamageProfile,
     reworks: &Reworks,
+    owned_as: &HashMap<u32, Vec<u32>>,
     min_games: usize,
 ) -> Vec<ItemCandidatesEntry> {
     let mut groups: BTreeMap<(&str, &str), BucketGames<'_>> = BTreeMap::new();
@@ -45,7 +46,7 @@ pub(super) fn item_candidates(
                 let own = buckets
                     .get(bucket.index())
                     .filter(|own| own.len() >= min_games);
-                candidate_list(own.unwrap_or(&pooled))
+                candidate_list(own.unwrap_or(&pooled), owned_as)
             });
             Some(ItemCandidatesEntry {
                 champion: champion.to_string(),

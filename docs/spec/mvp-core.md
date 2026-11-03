@@ -209,7 +209,8 @@ Built offline and shipped as one versioned file
   regions pooled. Matchup, map side and stored percentiles are not included.
 - **File:** JSON with `schema_version`, `patch_window` and `cells`, written by
   `lollipop-collector build-table`. Schema 2 adds `damage_profile` and
-  `item_candidates`, described in the [AI Advice spec](ai-advice.md#in-the-benchmark-table).
+  `item_candidates`, with `item_names` and `data_dragon_version`, described in the
+  [AI Advice spec](ai-advice.md#in-the-benchmark-table).
 - **Contents per minute:** median CS, median `totalGold`, mean level and n. Timeline
   frames are aligned to the minute by linear interpolation, and a game counts only
   towards the minutes it reached.

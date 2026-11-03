@@ -264,10 +264,12 @@ picks one, and code rejects anything else.
   buckets; under 50 pooled, no entry and `item` stays null. Threshold in
   `table_config`, and `--min-candidate-games` on `build-table` and `publish`.
 - **Transforms:** Seraph's, Muramana and support upgrades map to their purchasable
-  source through Data Dragon `specialRecipe` / `from`; a candidate carries optional
-  `owned_as` ids.
-- **Names:** every candidate id maps to its en and ru name, from Data Dragon at the
-  newest patch of the Patch window. The file carries that Data Dragon version.
+  source through Data Dragon `specialRecipe`, else a lone `from`; a candidate carries
+  optional `owned_as` ids. A completed item whose `into` holds only transforms (items
+  of map 11 no shop sells) stays completed.
+- **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
+  Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
+  translation repeats the English one. `data_dragon_version` is that version.
 
 ## Voiceover
 

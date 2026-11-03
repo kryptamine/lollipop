@@ -14,7 +14,9 @@ mod drift_comparison;
 mod drift_report;
 mod first_purchase;
 mod item_candidates;
+mod item_catalog;
 mod item_class;
+mod item_names;
 mod match_items;
 mod minute_samples;
 mod participant_items;
@@ -32,13 +34,14 @@ use lollipop_core::game_inputs::Patch;
 
 use crate::seed_tier::SeedTier;
 use crate::store::Store;
-use benchmark_file::{BenchmarkFile, CellEntry};
+use benchmark_file::{BenchmarkFile, CellEntry, ItemsEntry};
 use cell_drift::CellDrift;
 use cell_samples::CellSamples;
 use damage_profile::DamageProfile;
-use data_dragon::item_classes;
+use data_dragon::item_catalog;
 use drift_comparison::DriftComparison;
 use item_candidates::item_candidates;
+use item_names::item_names;
 use match_items::MatchItems;
 
 pub(crate) use benchmark_file::SCHEMA_VERSION;
@@ -68,7 +71,7 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
         open: None,
     };
     let newest = patches.last().copied().unwrap_or(floor);
-    let classes = item_classes(&config.data_dragon_url, newest)?;
+    let catalog = item_catalog(&config.data_dragon_url, newest)?;
     store.for_each_played_game(|game: PlayedGame| {
         if game.patch < floor || reworks.drops(&game.champion, game.patch) {
             return Ok::<(), TableError>(());
@@ -78,20 +81,26 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
     build.close_open_group();
     let mut matches = Vec::new();
     store.for_each_stored_payloads(floor, |stored| {
-        matches.push(MatchItems::read(&stored, &classes)?);
+        matches.push(MatchItems::read(&stored, &catalog.classes)?);
         Ok::<(), TableError>(())
     })?;
     let profile = DamageProfile::of(&matches, &reworks);
     let candidates = profile.as_ref().map_or_else(Vec::new, |profile| {
-        item_candidates(&matches, profile, &reworks, config.min_candidate_games)
+        item_candidates(
+            &matches,
+            profile,
+            &reworks,
+            &catalog.owned_as,
+            config.min_candidate_games,
+        )
     });
-    let file = BenchmarkFile::new(
-        config.max_patch,
-        &patches,
-        build.cells,
-        profile.map(DamageProfile::entry),
-        candidates,
-    );
+    let items = ItemsEntry {
+        damage_profile: profile.map(DamageProfile::entry),
+        item_names: item_names(&candidates, &catalog),
+        item_candidates: candidates,
+        data_dragon_version: catalog.version,
+    };
+    let file = BenchmarkFile::new(config.max_patch, &patches, build.cells, items);
     write_atomically(&config.output, &file)?;
     Ok(DriftReport::new(&patches, comparison, &build.drifts))
 }

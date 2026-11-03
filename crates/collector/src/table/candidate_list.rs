@@ -12,7 +12,10 @@ const MINUTE_MS: f64 = 60_000.0;
 
 /// The most bought completed items, then tier-2 boots, each until they cover 90% of their
 /// class's purchases or reach their cap, as one list by share.
-pub(super) fn candidate_list(games: &[&[FirstPurchase]]) -> Vec<CandidateEntry> {
+pub(super) fn candidate_list(
+    games: &[&[FirstPurchase]],
+    owned_as: &HashMap<u32, Vec<u32>>,
+) -> Vec<CandidateEntry> {
     let mut bought: HashMap<u32, (ItemClass, Vec<f64>)> = HashMap::new();
     for purchase in games.iter().flat_map(|purchases| purchases.iter()) {
         let (_, minutes) = bought
@@ -31,6 +34,7 @@ pub(super) fn candidate_list(games: &[&[FirstPurchase]]) -> Vec<CandidateEntry> 
             item,
             share: rounded(count(minutes.len()) / count(games.len())),
             minute: rounded(median(minutes)?),
+            owned_as: owned_as.get(&item).cloned().unwrap_or_default(),
         })
     })
     .collect::<Vec<_>>();

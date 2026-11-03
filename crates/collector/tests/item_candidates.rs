@@ -20,9 +20,10 @@ use serde_json::json;
 use support::archived_match::{damage, ArchivedMatch, Seat, FILLER};
 use support::build::{run_build, Build, Candidate};
 use support::fake_data_dragon::{
-    FakeDataDragon, ARCHANGELS_STAFF, ARENA_ITEM, BOOTS, DEMOTED_ITEM, DORANS_BLADE, HEALTH_POTION,
-    INFINITY_EDGE, MERCURYS_TREADS, MORE_BOOTS, MORE_COMPLETED, PLATED_STEELCAPS, RABADONS,
-    REMOVED_ITEM, ZHONYAS,
+    FakeDataDragon, ARCHANGELS_STAFF, ARENA_ITEM, BOOTS, COSTLY_COMPONENT, DEMOTED_ITEM,
+    DORANS_BLADE, HEALTH_POTION, INFINITY_EDGE, MANAMUNE, MERCURYS_TREADS, MORE_BOOTS,
+    MORE_COMPLETED, MURAMANA, PLATED_STEELCAPS, QUEST_ITEM, QUEST_ITEM_STEP_1, QUEST_ITEM_STEP_2,
+    RABADONS, REMOVED_ITEM, SERAPHS_EMBRACE, ZHONYAS,
 };
 use support::game::Game;
 use support::played::Played;
@@ -83,7 +84,7 @@ fn candidates_are_completed_items_and_tier_2_boots_with_their_share_and_minute()
         .buys(1, BOOTS, 3)
         .buys(1, MERCURYS_TREADS, 8)
         .buys(1, RABADONS, 12)
-        .buys(1, ARCHANGELS_STAFF, 15)
+        .buys(1, COSTLY_COMPONENT, 15)
         .buys(1, ARENA_ITEM, 20)
         .buys(1, ZHONYAS, 22);
     bench.add_archived(3, &full_build);
@@ -178,6 +179,74 @@ fn items_are_classed_by_the_newest_patchs_data_dragon_version() {
     let build = build(&bench, 2);
 
     assert_eq!(items(&only_list(&build, "Ahri", "MIDDLE")), [RABADONS]);
+}
+
+// The view loads icons by this version, and Data Dragon lags a new patch by days: the
+// patch label would point at icons that do not exist yet.
+#[test]
+fn the_file_carries_the_data_dragon_version_the_items_were_read_at() {
+    let mut bench = TableBench::new();
+    bench.add_archived(1, &ahri_match().on_patch(16, 22).buys(1, RABADONS, 12));
+
+    let build = build(&bench, 1);
+
+    assert_eq!(build.table()["data_dragon_version"], json!("16.21.1"));
+}
+
+// Seraph's Embrace has no purchase event: without the mapping Archangel's Staff would
+// drop out of every list, and a player holding Seraph's would be advised it again.
+#[test]
+fn an_item_that_transforms_is_a_candidate_owned_as_its_transforms() {
+    let mut bench = TableBench::new();
+    let transforming = ahri_match()
+        .buys(1, ARCHANGELS_STAFF, 10)
+        .buys(1, MANAMUNE, 12)
+        .buys(1, QUEST_ITEM, 14)
+        .buys(1, RABADONS, 16);
+    bench.add_archived(1, &transforming);
+
+    let build = build(&bench, 1);
+
+    let owned_as = |item: u32| {
+        let entry = build.table()["item_candidates"][0]["mixed"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|candidate| candidate["item"] == item)
+            .cloned()
+            .unwrap();
+        entry.get("owned_as").cloned()
+    };
+    assert_eq!(owned_as(ARCHANGELS_STAFF), Some(json!([SERAPHS_EMBRACE])));
+    assert_eq!(owned_as(MANAMUNE), Some(json!([MURAMANA])));
+    assert_eq!(
+        owned_as(QUEST_ITEM),
+        Some(json!([QUEST_ITEM_STEP_1, QUEST_ITEM_STEP_2]))
+    );
+    assert_eq!(owned_as(RABADONS), None);
+}
+
+// The prompt names items to the model in the player's language, and the file is all the
+// app has: a candidate with no name could not be offered.
+#[test]
+fn every_candidate_and_no_other_item_has_its_en_and_ru_name() {
+    let mut bench = TableBench::new();
+    let full_build = ahri_match()
+        .buys(1, DORANS_BLADE, 0)
+        .buys(1, RABADONS, 12)
+        .buys(1, ZHONYAS, 22);
+    bench.add_archived(1, &full_build);
+
+    let build = build(&bench, 1);
+
+    assert_eq!(
+        build.table()["item_names"],
+        json!({
+            RABADONS.to_string(): { "en": "Item 3089", "ru": "Предмет 3089" },
+            // Data Dragon's ru_RU lacks it here, so the English name stands in.
+            ZHONYAS.to_string(): { "en": "Item 3157", "ru": "Item 3157" },
+        })
+    );
 }
 
 fn team_of(archived: ArchivedMatch, team: u32, magic_seats: u32) -> ArchivedMatch {

@@ -17,10 +17,8 @@ pub(super) struct BenchmarkFile {
     max_patch: Option<String>,
     patch_window: Vec<String>,
     cells: Vec<CellEntry>,
-    /// Left out when no stored match is archived, and then no list is either.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    damage_profile: Option<DamageProfileEntry>,
-    item_candidates: Vec<ItemCandidatesEntry>,
+    #[serde(flatten)]
+    items: ItemsEntry,
 }
 
 impl BenchmarkFile {
@@ -28,18 +26,29 @@ impl BenchmarkFile {
         max_patch: Option<Patch>,
         patches: &[Patch],
         cells: Vec<CellEntry>,
-        damage_profile: Option<DamageProfileEntry>,
-        item_candidates: Vec<ItemCandidatesEntry>,
+        items: ItemsEntry,
     ) -> Self {
         Self {
             schema_version: SCHEMA_VERSION,
             max_patch: max_patch.map(patch_label),
             patch_window: patches.iter().copied().map(patch_label).collect(),
             cells,
-            damage_profile,
-            item_candidates,
+            items,
         }
     }
+}
+
+/// What item Advice reads, at the top level of the file beside `cells`.
+#[derive(Serialize)]
+pub(super) struct ItemsEntry {
+    /// Left out when no stored match is archived, and then no list is either.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) damage_profile: Option<DamageProfileEntry>,
+    pub(super) item_candidates: Vec<ItemCandidatesEntry>,
+    /// The Data Dragon version the items were read at, for their icons.
+    pub(super) data_dragon_version: String,
+    /// The en and ru name of every candidate id, for the prompt.
+    pub(super) item_names: BTreeMap<u32, ItemNameEntry>,
 }
 
 #[derive(Serialize)]
@@ -95,4 +104,13 @@ pub(super) struct CandidateEntry {
     pub(super) item: u32,
     pub(super) share: f64,
     pub(super) minute: f64,
+    /// The transforms that hold `item`, so a player owning one is not advised it again.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(super) owned_as: Vec<u32>,
+}
+
+#[derive(Clone, Serialize)]
+pub(super) struct ItemNameEntry {
+    pub(super) en: String,
+    pub(super) ru: String,
 }
