@@ -10,7 +10,8 @@ use super::item_widget::ItemWidget;
 use super::payload::{AllGameData, Player};
 use crate::advice::{Advisor, Question, Trigger};
 
-/// Advice on each death to an enemy champion, which may name the Item to build.
+/// Advice on a death to an enemy champion that teaches something, which may name the
+/// Item to build.
 #[derive(Default)]
 pub(super) struct DeathAdvice {
     /// `ChampionKill` events already seen, `None` before the game's first poll.
@@ -36,7 +37,11 @@ impl DeathAdvice {
             .rev()
             .find_map(|kill| Death::of(data, player, kill));
         if let Some(death) = death {
-            self.ask(&death, advisor, widget.items);
+            // A new death means the player respawned since the last, whose answer is now late.
+            self.end_game();
+            if death.teaches() {
+                self.ask(&death, advisor, widget.items);
+            }
         }
         self.collect(data, player, widget).await;
     }
@@ -48,8 +53,6 @@ impl DeathAdvice {
     }
 
     fn ask(&mut self, death: &Death<'_>, advisor: &Advisor, items: &AdvisedItems) {
-        // A new death means the player respawned since the last, whose answer is now late.
-        self.end_game();
         let player = death.player;
         if !player.is_dead || player.respawn_timer <= 0.0 {
             return;

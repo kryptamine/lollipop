@@ -1,5 +1,8 @@
 use super::payload::{AllGameData, Event, Player};
 
+// Kills over deaths from which a killer is fed: a death to them is worth a lesson.
+const FED_LEAD: u32 = 3;
+
 /// The active player killed by an enemy champion.
 pub(super) struct Death<'a> {
     pub(super) data: &'a AllGameData,
@@ -32,6 +35,16 @@ impl<'a> Death<'a> {
     pub(super) fn enemies(&self) -> impl Iterator<Item = &'a Player> {
         let team = self.killer.team();
         self.data.players().iter().filter(move |p| p.team() == team)
+    }
+
+    /// A death worth Advice: the killer has killed the player before, or is fed. A
+    /// lone death to an even opponent teaches little, and its Advice was filler.
+    pub(super) fn teaches(&self) -> bool {
+        let scores = &self.killer.scores;
+        let fed = scores
+            .kills
+            .is_some_and(|kills| kills >= scores.deaths.unwrap_or(0) + FED_LEAD);
+        fed || self.kills_by_killer() >= 2
     }
 
     /// The killer's kills of the player this game, this one included.

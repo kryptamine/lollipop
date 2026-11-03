@@ -13,6 +13,7 @@ use super::game_clock::GameClock;
 use super::loading_game::{lineup, Updates, KEY, ME};
 use super::server::serve;
 
+pub const FED: &str = "Foe2#EUW";
 pub const DATA_DRAGON_VERSION: &str = "16.21.1";
 
 /// A game whose `gameTime` stands still between the moves the test makes, so an answer
@@ -52,6 +53,11 @@ impl ItemGame {
                 player["respawnTimer"] = json!(0.0);
                 player["scores"] =
                     json!({ "creepScore": 0, "kills": 1, "deaths": 2, "assists": 3 });
+                // Zed, the usual killer, is fed so that a death to him asks for Advice.
+                if player["riotId"] == FED {
+                    player["scores"] =
+                        json!({ "creepScore": 0, "kills": 5, "deaths": 1, "assists": 0 });
+                }
                 player
             })
             .collect();

@@ -177,6 +177,9 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
   `advice` is null when the death teaches nothing, as in a fair trade.
 - **Fires:** on a `ChampionKill` whose `VictimName` is the active player and whose
   killer is an enemy champion. A death to a turret, minion or monster gets none.
+- **Only when it teaches:** the killer has killed the player before this game, or
+  is fed, with at least 3 kills more than deaths. A lone death to an even opponent
+  asks nothing, and still ends the last death's request.
 - **Prompt:** the player's champion, role, level, items and `currentGold`; the
   killer and assisters (champion, position, level, items, KDA); the whole enemy
   team's champions, items and levels; `gameTime`; how many times this killer has
