@@ -195,6 +195,30 @@ async fn an_item_shown_and_not_bought_stays_the_item_to_build() {
     assert!(input.contains("Item to build: 3102 Покров банши"));
 }
 
+// A player holds one pair of boots: boots shown and then passed over for another pair
+// would otherwise stay the Item to build for the rest of the game.
+#[tokio::test]
+async fn boots_are_never_the_item_to_build_once_the_player_owns_a_pair() {
+    let openai = FakeOpenAi::advising(&answer(TIP, Some(3047))).await;
+    let (game, mut updates) = game_at_five_minutes(&item_table(&physical_heavy()), &openai).await;
+    game.die_to(KILLER, &[], RESPAWN);
+    settle(&mut updates, &openai).await;
+    game.respawn();
+    game.give_items(ME, &[(3006, "Берсерки")]);
+    game.set_time(400.0);
+    settle(&mut updates, &openai).await;
+    game.die_to(KILLER, &[], RESPAWN);
+    settle(&mut updates, &openai).await;
+
+    let bodies = openai.bodies();
+    assert!(bodies[0]["input"]
+        .as_str()
+        .unwrap()
+        .contains("Item to build: 3047 Бронированные сапоги"));
+    let input = bodies[1]["input"].as_str().unwrap();
+    assert!(input.contains("Item to build: 3157 Песочные часы Жони"));
+}
+
 // Without a table for the game, a death still gets Advice, but no item.
 #[tokio::test]
 async fn no_table_gives_no_item_to_build() {

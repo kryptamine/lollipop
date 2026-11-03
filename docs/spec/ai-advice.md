@@ -242,7 +242,8 @@ Item to build among them, the model explains it, and code rejects anything else.
 
 - **In the app:** sum the five enemies' magic share from `allPlayers` and read the
   Damage profile bucket. The candidates are the list for the player's champion,
-  role and bucket, minus items the player owns, `owned_as` included.
+  role and bucket, minus items the player owns, `owned_as` included, and minus
+  every boots once the player owns any id of `boots`.
 
 ### Item to build
 
@@ -285,6 +286,9 @@ Settled in [#152](https://github.com/kryptamine/lollipop/issues/152).
   of map 11 no shop sells) stays completed.
 - **Components:** a candidate carries optional `builds_from`, every id down its
   Data Dragon `from` tree. A table without it ties no component to a candidate.
+- **Boots:** `boots` lists every Data Dragon item of map 11 with the `Boots` tag and
+  `depth` 2 or more, candidate or not, since a player holds one pair. A table
+  without it leaves boots among the candidates.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
   translation repeats the English one. `data_dragon_version` is that version.

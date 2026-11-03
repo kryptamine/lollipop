@@ -253,6 +253,7 @@ pub fn item_table(magic_share: &Value) -> Value {
             "3102": { "en": "Banshee's Veil", "ru": "Покров банши" },
             "3003": { "en": "Archangel's Staff", "ru": "Посох архангела" },
         },
+        "boots": [3006, 3020, 3047, 3111],
     })
 }
 

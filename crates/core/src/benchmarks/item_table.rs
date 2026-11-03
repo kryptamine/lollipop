@@ -21,6 +21,9 @@ pub(crate) struct ItemTable {
     // By the id as a string: a flattened map cannot read its keys as numbers.
     #[serde(default)]
     item_names: HashMap<String, ItemName>,
+    /// Every boots id past the first tier; empty in a table built before they were listed.
+    #[serde(default)]
+    boots: Vec<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -46,7 +49,8 @@ struct CandidateEntry {
 
 impl ItemTable {
     /// The list for the bucket of the enemy team, less what `owned` holds, itself or
-    /// transformed. No list for the champion and role gives none: see ADR 0004.
+    /// transformed, and less every boots once it holds a pair. No list for the champion
+    /// and role gives none: see ADR 0004.
     pub(crate) fn candidates<'a>(
         &self,
         champion: &str,
@@ -68,11 +72,14 @@ impl ItemTable {
             ProfileBucket::Mixed => &entry.mixed,
             ProfileBucket::MagicHeavy => &entry.magic_heavy,
         };
+        let shod = owned.iter().any(|item| self.boots.contains(item));
+        let held = |candidate: &&CandidateEntry| {
+            owned.contains(&candidate.item)
+                || candidate.owned_as.iter().any(|item| owned.contains(item))
+                || shod && self.boots.contains(&candidate.item)
+        };
         list.iter()
-            .filter(|candidate| {
-                !owned.contains(&candidate.item)
-                    && !candidate.owned_as.iter().any(|item| owned.contains(item))
-            })
+            .filter(|candidate| !held(candidate))
             .map(|candidate| ItemCandidate {
                 item: candidate.item,
                 share: candidate.share,
