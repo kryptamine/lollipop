@@ -16,3 +16,16 @@ pub(super) struct ItemCatalog {
     /// Every boots of the Rift past the first tier, in id order.
     pub(super) boots: Vec<u32>,
 }
+
+impl ItemCatalog {
+    pub(super) fn completed(&self) -> Vec<u32> {
+        let mut completed: Vec<u32> = self
+            .classes
+            .iter()
+            .filter(|(_, class)| **class == ItemClass::Completed)
+            .map(|(&id, _)| id)
+            .collect();
+        completed.sort_unstable();
+        completed
+    }
+}

@@ -270,6 +270,43 @@ fn the_file_lists_every_boots_past_the_first_tier_tagged_or_not() {
     assert_eq!(build.table()["boots"], json!(expected));
 }
 
+// A player who finishes an item off the plan has moved on: without every completed id,
+// the app could not tell when one no list names was finished.
+#[test]
+fn the_file_lists_every_completed_item_on_the_newest_patch() {
+    let mut bench = TableBench::new();
+    bench.add_archived(1, &ahri_match().buys(1, RABADONS, 12));
+
+    let build = build(&bench, 1);
+
+    let completed: Vec<u64> = build.table()["completed"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|id| id.as_u64().unwrap())
+        .collect();
+    for item in [
+        INFINITY_EDGE,
+        RABADONS,
+        ZHONYAS,
+        ARCHANGELS_STAFF,
+        QUEST_ITEM,
+    ] {
+        assert!(completed.contains(&u64::from(item)), "{item} is missing");
+    }
+    for item in [
+        MERCURYS_TREADS,
+        COSTLY_COMPONENT,
+        SERAPHS_EMBRACE,
+        HEALTH_POTION,
+        ARENA_ITEM,
+        DEMOTED_ITEM,
+    ] {
+        assert!(!completed.contains(&u64::from(item)), "{item} is listed");
+    }
+    assert!(completed.is_sorted());
+}
+
 // The prompt names items to the model in the player's language, and the file is all the
 // app has: a candidate with no name could not be offered.
 #[test]

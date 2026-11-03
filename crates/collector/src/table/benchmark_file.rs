@@ -51,6 +51,8 @@ pub(super) struct ItemsEntry {
     pub(super) item_names: BTreeMap<u32, ItemNameEntry>,
     /// Every boots id past the first tier, candidate or not: a player holds one pair.
     pub(super) boots: Vec<u32>,
+    /// Every completed item id, candidate or not, so the app sees a player finish one.
+    pub(super) completed: Vec<u32>,
 }
 
 #[derive(Serialize)]
