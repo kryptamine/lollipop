@@ -67,7 +67,8 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
         drifts: Vec::new(),
         open: None,
     };
-    let classes = item_classes(&config.data_dragon_url, &patches)?;
+    let newest = patches.last().copied().unwrap_or(floor);
+    let classes = item_classes(&config.data_dragon_url, newest)?;
     store.for_each_played_game(|game: PlayedGame| {
         if game.patch < floor || reworks.drops(&game.champion, game.patch) {
             return Ok::<(), TableError>(());

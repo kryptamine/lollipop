@@ -257,7 +257,7 @@ picks one, and code rejects anything else.
   first purchase). No slot, no win rate.
 - **List:** completed items up to 90% coverage, at most 12, plus tier-2 boots up to
   90%, at most 3, in one list by share. Classes come from Data Dragon's `item.json`
-  for each patch of the window: completed is on map 11, purchasable, no `into`, at
+  for the newest patch of the window: completed is on map 11, purchasable, no `into`, at
   least 2200 gold, and not boots, a consumable or a trinket; tier-2 boots have the
   `Boots` tag and `depth` 2. A build that cannot reach Data Dragon writes no table.
 - **Thin groups:** a bucket under 50 games uses the champion+role list pooled over

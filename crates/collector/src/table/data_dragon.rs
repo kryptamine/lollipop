@@ -43,11 +43,11 @@ struct Gold {
     purchasable: bool,
 }
 
-/// The class of every item a candidate list may hold, as the Patch window's newest patch
-/// has it. Each patch reads its own `item.json`, since an item can leave a patch.
+/// The class of every item a candidate list may hold, on the newest patch only: an item
+/// that left the game, or became a component, is advice nobody can follow there.
 pub(super) fn item_classes(
     url: &str,
-    patches: &[Patch],
+    newest: Patch,
 ) -> Result<HashMap<u32, ItemClass>, TableError> {
     let http = Client::builder()
         .user_agent(USER_AGENT)
@@ -55,22 +55,14 @@ pub(super) fn item_classes(
         .build()
         .map_err(|error| TableError::DataDragon(error.to_string()))?;
     let versions: Vec<String> = fetch(&http, &format!("{url}/api/versions.json"))?;
-    let mut classes = HashMap::new();
-    for patch in patches {
-        let version = version_for(&versions, *patch)?;
-        let path = format!("{url}/cdn/{version}/data/en_US/item.json");
-        let document: ItemDocument = fetch(&http, &path)?;
-        for (id, item) in &document.data {
-            let Ok(id) = id.parse() else {
-                continue;
-            };
-            match class_of(item) {
-                Some(class) => classes.insert(id, class),
-                None => classes.remove(&id),
-            };
-        }
-    }
-    Ok(classes)
+    let version = version_for(&versions, newest)?;
+    let path = format!("{url}/cdn/{version}/data/en_US/item.json");
+    let document: ItemDocument = fetch(&http, &path)?;
+    let classes = document.data.iter().filter_map(|(id, item)| {
+        let id = id.parse().ok()?;
+        Some((id, class_of(item)?))
+    });
+    Ok(classes.collect())
 }
 
 fn fetch<T: DeserializeOwned>(http: &Client, url: &str) -> Result<T, TableError> {

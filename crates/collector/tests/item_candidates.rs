@@ -163,10 +163,10 @@ fn the_list_holds_at_most_12_completed_items_and_3_boots() {
     assert_eq!(kept, expected);
 }
 
-// An item that left the game still counts on the patch it was in, and an item a newer
-// patch turned into a component no longer does.
+// The table serves the newest patch: an item that left the game, or became a component,
+// bought on an older one would be advice nobody can follow.
 #[test]
-fn each_patch_classes_items_by_its_own_data_dragon_version() {
+fn items_are_classed_by_the_newest_patchs_data_dragon_version() {
     let mut bench = TableBench::new();
     let older = ahri_match()
         .on_patch(16, 20)
@@ -177,10 +177,7 @@ fn each_patch_classes_items_by_its_own_data_dragon_version() {
 
     let build = build(&bench, 2);
 
-    assert_eq!(
-        items(&only_list(&build, "Ahri", "MIDDLE")),
-        [RABADONS, REMOVED_ITEM]
-    );
+    assert_eq!(items(&only_list(&build, "Ahri", "MIDDLE")), [RABADONS]);
 }
 
 fn team_of(archived: ArchivedMatch, team: u32, magic_seats: u32) -> ArchivedMatch {
