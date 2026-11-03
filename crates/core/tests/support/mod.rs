@@ -1,4 +1,5 @@
 pub mod benchmark_file;
+pub mod death_game;
 pub mod delivery_bench;
 pub mod fake_bucket;
 pub mod fake_lcu;

@@ -29,30 +29,40 @@ function mockTable() {
     assists: minute * 0.3,
     scores_n: 300,
   }));
+  const candidates = [
+    { item: 3157, share: 0.6, minute: 18 },
+    { item: 3102, share: 0.45, minute: 21 },
+  ];
   return {
     schema_version: 2,
     patch_window: ["16.20", "16.21"],
     cells: [{ champion: "Ahri", role: "MIDDLE", tier: "GOLD", minutes }],
+    damage_profile: { magic_share: { Zed: 0.1 }, mixed_from: 1, magic_heavy_from: 1.5 },
+    item_candidates: [
+      { champion: "Ahri", role: "MIDDLE", physical_heavy: candidates, mixed: candidates, magic_heavy: candidates },
+    ],
+    data_dragon_version: "16.21.1",
+    item_names: {
+      3157: { en: "Zhonya's Hourglass", ru: "Песочные часы Жони" },
+      3102: { en: "Banshee's Veil", ru: "Покров банши" },
+    },
   };
 }
+
+// Zed kills the mock player at this game time, and they respawn RESPAWN_S later.
+const DEATH_AT_S = 40;
+const RESPAWN_S = 15;
 
 // The first seconds are the loading screen, which asks for loading screen Advice.
 const LOADING_SCREEN_S = 5;
 
 // Stands in for a Responses call: the model's JSON as the output text.
-const MOCK_ADVICE = {
-  output: [
-    {
-      type: "message",
-      content: [
-        {
-          type: "output_text",
-          text: JSON.stringify({ advice: "Mock Advice: trade when Zed uses W, then back off.", item: null }),
-        },
-      ],
-    },
-  ],
-};
+function mockAdvice(answer) {
+  return { output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(answer) }] }] };
+}
+
+const LANE_PLAN = { advice: "Mock Advice: trade when Zed uses W, then back off.", item: null };
+const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, Zhonya's Hourglass answers it.", item: 3157 };
 
 function liveClientData() {
   // Starts at 0:00 game time after the loading screen, so the notices of the first 10 s show.
@@ -60,6 +70,12 @@ function liveClientData() {
   const loading = elapsed < LOADING_SCREEN_S;
   const gameTime = loading ? 0 : elapsed - LOADING_SCREEN_S;
   const minutes = gameTime / 60;
+  const isDead = gameTime >= DEATH_AT_S && gameTime < DEATH_AT_S + RESPAWN_S;
+  const death = { EventName: "ChampionKill", EventTime: DEATH_AT_S, KillerName: "Rival#DEV", VictimName: "Me#DEV", Assisters: [] };
+  const events = loading ? [] : [{ EventName: "GameStart", EventTime: 0 }];
+  if (gameTime >= DEATH_AT_S) {
+    events.push(death);
+  }
   return {
     activePlayer: { riotId: "Me#DEV", currentGold: 500 + gameTime * 3 },
     allPlayers: [
@@ -78,6 +94,8 @@ function liveClientData() {
         team: "ORDER",
         position: "MIDDLE",
         level: Math.min(18, 1 + Math.floor(minutes)),
+        isDead,
+        respawnTimer: isDead ? DEATH_AT_S + RESPAWN_S - gameTime : 0,
         items: [],
         // The API floors CS to 10.
         scores: {
@@ -88,7 +106,7 @@ function liveClientData() {
         },
       },
     ],
-    events: { Events: loading ? [] : [{ EventName: "GameStart", EventTime: 0 }] },
+    events: { Events: events },
     gameData: { gameTime, gameMode: "CLASSIC" },
   };
 }
@@ -114,12 +132,17 @@ createServer((req, res) => {
     return;
   }
   if (req.method === "POST" && req.url === "/v1/responses") {
-    req.resume();
     if (openaiFailure !== undefined) {
+      req.resume();
       failAdvice(res);
       return;
     }
-    res.end(JSON.stringify(MOCK_ADVICE));
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => {
+      const isDeath = body.includes("just killed");
+      res.end(JSON.stringify(mockAdvice(isDeath ? DEATH_ADVICE : LANE_PLAN)));
+    });
     return;
   }
   res.end(JSON.stringify(leagueClient.get(req.url) ?? liveClientData()));

@@ -1,8 +1,13 @@
 //! Polls Riot's Live Client Data API for the active player's own stats.
 
+mod advice_slot;
+mod arrival;
 mod clock;
 mod compared_game;
 mod comparison;
+mod death;
+mod death_advice;
+mod death_prompt;
 mod dragon_pit;
 mod game_hints;
 mod game_markers;
@@ -22,6 +27,7 @@ mod notice;
 mod objective_schedule;
 mod payload;
 mod poll;
+mod recommended_item;
 mod scores;
 mod shown_advice;
 mod shown_benchmarks;

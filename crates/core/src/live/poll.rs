@@ -2,7 +2,9 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use super::advice_slot::AdviceSlot;
 use super::clock::Clock;
+use super::death_advice::DeathAdvice;
 use super::game_hints::GameHints;
 use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
@@ -54,7 +56,9 @@ pub async fn poll(
         inputs: InputsOfGame::default(),
         markers: GameMarkers::default(),
         hints: GameHints::default(),
-        advice: LoadingScreenAdvice::default(),
+        loading_screen: LoadingScreenAdvice::new(&http, league.lockfile),
+        death: DeathAdvice::default(),
+        slot: AdviceSlot::default(),
         notices: Arc::from([]),
     };
     loop {
@@ -93,7 +97,9 @@ struct CurrentGame<'a> {
     inputs: InputsOfGame,
     markers: GameMarkers,
     hints: GameHints,
-    advice: LoadingScreenAdvice,
+    loading_screen: LoadingScreenAdvice,
+    death: DeathAdvice,
+    slot: AdviceSlot,
     notices: Arc<[Notice]>,
 }
 
@@ -106,13 +112,15 @@ impl CurrentGame<'_> {
 
     async fn update(&mut self, data: &AllGameData) -> Option<LiveGame> {
         if data.at_loading_screen() {
-            self.advice
-                .at_loading_screen(data, self.advisor, self.http, self.lockfile)
+            self.loading_screen
+                .at_loading_screen(data, self.advisor, &mut self.slot)
                 .await;
         }
         if !data.match_running() {
             if data.game_ended() {
-                self.advice.end_game();
+                self.loading_screen.end_game();
+                self.death.end_game();
+                self.slot.clear();
                 self.advisor.end_game();
             }
             self.gold_earned.end_game();
@@ -132,13 +140,17 @@ impl CurrentGame<'_> {
             scores: player.scores.player_scores(),
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
+        self.loading_screen.at(data, &mut self.slot).await;
+        self.death
+            .at(data, player, self.advisor, &mut self.slot)
+            .await;
         Some(LiveGame {
             snapshot,
             inputs,
             markers,
             benchmarks,
             hints: self.hints.at(data),
-            advice: self.advice.at(data).await,
+            advice: self.slot.at(data.game_time(), data.game_start()),
             notices: Arc::clone(&self.notices),
             game_time: data.game_time(),
         })
@@ -157,8 +169,10 @@ impl CurrentGame<'_> {
             player.position.as_deref(),
         )
         .await;
-        let table = BenchmarkTable::read(self.benchmark_table.path());
+        let mut table = BenchmarkTable::read(self.benchmark_table.path());
         self.notices = notices_of(&inputs, table.as_ref()).into();
+        self.death.end_game();
+        self.death = DeathAdvice::start(table.as_mut(), &inputs);
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)

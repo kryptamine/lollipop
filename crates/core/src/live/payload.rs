@@ -79,26 +79,34 @@ pub(super) struct Player {
     raw_champion_name: Option<String>,
     pub(super) position: Option<String>,
     pub(super) level: u32,
-    items: Vec<Item>,
+    #[serde(default)]
+    pub(super) is_dead: bool,
+    /// Seconds left until the player respawns, while dead.
+    #[serde(default)]
+    pub(super) respawn_timer: f64,
+    pub(super) items: Vec<Item>,
     pub(super) scores: Scores,
     pub(super) runes: Option<Runes>,
     pub(super) summoner_spells: Option<SummonerSpells>,
 }
 
 #[derive(Deserialize)]
-struct Item {
+#[serde(rename_all = "camelCase")]
+pub(super) struct Item {
     #[serde(rename = "itemID")]
-    id: u32,
+    pub(super) id: u32,
     count: u32,
+    /// In the client's language.
+    pub(super) display_name: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct Scores {
     pub(super) creep_score: u32,
-    kills: Option<u32>,
-    deaths: Option<u32>,
-    assists: Option<u32>,
+    pub(super) kills: Option<u32>,
+    pub(super) deaths: Option<u32>,
+    pub(super) assists: Option<u32>,
 }
 
 impl Scores {
@@ -124,7 +132,10 @@ pub(super) struct Event {
     name: String,
     #[serde(rename = "EventTime")]
     time: Option<f64>,
-    killer_name: Option<String>,
+    pub(super) killer_name: Option<String>,
+    pub(super) victim_name: Option<String>,
+    #[serde(default)]
+    pub(super) assisters: Vec<String>,
     dragon_type: Option<String>,
 }
 
@@ -190,15 +201,21 @@ impl AllGameData {
 
     pub(super) fn killer_team(&self, kill: &Event) -> Option<Team> {
         let killer = kill.killer_name.as_deref()?;
-        let mut named = self.all_players.iter().filter(|p| p.goes_by(killer));
-        let Some(player) = named.next() else {
+        if !self.all_players.iter().any(|p| p.goes_by(killer)) {
             return Team::of_minion(killer);
-        };
-        // A game name is not unique: picking one of two players could miscount the Elder rule.
-        if named.next().is_some() {
-            return None;
         }
-        player.team.as_deref().and_then(Team::of_player)
+        self.player_named(killer)?
+            .team
+            .as_deref()
+            .and_then(Team::of_player)
+    }
+
+    /// `None` also for a name two players go by: a game name is not unique, and picking
+    /// one of them could miscount the Elder rule or blame the wrong killer.
+    pub(super) fn player_named(&self, name: &str) -> Option<&Player> {
+        let mut named = self.all_players.iter().filter(|p| p.goes_by(name));
+        let player = named.next()?;
+        named.next().is_none().then_some(player)
     }
 }
 
@@ -219,7 +236,7 @@ impl Player {
     }
 
     // Events give "a player name", and no recording shows which of these it is.
-    fn goes_by(&self, name: &str) -> bool {
+    pub(super) fn goes_by(&self, name: &str) -> bool {
         [&self.riot_id, &self.riot_id_game_name, &self.summoner_name]
             .into_iter()
             .any(|known| known.as_deref() == Some(name))
