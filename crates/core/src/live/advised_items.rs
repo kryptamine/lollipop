@@ -1,5 +1,7 @@
 use super::payload::Player;
 use super::recommended_item::RecommendedItem;
+use super::shown_item::ShownItem;
+use super::standing::Standing;
 use crate::benchmarks::{BenchmarkTable, ItemCandidate, ItemTable};
 use crate::game_inputs::{ClientInputs, GameInputs, Role};
 
@@ -10,7 +12,7 @@ pub(super) struct AdvisedItems {
     /// Empty when the game's table is missing or Stale, so no item can be advised.
     table: ItemTable,
     role: Option<Role>,
-    shown: Vec<u32>,
+    shown: Vec<ShownItem>,
 }
 
 impl AdvisedItems {
@@ -30,8 +32,9 @@ impl AdvisedItems {
         }
     }
 
-    /// The one candidate item Advice may name: an item Advice showed and the player has not
-    /// bought, else the one most held components build into, else the earliest by minute.
+    /// The one candidate item Advice may name: the one most held components build into,
+    /// then one Advice showed and the player has not left for another finished item,
+    /// then the earliest by minute.
     pub(super) fn to_build<'a>(
         &self,
         player: &Player,
@@ -41,16 +44,9 @@ impl AdvisedItems {
             return None;
         };
         let owned = player.item_ids();
+        let finished = self.table.finished(&owned);
         let enemies = enemies.filter_map(Player::cell_champion);
-        let mut candidates = self.table.candidates(champion, role, enemies, &owned);
-        let shown = self.shown.iter().find_map(|&item| {
-            candidates
-                .iter()
-                .position(|candidate| candidate.item == item)
-        });
-        if let Some(shown) = shown {
-            return Some(candidates.swap_remove(shown));
-        }
+        let candidates = self.table.candidates(champion, role, enemies, &owned);
         let held = |candidate: &ItemCandidate<'_>| {
             candidate
                 .builds_from
@@ -58,10 +54,28 @@ impl AdvisedItems {
                 .filter(|item| owned.contains(item))
                 .count()
         };
+        let standing = |candidate: &ItemCandidate<'_>| {
+            let Some((index, shown)) = self
+                .shown
+                .iter()
+                .enumerate()
+                .find(|(_, shown)| shown.item == candidate.item)
+            else {
+                return Standing::NeverShown;
+            };
+            if shown.passed_over(&finished) {
+                Standing::PassedOver
+            } else {
+                Standing::InProgress(index)
+            }
+        };
         // `min_by` keeps the first of equals, so a tie goes to the larger share.
-        candidates
-            .into_iter()
-            .min_by(|a, b| held(b).cmp(&held(a)).then(a.minute.total_cmp(&b.minute)))
+        candidates.into_iter().min_by(|a, b| {
+            held(b)
+                .cmp(&held(a))
+                .then_with(|| standing(a).cmp(&standing(b)))
+                .then(a.minute.total_cmp(&b.minute))
+        })
     }
 
     /// Items earlier Advice in this game showed, and whether `player` bought them,
@@ -70,8 +84,9 @@ impl AdvisedItems {
         let owned = player.item_ids();
         self.shown
             .iter()
-            .filter(|&&item| !self.table.another_pair(item, &owned))
-            .map(|&item| RecommendedItem {
+            .map(|shown| shown.item)
+            .filter(|&item| !self.table.another_pair(item, &owned))
+            .map(|item| RecommendedItem {
                 item,
                 name: self.table.name_of(item),
                 bought: owned.contains(&item),
@@ -83,9 +98,12 @@ impl AdvisedItems {
         self.table.icon_url(item)
     }
 
-    pub(super) fn show(&mut self, item: u32) {
-        if !self.shown.contains(&item) {
-            self.shown.push(item);
+    pub(super) fn show(&mut self, item: u32, player: &Player) {
+        if !self.shown.iter().any(|shown| shown.item == item) {
+            self.shown.push(ShownItem {
+                item,
+                finished_then: self.table.finished(&player.item_ids()),
+            });
         }
     }
 }

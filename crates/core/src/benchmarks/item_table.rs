@@ -24,6 +24,9 @@ pub(crate) struct ItemTable {
     /// Every boots id past the first tier; empty in a table built before they were listed.
     #[serde(default)]
     boots: HashSet<u32>,
+    /// Every completed item id; empty in a table built before they were listed.
+    #[serde(default)]
+    completed: HashSet<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -94,6 +97,15 @@ impl ItemTable {
         self.boots.contains(&item)
             && !owned.contains(&item)
             && owned.iter().any(|own| self.boots.contains(own))
+    }
+
+    /// The completed items `owned` holds.
+    pub(crate) fn finished(&self, owned: &[u32]) -> Vec<u32> {
+        owned
+            .iter()
+            .copied()
+            .filter(|item| self.completed.contains(item))
+            .collect()
     }
 
     pub(crate) fn name_of(&self, item: u32) -> Option<&ItemName> {

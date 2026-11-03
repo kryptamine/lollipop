@@ -84,7 +84,7 @@ impl DeathAdvice {
             return;
         }
         if let Some(answered) = asking.await.ok().flatten() {
-            widget.offer(answered, Trigger::Death, data.game_time());
+            widget.offer(answered, Trigger::Death, data.game_time(), player);
         }
     }
 }

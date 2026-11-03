@@ -250,11 +250,13 @@ Item to build among them, the model explains it, and code rejects anything else.
 
 Settled in [#152](https://github.com/kryptamine/lollipop/issues/152).
 
-- **In progress first:** the oldest candidate earlier Advice showed and the player
-  has not bought. A death never breaks it, whatever killed the player.
-- **Then components:** the candidate whose `builds_from` the player's items hit
-  most, ties to the earlier `minute`.
-- **Else** the candidate with the earliest `minute`, ties to the larger `share`.
+- **Components first:** the candidate whose `builds_from` the player's items hit
+  most. The inventory outranks earlier Advice.
+- **Then in progress:** among equal components, the oldest candidate earlier Advice
+  showed, not bought, and not left: the player has finished no other item of
+  `completed` since it showed. A death never breaks it.
+- **Then never shown,** and an item shown and left comes last.
+- **Else** by the earliest `minute`, ties to the larger `share`.
 - **None** when no candidate is left, and `item` stays null.
 
 ### In the Benchmark table
@@ -291,6 +293,9 @@ Settled in [#152](https://github.com/kryptamine/lollipop/issues/152).
   an item with the `Boots` tag, candidate or not, since a player holds one pair.
   The tree catches Gunmetal Greaves, which has no tag. A table without it leaves
   boots among the candidates.
+- **Completed:** `completed` lists every completed item id, candidate or not, so
+  the app sees a player finish an item off the plan. A table without it never
+  counts a shown item left.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
   translation repeats the English one. `data_dragon_version` is that version.

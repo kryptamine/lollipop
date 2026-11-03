@@ -306,6 +306,6 @@ async fn an_item_death_advice_showed_goes_in_the_prompt() {
     assert_eq!(inputs.len(), 2);
     assert!(inputs[1].contains("Moment: the player is back to base"));
     assert!(inputs[1].contains("Earlier recommended: Покров банши, not bought\n"));
-    // The Rod bought builds into Zhonya's, yet Banshee's death Advice showed stays held.
-    assert!(inputs[1].contains("Item to build: 3102 Покров банши"));
+    // The Rod bought builds into Zhonya's, so the inventory outranks Banshee's shown.
+    assert!(inputs[1].contains("Item to build: 3157 Песочные часы Жони"));
 }
