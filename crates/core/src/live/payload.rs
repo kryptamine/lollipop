@@ -137,6 +137,9 @@ pub(super) struct Event {
     #[serde(default)]
     pub(super) assisters: Vec<String>,
     dragon_type: Option<String>,
+    turret_killed: Option<String>,
+    inhib_killed: Option<String>,
+    acing_team: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -200,6 +203,11 @@ impl AllGameData {
         self.events.events.iter().any(|e| e.name == name)
     }
 
+    /// The whole game's events, oldest first.
+    pub(super) fn events(&self) -> &[Event] {
+        &self.events.events
+    }
+
     /// The whole game's events of one kind, oldest first.
     pub(super) fn events_named<'a>(&'a self, name: &'a str) -> impl Iterator<Item = &'a Event> {
         self.events.events.iter().filter(move |e| e.name == name)
@@ -214,6 +222,17 @@ impl AllGameData {
             .team
             .as_deref()
             .and_then(Team::of_player)
+    }
+
+    /// The team that took an objective or structure, or aced the other.
+    pub(super) fn taker_team(&self, event: &Event) -> Option<Team> {
+        if let Some(structure) = event.turret_killed.as_ref().or(event.inhib_killed.as_ref()) {
+            return Team::destroyer_of(structure);
+        }
+        if let Some(team) = &event.acing_team {
+            return Team::of_player(team);
+        }
+        self.killer_team(event)
     }
 
     /// `None` also for a name two players go by: a game name is not unique, and picking
@@ -235,6 +254,10 @@ impl Item {
 }
 
 impl Event {
+    pub(super) fn name(&self) -> &str {
+        &self.name
+    }
+
     /// `EventTime`, not the poll that saw it: an event can be logged seconds late.
     pub(super) const fn time(&self) -> Option<f64> {
         self.time
@@ -242,6 +265,10 @@ impl Event {
 
     pub(super) fn is_elder(&self) -> bool {
         self.dragon_type.as_deref() == Some("Elder")
+    }
+
+    pub(super) fn dragon_type(&self) -> Option<&str> {
+        self.dragon_type.as_deref()
     }
 }
 

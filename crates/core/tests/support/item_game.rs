@@ -130,6 +130,10 @@ impl ItemGame {
         drop(state);
     }
 
+    pub fn set_level(&self, level: u32) {
+        self.set_player(ME, "level", json!(level));
+    }
+
     pub fn set_gold(&self, gold: f64) {
         self.state.lock().unwrap().gold = gold;
     }

@@ -20,6 +20,7 @@ use super::loading_screen_advice::LoadingScreenAdvice;
 use super::notice::Notice;
 use super::payload::{AllGameData, Player};
 use super::snapshot::Snapshot;
+use super::turning_point_advice::TurningPointAdvice;
 use crate::advice::Advisor;
 use crate::benchmarks::BenchmarkTable;
 use crate::delivery::TableFile;
@@ -62,6 +63,7 @@ pub async fn poll(
         loading_screen: LoadingScreenAdvice::new(&http, league.lockfile),
         death: DeathAdvice::default(),
         back_to_base: BackToBaseAdvice::default(),
+        turning_point: TurningPointAdvice::default(),
         items: AdvisedItems::default(),
         slot: AdviceSlot::default(),
         notices: Arc::from([]),
@@ -105,6 +107,7 @@ struct CurrentGame<'a> {
     loading_screen: LoadingScreenAdvice,
     death: DeathAdvice,
     back_to_base: BackToBaseAdvice,
+    turning_point: TurningPointAdvice,
     items: AdvisedItems,
     slot: AdviceSlot,
     notices: Arc<[Notice]>,
@@ -128,6 +131,7 @@ impl CurrentGame<'_> {
                 self.loading_screen.end_game();
                 self.death.end_game();
                 self.back_to_base.end_game();
+                self.turning_point.end_game();
                 self.slot.clear();
                 self.advisor.end_game();
             }
@@ -149,6 +153,9 @@ impl CurrentGame<'_> {
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
         self.loading_screen.at(data, &mut self.slot).await;
+        self.turning_point
+            .at(data, player, self.advisor, &mut self.slot)
+            .await;
         let mut widget = ItemWidget {
             items: &mut self.items,
             slot: &mut self.slot,
@@ -188,6 +195,8 @@ impl CurrentGame<'_> {
         self.death = DeathAdvice::default();
         self.back_to_base.end_game();
         self.back_to_base = BackToBaseAdvice::default();
+        self.turning_point.end_game();
+        self.turning_point = TurningPointAdvice::default();
         self.items = AdvisedItems::start(table.as_mut(), &inputs);
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);

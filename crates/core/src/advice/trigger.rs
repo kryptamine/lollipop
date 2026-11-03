@@ -5,11 +5,17 @@ use serde::Serialize;
 #[serde(rename_all = "camelCase")]
 pub enum Trigger {
     LoadingScreen,
+    TurningPoint,
     BackToBase,
     Death,
 }
 
-pub const TRIGGERS: [Trigger; 3] = [Trigger::LoadingScreen, Trigger::BackToBase, Trigger::Death];
+pub const TRIGGERS: [Trigger; 4] = [
+    Trigger::LoadingScreen,
+    Trigger::TurningPoint,
+    Trigger::BackToBase,
+    Trigger::Death,
+];
 
 impl Trigger {
     /// The key in the settings file and in the view's switches, so it must never change.
@@ -17,6 +23,7 @@ impl Trigger {
     pub const fn id(self) -> &'static str {
         match self {
             Self::LoadingScreen => "loadingScreen",
+            Self::TurningPoint => "turningPoint",
             Self::BackToBase => "backToBase",
             Self::Death => "death",
         }
@@ -26,8 +33,9 @@ impl Trigger {
     pub(crate) const fn rank(self) -> u8 {
         match self {
             Self::LoadingScreen => 0,
-            Self::BackToBase => 1,
-            Self::Death => 2,
+            Self::TurningPoint => 1,
+            Self::BackToBase => 2,
+            Self::Death => 3,
         }
     }
 }

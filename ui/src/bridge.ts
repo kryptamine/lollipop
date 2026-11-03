@@ -49,6 +49,7 @@ export type WidgetId = keyof WidgetSwitches;
 export type TriggerSwitches = {
   loadingScreen: boolean;
   backToBase: boolean;
+  turningPoint: boolean;
   death: boolean;
 };
 
