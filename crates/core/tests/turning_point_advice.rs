@@ -15,7 +15,7 @@ use serde_json::{json, Value};
 
 use support::fake_openai::{FakeOpenAi, Reply};
 use support::item_game::{item_table, magic_heavy, settle, ItemGame, SETTLING_POLLS};
-use support::loading_game::Updates;
+use support::loading_game::{Updates, ME};
 
 const ALLY: &str = "Friend1#EUW";
 const KILLER: &str = "Foe2#EUW";
@@ -431,4 +431,90 @@ async fn the_turning_point_switch_off_asks_nothing() {
     moment(&game, &mut updates, &openai, baron(LATE, ALLY)).await;
 
     assert!(openai.requests().is_empty());
+}
+
+// Live Client Data has no map positions, so a lane or an ally to join is a guess.
+#[tokio::test]
+async fn the_instructions_say_the_players_position_is_unknown() {
+    let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
+    let (game, mut updates) = game_at(LATE, &openai).await;
+
+    moment(&game, &mut updates, &openai, baron(LATE, ALLY)).await;
+
+    let instructions = openai.bodies()[0]["instructions"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    assert!(instructions.contains("Where the player is on the map is unknown"));
+}
+
+// A player in a fight cannot act on a macro plan, and a Baron taken then is not lost.
+#[tokio::test]
+async fn a_moment_within_20_seconds_of_the_players_kill_waits_for_the_fight_to_pass() {
+    let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
+    let (game, mut updates) = game_at(LATE, &openai).await;
+    game.log_event(json!({ "EventName": "ChampionKill", "EventTime": LATE, "KillerName": ME, "VictimName": KILLER, "Assisters": [] }));
+    game.set_time(LATE + 5.0);
+
+    let shown = moment(&game, &mut updates, &openai, baron(LATE + 5.0, ALLY)).await;
+    assert_eq!(shown, None);
+    game.set_time(LATE + 19.0);
+    settle(&mut updates, &openai).await;
+    assert!(openai.requests().is_empty());
+
+    game.set_time(LATE + 20.0);
+    let shown = settle(&mut updates, &openai).await;
+
+    assert_eq!(openai.requests().len(), 1);
+    assert_eq!(shown.unwrap().text, PLAN);
+}
+
+#[tokio::test]
+async fn a_moment_right_after_the_players_assist_waits_too() {
+    let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
+    let (game, mut updates) = game_at(LATE, &openai).await;
+    game.log_event(json!({ "EventName": "ChampionKill", "EventTime": LATE, "KillerName": ALLY, "VictimName": KILLER, "Assisters": [ME] }));
+
+    moment(&game, &mut updates, &openai, baron(LATE, ALLY)).await;
+
+    assert!(openai.requests().is_empty());
+}
+
+#[tokio::test]
+async fn a_newer_moment_in_the_fight_replaces_the_one_held() {
+    let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
+    let (game, mut updates) = game_at(LATE, &openai).await;
+    game.log_event(json!({ "EventName": "ChampionKill", "EventTime": LATE, "KillerName": ME, "VictimName": KILLER, "Assisters": [] }));
+    moment(&game, &mut updates, &openai, baron(LATE, ALLY)).await;
+    game.set_time(LATE + 5.0);
+    moment(
+        &game,
+        &mut updates,
+        &openai,
+        json!({ "EventName": "InhibKilled", "EventTime": LATE + 5.0, "InhibKilled": "Barracks_T2_L1", "KillerName": ALLY }),
+    )
+    .await;
+
+    game.set_time(LATE + 20.0);
+    settle(&mut updates, &openai).await;
+
+    let inputs = inputs(&openai);
+    assert_eq!(inputs.len(), 1);
+    assert!(inputs[0].contains("Moment: an inhibitor was destroyed\n"));
+}
+
+// A dead player is out of the fight, so the plan held for it is asked at once.
+#[tokio::test]
+async fn a_death_after_the_players_kill_asks_the_moment_held() {
+    let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
+    let (game, mut updates) = game_at(LATE, &openai).await;
+    game.log_event(json!({ "EventName": "ChampionKill", "EventTime": LATE, "KillerName": ME, "VictimName": KILLER, "Assisters": [] }));
+    moment(&game, &mut updates, &openai, baron(LATE, ALLY)).await;
+    assert!(openai.requests().is_empty());
+
+    game.die_to(KILLER, &[], 40.0);
+    let shown = settle(&mut updates, &openai).await;
+
+    assert_eq!(openai.requests().len(), 1);
+    assert_eq!(shown.unwrap().trigger, Trigger::TurningPoint);
 }

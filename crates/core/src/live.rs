@@ -14,6 +14,7 @@ mod death;
 mod death_advice;
 mod death_prompt;
 mod dragon_pit;
+mod fighting;
 mod game_hints;
 mod game_markers;
 mod game_notices;

@@ -147,7 +147,7 @@ Advice stays the Widget's 20 s.
 | Loading screen | Never | 1:30 `gameTime` |
 | Death | Optional | Respawn |
 | Back to base | Optional | 10 s after the purchase, or a death |
-| Turning point | Never | 15 s after the moment, or a death |
+| Turning point | Never | 15 s after the request, or a death |
 
 ### Loading screen
 
@@ -205,10 +205,13 @@ Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
 ### Turning point
 
 Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
-[#121](https://github.com/kryptamine/lollipop/issues/121).
+[#121](https://github.com/kryptamine/lollipop/issues/121) and
+[#153](https://github.com/kryptamine/lollipop/issues/153).
 
-- **Says:** one macro idea for the next few minutes: where to be, what to
-  prioritise. `advice` is null when nothing is worth saying.
+- **Says:** one macro idea for the next few minutes: which objective to play for,
+  what to prioritise. `advice` is null when nothing is worth saying. Live Client
+  Data has no map positions, so the instructions say the player's position is
+  unknown: no lane and no named ally to join.
 - **Fires on,** either team: end of laning (the first turret kill or 14:00
   `gameTime`, whichever comes first, once per game); `DragonKill` (Elder included),
   `HeraldKill`, `BaronKill`; `InhibKilled`; `Ace`; the player's own level 6, 11
@@ -219,6 +222,10 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
   the window is skipped, not queued. One dropped by rank, by lateness or as null
   does not start the window. Within 30 s of a Turning point, a new one sends a new
   request whose answer replaces it.
+- **In a fight:** a moment within 20 s of a `ChampionKill` the player, alive,
+  killed or assisted in is held, not dropped, and asked once those 20 s pass. A
+  newer moment replaces the held one. A death does not count: a dead player is out
+  of the fight.
 - **While dead:** fires as usual; rank keeps it off a death Advice.
 - **Prompt:** the player's champion, role, level, items, KDA and `currentGold`;
   both teams' champions, items, levels and KDA; which moment fired and which team
