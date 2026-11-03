@@ -1,6 +1,8 @@
 //! Polls Riot's Live Client Data API for the active player's own stats.
 
 mod advice_slot;
+mod advised_items;
+mod answered;
 mod arrival;
 mod clock;
 mod compared_game;
@@ -15,6 +17,8 @@ mod game_notices;
 mod gold_earned;
 mod held_marker;
 mod inputs_of_game;
+mod item_prompt;
+mod item_widget;
 mod lane_opponent;
 mod league;
 mod live_game;
