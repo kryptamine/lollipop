@@ -172,8 +172,8 @@ Settled in [#94](https://github.com/kryptamine/lollipop/issues/94).
 
 Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 
-- **Says:** why the player died and what to change, naming the
-  [Item to build](#item-to-build). The model never picks another item.
+- **Says:** why the player died and what to change, naming one of the
+  [Item options](#item-options). The model never picks another item.
   `advice` is null when the death teaches nothing, as in a fair trade.
 - **Fires:** on a `ChampionKill` whose `VictimName` is the active player and whose
   killer is an enemy champion. A death to a turret, minion or monster gets none.
@@ -183,10 +183,11 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 - **Prompt:** the player's champion, role, level, items and `currentGold`; the
   killer and assisters (champion, position, level, items, KDA); the whole enemy
   team's champions, items and levels; `gameTime`; how many times this killer has
-  killed the player; the [kill score](#kill-score); the Item to build; items
+  killed the player; the [kill score](#kill-score); the Item options; items
   earlier Advice in this game recommended, and whether the player bought them,
   less boots passed over for another pair.
-- **Item:** the [Item to build](#item-to-build), held by code. Not filtered by gold:
+- **Item:** one of the [Item options](#item-options): the first unless the enemy
+  team's items, levels or the kill score call for another. Not filtered by gold:
   the model sees `currentGold` and may say to build toward it.
 - **Another death:** sends a new request, whose answer replaces the one showing.
 
@@ -194,7 +195,7 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 
 Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
 
-- **Says:** the Item to build. One the player can afford now is "buy it now",
+- **Says:** one of the Item options, picked as on death. One the player can afford now is "buy it now",
   otherwise "build toward it". `advice` is null when nothing changed since the
   last Advice.
 - **Fires:** on the first purchase of a visit: a new item in `items` and
@@ -204,7 +205,7 @@ Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
   base; once the inventory is full. A recall that buys nothing is not visible.
 - **Prompt:** the player's champion, role, level, items, KDA and `currentGold`; the
   items bought in this visit; the whole enemy team's champions, items, levels and
-  KDA; `gameTime`; the [kill score](#kill-score); the Item to build; earlier
+  KDA; `gameTime`; the [kill score](#kill-score); the Item options; earlier
   recommended items and whether bought, as on death.
 - **Item:** as for death. The first one comes on the first Back to base.
 
@@ -252,17 +253,20 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
 Settled in [#126](https://github.com/kryptamine/lollipop/issues/126). Research:
 [`item-statistics.md`](../research/item-statistics.md).
 
-Item Advice is hybrid: the Benchmark table supplies the candidates, code picks the
-Item to build among them, the model explains it, and code rejects anything else.
+Item Advice is hybrid: the Benchmark table supplies the candidates, code ranks them
+and gives the first three as Item options, the model picks one and explains it, and
+code rejects anything else ([ADR 0017](../adr/0017-model-picks-among-item-options.md)).
 
 - **In the app:** sum the five enemies' magic share from `allPlayers` and read the
   Damage profile bucket. The candidates are the list for the player's champion,
   role and bucket, minus items the player owns, `owned_as` included, and minus
   every boots once the player owns any id of `boots`.
 
-### Item to build
+### Item options
 
-Settled in [#152](https://github.com/kryptamine/lollipop/issues/152).
+Settled in [#152](https://github.com/kryptamine/lollipop/issues/152), amended by
+[#167](https://github.com/kryptamine/lollipop/issues/167). The first three of this
+order, best first; the model sees no other.
 
 - **Components first:** the candidate whose `builds_from` the player's items hit
   most. The inventory outranks earlier Advice.

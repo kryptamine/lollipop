@@ -223,7 +223,7 @@ fn body(state: &State) -> String {
 
 /// A schema 2 table with no Cells and Ahri's Item candidates for the middle lane: one
 /// list for each Damage profile bucket, with `magic_share` per enemy champion. Zhonya's
-/// builds from the Rod, and Banshee's comes first by its minute.
+/// builds from the Rod, Banshee's comes first by its minute, and Rabadon's is a fourth.
 pub fn item_table(magic_share: &Value) -> Value {
     let candidate = |item: u32, share: f64, minute: f64, builds_from: &[u32]| json!({ "item": item, "share": share, "minute": minute, "builds_from": builds_from });
     let zhonyas = candidate(3157, 0.6, 20.0, &[1052, 1058, 2420]);
@@ -249,6 +249,7 @@ pub fn item_table(magic_share: &Value) -> Value {
                 zhonyas,
                 candidate(3102, 0.45, 14.0, &[1033, 1052, 4632]),
                 seraphs,
+                candidate(3089, 0.3, 25.0, &[1026, 1058]),
             ],
         }],
         "data_dragon_version": DATA_DRAGON_VERSION,
@@ -258,6 +259,7 @@ pub fn item_table(magic_share: &Value) -> Value {
             "3020": { "en": "Sorcerer's Shoes", "ru": "Сапоги чародея" },
             "3102": { "en": "Banshee's Veil", "ru": "Покров банши" },
             "3003": { "en": "Archangel's Staff", "ru": "Посох архангела" },
+            "3089": { "en": "Rabadon's Deathcap", "ru": "Смертельная шляпа Рабадона" },
         },
         "boots": [3006, 3020, 3047, 3111],
         "completed": [3003, 3089, 3102, 3135, 3157],
