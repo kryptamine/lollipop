@@ -15,39 +15,24 @@ use lollipop_core::advice::Trigger;
 use lollipop_core::live::ShownAdvice;
 use serde_json::{json, Value};
 
-use support::death_game::{item_table, magic_heavy, physical_heavy, DeathGame};
 use support::fake_openai::{FakeOpenAi, Reply};
+use support::item_game::{
+    item_table, magic_heavy, physical_heavy, settle, ItemGame, SETTLING_POLLS,
+};
 use support::loading_game::{Updates, ME};
 
 const KILLER: &str = "Foe2#EUW";
 const ASSISTER: &str = "Foe1#EUW";
 const TIP: &str = "Zed ловит тебя у стены: собери Покров банши и держи E на его прыжок.";
 const RESPAWN: f64 = 30.0;
-const SETTLING_POLLS: usize = 8;
 
 fn answer(text: &str, item: Option<u32>) -> String {
     json!({ "advice": text, "item": item }).to_string()
 }
 
-/// Polls until OpenAI has answered every request and the poll loop has had time to take
-/// the answers, and gives the Widget then.
-async fn settle(updates: &mut Updates, openai: &FakeOpenAi) -> Option<ShownAdvice> {
-    let mut last = None;
-    for _ in 0..SETTLING_POLLS {
-        last = updates.recv().await.unwrap();
-    }
-    while openai.answered() < openai.requests().len() {
-        last = updates.recv().await.unwrap();
-    }
-    for _ in 0..3 {
-        last = updates.recv().await.unwrap();
-    }
-    last.and_then(|game| game.advice)
-}
-
 /// A game at 5:00 on a magic-heavy enemy team, polled until it runs.
-async fn game_at_five_minutes(table: &Value, openai: &FakeOpenAi) -> (DeathGame, Updates) {
-    let game = DeathGame::running_at(300.0, table).await;
+async fn game_at_five_minutes(table: &Value, openai: &FakeOpenAi) -> (ItemGame, Updates) {
+    let game = ItemGame::running_at(300.0, table).await;
     let mut updates = game.poll(&openai.url);
     settle(&mut updates, openai).await;
     (game, updates)
@@ -62,7 +47,7 @@ async fn shown_after_death(text: &str) -> Option<ShownAdvice> {
 }
 
 /// The input of the request one death to Zed sends, on a game set up by `prepare`.
-async fn input_of_death(table: &Value, prepare: impl FnOnce(&DeathGame)) -> String {
+async fn input_of_death(table: &Value, prepare: impl FnOnce(&ItemGame)) -> String {
     let openai = FakeOpenAi::advising(&answer(TIP, None)).await;
     let (game, mut updates) = game_at_five_minutes(table, &openai).await;
     prepare(&game);
@@ -195,7 +180,7 @@ async fn other_kills_ask_nothing() {
 #[tokio::test]
 async fn the_death_switch_off_asks_nothing() {
     let openai = FakeOpenAi::advising(&answer(TIP, None)).await;
-    let game = DeathGame::running_at(300.0, &item_table(&magic_heavy())).await;
+    let game = ItemGame::running_at(300.0, &item_table(&magic_heavy())).await;
     let mut updates = game.poll_with(&openai.url, |trigger| trigger != Trigger::Death);
     settle(&mut updates, &openai).await;
     game.die_to(KILLER, &[], RESPAWN);
@@ -208,7 +193,7 @@ async fn the_death_switch_off_asks_nothing() {
 #[tokio::test]
 async fn a_death_before_the_first_poll_asks_nothing() {
     let openai = FakeOpenAi::advising(&answer(TIP, None)).await;
-    let game = DeathGame::running_at(300.0, &item_table(&magic_heavy())).await;
+    let game = ItemGame::running_at(300.0, &item_table(&magic_heavy())).await;
     game.die_to(KILLER, &[], RESPAWN);
     let mut updates = game.poll(&openai.url);
     settle(&mut updates, &openai).await;
@@ -305,7 +290,7 @@ async fn death_advice_replaces_the_loading_screen_advice() {
         Reply::advising(&answer(TIP, None)),
     ])
     .await;
-    let game = DeathGame::at_loading_screen(&item_table(&magic_heavy())).await;
+    let game = ItemGame::at_loading_screen(&item_table(&magic_heavy())).await;
     let mut updates = game.poll(&openai.url);
     settle(&mut updates, &openai).await;
     game.start_game();
@@ -330,7 +315,7 @@ async fn a_late_loading_screen_answer_does_not_replace_death_advice() {
         Reply::advising(&answer(TIP, None)),
     ])
     .await;
-    let game = DeathGame::at_loading_screen(&item_table(&magic_heavy())).await;
+    let game = ItemGame::at_loading_screen(&item_table(&magic_heavy())).await;
     let mut updates = game.poll(&openai.url);
     while openai.requests().is_empty() {
         updates.recv().await.unwrap();

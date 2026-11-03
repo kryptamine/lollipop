@@ -160,6 +160,12 @@ impl AllGameData {
         &self.all_players
     }
 
+    pub(super) fn enemies_of<'a>(&'a self, player: &'a Player) -> impl Iterator<Item = &'a Player> {
+        self.all_players
+            .iter()
+            .filter(|other| other.team().is_some() && other.team() != player.team())
+    }
+
     pub(super) const fn full_runes(&self) -> Option<&FullRunes> {
         self.active_player.full_runes.as_ref()
     }
@@ -219,6 +225,15 @@ impl AllGameData {
     }
 }
 
+impl Item {
+    /// The client's name for the item, or its id when the client gives none.
+    pub(super) fn shown_name(&self) -> String {
+        self.display_name
+            .clone()
+            .unwrap_or_else(|| format!("item {}", self.id))
+    }
+}
+
 impl Event {
     /// `EventTime`, not the poll that saw it: an event can be logged seconds late.
     pub(super) const fn time(&self) -> Option<f64> {
@@ -250,6 +265,10 @@ impl Player {
             .as_deref()
             .and_then(|raw| raw.strip_prefix(RAW_CHAMPION_PREFIX));
         raw.or(self.champion_name.as_deref())
+    }
+
+    pub(super) fn item_ids(&self) -> Vec<u32> {
+        self.items.iter().map(|item| item.id).collect()
     }
 
     pub(super) fn item_counts(&self) -> ItemCounts {

@@ -3,10 +3,10 @@
 use std::fmt::Write;
 
 use super::death::Death;
-use super::payload::Player;
+use super::item_prompt::{clock, describe, item_lines};
 use super::recommended_item::RecommendedItem;
 use crate::advice::{instructions, Language};
-use crate::benchmarks::{ItemCandidate, ItemName};
+use crate::benchmarks::ItemCandidate;
 
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player has just died to an enemy champion: `advice` says why and what to \
@@ -47,83 +47,6 @@ pub(super) fn input(
     for enemy in death.enemies() {
         let _ = writeln!(lines, "Enemy: {}", describe(enemy));
     }
-    if candidates.is_empty() {
-        let _ = writeln!(lines, "Item candidates: none");
-    } else {
-        let _ = writeln!(lines, "Item candidates:");
-    }
-    for candidate in candidates {
-        let _ = writeln!(
-            lines,
-            "- {} {}: bought in {:.0}% of games, first at minute {:.0}",
-            candidate.item,
-            item_name(candidate.item, candidate.name, language),
-            candidate.share * 100.0,
-            candidate.minute
-        );
-    }
-    for earlier in recommended {
-        let bought = if earlier.bought {
-            "bought"
-        } else {
-            "not bought"
-        };
-        let _ = writeln!(
-            lines,
-            "Earlier recommended: {}, {bought}",
-            item_name(earlier.item, earlier.name, language)
-        );
-    }
+    item_lines(&mut lines, language, candidates, recommended);
     lines
-}
-
-/// Champion, position, level, KDA and items.
-fn describe(player: &Player) -> String {
-    let mut parts = vec![player
-        .champion_name
-        .as_deref()
-        .or_else(|| player.cell_champion())
-        .unwrap_or("unknown champion")
-        .to_string()];
-    parts.extend(player.position.clone());
-    parts.push(format!("level {}", player.level));
-    let scores = &player.scores;
-    if let (Some(kills), Some(deaths), Some(assists)) =
-        (scores.kills, scores.deaths, scores.assists)
-    {
-        parts.push(format!("KDA {kills}/{deaths}/{assists}"));
-    }
-    let items: Vec<String> = player
-        .items
-        .iter()
-        .map(|item| {
-            item.display_name
-                .clone()
-                .unwrap_or_else(|| format!("item {}", item.id))
-        })
-        .collect();
-    if items.is_empty() {
-        parts.push("no items".to_string());
-    } else {
-        parts.push(format!("items {}", items.join(", ")));
-    }
-    parts.join(", ")
-}
-
-fn item_name(item: u32, name: Option<&ItemName>, language: Language) -> String {
-    name.map_or_else(
-        || format!("item {item}"),
-        |name| name.of(language).to_string(),
-    )
-}
-
-#[allow(
-    clippy::as_conversions,
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    reason = "game time is a few thousand seconds, never negative"
-)]
-fn clock(game_time: f64) -> String {
-    let seconds = game_time.max(0.0) as u64;
-    format!("{}:{:02}", seconds / 60, seconds % 60)
 }

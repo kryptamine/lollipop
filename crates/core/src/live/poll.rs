@@ -3,6 +3,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::advice_slot::AdviceSlot;
+use super::advised_items::AdvisedItems;
+use super::back_to_base_advice::BackToBaseAdvice;
 use super::clock::Clock;
 use super::death_advice::DeathAdvice;
 use super::game_hints::GameHints;
@@ -10,6 +12,7 @@ use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
 use super::gold_earned::GoldEarned;
 use super::inputs_of_game::InputsOfGame;
+use super::item_widget::ItemWidget;
 use super::league::League;
 use super::live_game::LiveGame;
 use super::live_update::LiveUpdate;
@@ -58,6 +61,8 @@ pub async fn poll(
         hints: GameHints::default(),
         loading_screen: LoadingScreenAdvice::new(&http, league.lockfile),
         death: DeathAdvice::default(),
+        back_to_base: BackToBaseAdvice::default(),
+        items: AdvisedItems::default(),
         slot: AdviceSlot::default(),
         notices: Arc::from([]),
     };
@@ -99,6 +104,8 @@ struct CurrentGame<'a> {
     hints: GameHints,
     loading_screen: LoadingScreenAdvice,
     death: DeathAdvice,
+    back_to_base: BackToBaseAdvice,
+    items: AdvisedItems,
     slot: AdviceSlot,
     notices: Arc<[Notice]>,
 }
@@ -120,6 +127,7 @@ impl CurrentGame<'_> {
             if data.game_ended() {
                 self.loading_screen.end_game();
                 self.death.end_game();
+                self.back_to_base.end_game();
                 self.slot.clear();
                 self.advisor.end_game();
             }
@@ -141,8 +149,13 @@ impl CurrentGame<'_> {
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
         self.loading_screen.at(data, &mut self.slot).await;
-        self.death
-            .at(data, player, self.advisor, &mut self.slot)
+        let mut widget = ItemWidget {
+            items: &mut self.items,
+            slot: &mut self.slot,
+        };
+        self.death.at(data, player, self.advisor, &mut widget).await;
+        self.back_to_base
+            .at(data, player, self.advisor, &mut widget)
             .await;
         Some(LiveGame {
             snapshot,
@@ -172,7 +185,10 @@ impl CurrentGame<'_> {
         let mut table = BenchmarkTable::read(self.benchmark_table.path());
         self.notices = notices_of(&inputs, table.as_ref()).into();
         self.death.end_game();
-        self.death = DeathAdvice::start(table.as_mut(), &inputs);
+        self.death = DeathAdvice::default();
+        self.back_to_base.end_game();
+        self.back_to_base = BackToBaseAdvice::default();
+        self.items = AdvisedItems::start(table.as_mut(), &inputs);
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)
