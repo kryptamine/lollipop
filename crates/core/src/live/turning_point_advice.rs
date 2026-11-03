@@ -49,7 +49,7 @@ impl TurningPointAdvice {
         if player.is_dead && self.asking.as_ref().is_some_and(|asking| asking.alive) {
             self.end_game();
         }
-        if let Some(point) = self.watch.seen(data, player) {
+        if let Some(point) = self.watch.seen(data) {
             if self.spaced(point.game_time) {
                 self.held = Some(point);
             }
