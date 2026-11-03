@@ -17,7 +17,7 @@ pub(super) struct BackToBase {
     pub(super) bought: Vec<u32>,
 }
 
-/// Watches one game's polls for a Back to base. A recall that buys nothing is not seen.
+/// Watches one game's polls for a Back to base. A visit that buys nothing is not seen.
 #[derive(Default)]
 pub(super) struct BackToBaseWatch {
     last: Option<Seen>,
