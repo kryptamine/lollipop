@@ -10,7 +10,8 @@ pub(crate) fn open(app: &AppHandle) -> tauri::Result<()> {
     }
     let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("settings.html".into()))
         .title("Settings")
-        .inner_size(520.0, 340.0)
+        // Fits the Advice tab at its tallest, with the off banner and a key failure: 554px.
+        .inner_size(600.0, 560.0)
         .resizable(false)
         .maximizable(false)
         .minimizable(false)
