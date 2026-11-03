@@ -17,3 +17,4 @@ When the app does not know something a comparison needs, it shows nothing and sa
 - An unranked player gets no Markers, and an LCU break removes them for everyone until it is fixed. Revisit this before public release.
 - A lane swap is a known MVP limit if the API keeps reporting the assigned role.
 - The same rule covers Timing hints: an unknown queue or patch, or a new Season without a schedule, shows no hints.
+- The same rule covers Advice: a malformed or over-length answer, or an item outside the candidates, drops the whole Advice, and an OpenAI that cannot be reached says so once per game.
