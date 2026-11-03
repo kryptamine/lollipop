@@ -20,8 +20,8 @@ use serde_json::json;
 use support::archived_match::{damage, ArchivedMatch, Seat, FILLER};
 use support::build::{run_build, Build, Candidate};
 use support::fake_data_dragon::{
-    FakeDataDragon, ARCHANGELS_STAFF, ARENA_ITEM, BOOTS, COSTLY_COMPONENT, DEMOTED_ITEM,
-    DORANS_BLADE, HEALTH_POTION, INFINITY_EDGE, MANAMUNE, MERCURYS_TREADS, MORE_BOOTS,
+    FakeDataDragon, ARCHANGELS_STAFF, ARENA_ITEM, BF_SWORD, BOOTS, COSTLY_COMPONENT, DEMOTED_ITEM,
+    DORANS_BLADE, HEALTH_POTION, INFINITY_EDGE, LONG_SWORD, MANAMUNE, MERCURYS_TREADS, MORE_BOOTS,
     MORE_COMPLETED, MURAMANA, PLATED_STEELCAPS, QUEST_ITEM, QUEST_ITEM_STEP_1, QUEST_ITEM_STEP_2,
     RABADONS, REMOVED_ITEM, SERAPHS_EMBRACE, ZHONYAS,
 };
@@ -224,6 +224,36 @@ fn an_item_that_transforms_is_a_candidate_owned_as_its_transforms() {
         Some(json!([QUEST_ITEM_STEP_1, QUEST_ITEM_STEP_2]))
     );
     assert_eq!(owned_as(RABADONS), None);
+}
+
+// A held component ties the player to the candidate it builds into, however deep it sits.
+#[test]
+fn a_candidate_carries_every_component_it_builds_from() {
+    let mut bench = TableBench::new();
+    let full_build = ahri_match()
+        .buys(1, MERCURYS_TREADS, 8)
+        .buys(1, INFINITY_EDGE, 12)
+        .buys(1, RABADONS, 16);
+    bench.add_archived(1, &full_build);
+
+    let build = build(&bench, 1);
+
+    let builds_from = |item: u32| {
+        let entry = build.table()["item_candidates"][0]["mixed"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|candidate| candidate["item"] == item)
+            .cloned()
+            .unwrap();
+        entry.get("builds_from").cloned()
+    };
+    assert_eq!(
+        builds_from(INFINITY_EDGE),
+        Some(json!([LONG_SWORD, BF_SWORD, COSTLY_COMPONENT]))
+    );
+    assert_eq!(builds_from(MERCURYS_TREADS), Some(json!([BOOTS])));
+    assert_eq!(builds_from(RABADONS), None);
 }
 
 // The prompt names items to the model in the player's language, and the file is all the

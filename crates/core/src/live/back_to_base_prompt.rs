@@ -11,10 +11,10 @@ use crate::benchmarks::ItemCandidate;
 
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player is back to base and has just bought items: `advice` says what to buy \
-next. `item` is the id of the one item candidate named in `advice`, or null when none \
-fits. Say to buy it now when the player's gold affords it, otherwise to build toward it. \
-When nothing has changed since an earlier recommended item, both `advice` and `item` \
-are null."
+next, which is the Item to build the input gives. `item` is its id, or null when the input \
+gives none. Never advise another item. Say to buy it now when the player's gold affords \
+it, otherwise to build toward it. When nothing has changed since an earlier recommended \
+item, both `advice` and `item` are null."
 );
 
 /// The game at a Back to base.
@@ -27,7 +27,7 @@ pub(super) struct Visit<'a> {
 pub(super) fn input(
     language: Language,
     visit: &Visit<'_>,
-    candidates: &[ItemCandidate<'_>],
+    to_build: Option<&ItemCandidate<'_>>,
     recommended: &[RecommendedItem<'_>],
 ) -> String {
     let Visit { data, player, back } = visit;
@@ -54,6 +54,6 @@ pub(super) fn input(
     for enemy in data.enemies_of(player) {
         let _ = writeln!(lines, "Enemy: {}", describe(enemy));
     }
-    item_lines(&mut lines, language, candidates, recommended);
+    item_lines(&mut lines, language, to_build, recommended);
     lines
 }

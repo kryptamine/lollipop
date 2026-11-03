@@ -102,6 +102,7 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
         version: version.to_string(),
         classes,
         owned_as: owned_as(&items),
+        builds_from: builds_from(&items),
         names,
     })
 }
@@ -170,6 +171,31 @@ fn owned_as(items: &Items) -> HashMap<u32, Vec<u32>> {
         transforms.sort_unstable();
     }
     owned_as
+}
+
+/// Every component down each item's `from` tree, in id order.
+fn builds_from(items: &Items) -> HashMap<u32, Vec<u32>> {
+    items
+        .iter()
+        .filter_map(|(&id, item)| {
+            let mut components = Vec::new();
+            let mut open: Vec<&str> = item.from.iter().map(String::as_str).collect();
+            while let Some(component) = open.pop() {
+                let Ok(component) = component.parse::<u32>() else {
+                    continue;
+                };
+                if components.contains(&component) {
+                    continue;
+                }
+                components.push(component);
+                if let Some(below) = items.get(&component) {
+                    open.extend(below.from.iter().map(String::as_str));
+                }
+            }
+            components.sort_unstable();
+            (!components.is_empty()).then_some((id, components))
+        })
+        .collect()
 }
 
 /// Follows `specialRecipe`, else a lone `from`, back to an item a shop sells.

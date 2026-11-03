@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use super::average::{median, rounded};
 use super::benchmark_file::CandidateEntry;
 use super::first_purchase::FirstPurchase;
+use super::item_catalog::ItemCatalog;
 use super::item_class::ItemClass;
 
 const COVERAGE_PERCENT: usize = 90;
@@ -14,7 +15,7 @@ const MINUTE_MS: f64 = 60_000.0;
 /// class's purchases or reach their cap, as one list by share.
 pub(super) fn candidate_list(
     games: &[&[FirstPurchase]],
-    owned_as: &HashMap<u32, Vec<u32>>,
+    catalog: &ItemCatalog,
 ) -> Vec<CandidateEntry> {
     let mut bought: HashMap<u32, (ItemClass, Vec<f64>)> = HashMap::new();
     for purchase in games.iter().flat_map(|purchases| purchases.iter()) {
@@ -34,7 +35,8 @@ pub(super) fn candidate_list(
             item,
             share: rounded(count(minutes.len()) / count(games.len())),
             minute: rounded(median(minutes)?),
-            owned_as: owned_as.get(&item).cloned().unwrap_or_default(),
+            owned_as: catalog.owned_as.get(&item).cloned().unwrap_or_default(),
+            builds_from: catalog.builds_from.get(&item).cloned().unwrap_or_default(),
         })
     })
     .collect::<Vec<_>>();

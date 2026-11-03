@@ -37,6 +37,10 @@ _Avoid_: Net worth, total gold
 A completed item or boots that players of a champion and role commonly buy against a Damage profile. Advice recommends no other item.
 _Avoid_: Recommended item, suggestion
 
+**Item to build**:
+The one Item candidate a Trigger's Advice may name, chosen by code: the item in progress, shown by earlier Advice and not bought or built from components the player holds, else the earliest by median minute.
+_Avoid_: Next item, target item
+
 **Lane opponent**:
 The enemy, or for the bottom lane the enemy pair, playing the same position as the active player.
 _Avoid_: Matchup, counterpart
