@@ -69,6 +69,7 @@ function mockAdvice(answer) {
 const LANE_PLAN = { advice: "Mock Advice: trade when Zed uses W, then back off.", item: null };
 const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, Zhonya's Hourglass answers it.", item: 3157 };
 const BACK_TO_BASE_ADVICE = { advice: "Mock Advice: build toward Banshee's Veil, Zed's ult is your threat.", item: 3102 };
+const TURNING_POINT_ADVICE = { advice: "Mock Advice: level 6, look for a roam to the bottom lane.", item: null };
 
 function liveClientData() {
   // Starts at 0:00 game time after the loading screen, so the notices of the first 10 s show.
@@ -131,6 +132,9 @@ function failAdvice(res) {
 function adviceFor(prompt) {
   if (prompt.includes("just killed")) {
     return DEATH_ADVICE;
+  }
+  if (prompt.includes("changed the game plan")) {
+    return TURNING_POINT_ADVICE;
   }
   return prompt.includes("back to base") ? BACK_TO_BASE_ADVICE : LANE_PLAN;
 }
