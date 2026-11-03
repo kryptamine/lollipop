@@ -115,6 +115,30 @@ async fn the_prompt_describes_the_death_without_names() {
     }
 }
 
+// The model reads who is ahead from the score; an execution would inflate it.
+#[tokio::test]
+async fn the_prompt_carries_the_kill_score_without_executions() {
+    let input = input_of_death(&item_table(&magic_heavy()), |game| {
+        game.log_event(json!({
+            "EventName": "ChampionKill",
+            "EventTime": 200.0,
+            "KillerName": "Friend1#EUW",
+            "VictimName": ASSISTER,
+            "Assisters": [],
+        }));
+        game.log_event(json!({
+            "EventName": "ChampionKill",
+            "EventTime": 250.0,
+            "KillerName": "Turret_T2_C_05_A",
+            "VictimName": "Friend1#EUW",
+            "Assisters": [],
+        }));
+    })
+    .await;
+
+    assert!(input.contains("Kills: player's team 1, enemy team 1\n"));
+}
+
 #[tokio::test]
 async fn the_candidates_follow_the_enemy_damage_profile() {
     let input = input_of_death(&item_table(&physical_heavy()), |_| {}).await;

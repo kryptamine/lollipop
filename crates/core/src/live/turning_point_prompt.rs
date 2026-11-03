@@ -3,6 +3,7 @@
 use std::fmt::Write;
 
 use super::item_prompt::{clock, describe};
+use super::kill_score::KillScore;
 use super::objective_score::ObjectiveScore;
 use super::payload::{AllGameData, Player};
 use super::team::Team;
@@ -58,6 +59,9 @@ pub(super) fn input(language: Language, turn: &Turn<'_>) -> String {
             "Enemy"
         };
         let _ = writeln!(lines, "{side}: {}", describe(other));
+    }
+    if let Some(score) = KillScore::of(data, player) {
+        let _ = writeln!(lines, "Kills: {score}");
     }
     if let Some(own) = own {
         let _ = writeln!(
