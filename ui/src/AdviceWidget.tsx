@@ -4,6 +4,7 @@ import type { ShownAdvice, TriggerId } from './bridge';
 const KICKER: Record<TriggerId, string> = {
   loadingScreen: 'Lane plan',
   backToBase: 'Back to base',
+  turningPoint: 'Turning point',
   death: 'Death',
 };
 

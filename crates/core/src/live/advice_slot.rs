@@ -7,6 +7,8 @@ const SHOWN_FOR: f64 = 20.0;
 #[derive(Default)]
 pub(super) struct AdviceSlot {
     showing: Option<Showing>,
+    /// The texts of every Advice this game showed, oldest first.
+    shown: Vec<String>,
 }
 
 struct Showing {
@@ -29,6 +31,7 @@ impl AdviceSlot {
         if outranked {
             return false;
         }
+        self.shown.push(arrival.text.clone());
         self.showing = Some(Showing {
             arrival,
             from: game_time,
@@ -52,8 +55,13 @@ impl AdviceSlot {
         })
     }
 
+    pub(super) fn shown(&self) -> &[String] {
+        &self.shown
+    }
+
     pub(super) fn clear(&mut self) {
         self.showing = None;
+        self.shown.clear();
     }
 
     fn expire(&mut self, game_time: f64) {
