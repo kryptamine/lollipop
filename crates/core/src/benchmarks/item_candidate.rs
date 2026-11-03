@@ -6,6 +6,8 @@ pub(crate) struct ItemCandidate<'a> {
     pub(crate) item: u32,
     pub(crate) share: f64,
     pub(crate) minute: f64,
+    /// The Cell's games buy it before an item the player already holds.
+    pub(crate) skipped: bool,
     /// Every component down its build tree; empty in a table built before they were listed.
     pub(crate) builds_from: &'a [u32],
     pub(crate) name: Option<&'a ItemName>,

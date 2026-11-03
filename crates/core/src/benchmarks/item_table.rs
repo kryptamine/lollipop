@@ -11,6 +11,8 @@ use super::item_name::ItemName;
 use crate::game_inputs::Role;
 
 const ICON_URL: &str = "https://ddragon.leagueoflegends.com/cdn";
+// Item slots, the trinket aside.
+const SLOTS: usize = 6;
 
 #[derive(Debug, Default, Deserialize)]
 pub(crate) struct ItemTable {
@@ -52,7 +54,8 @@ struct CandidateEntry {
 
 impl ItemTable {
     /// The list for the bucket of the enemy team, less what `owned` holds, itself or
-    /// transformed, and less every boots once it holds a pair. No list for the champion
+    /// transformed, and less every boots once it holds a pair. A candidate is skipped when
+    /// its minute comes before that of a held one. No list for the champion
     /// and role gives none: see ADR 0004.
     pub(crate) fn candidates<'a>(
         &self,
@@ -75,21 +78,35 @@ impl ItemTable {
             ProfileBucket::Mixed => &entry.mixed,
             ProfileBucket::MagicHeavy => &entry.magic_heavy,
         };
-        let excluded = |candidate: &&CandidateEntry| {
+        let held = |candidate: &&CandidateEntry| {
             owned.contains(&candidate.item)
                 || candidate.owned_as.iter().any(|item| owned.contains(item))
-                || self.another_pair(candidate.item, owned)
         };
+        let reached = list
+            .iter()
+            .filter(held)
+            .map(|candidate| candidate.minute)
+            .fold(f64::NEG_INFINITY, f64::max);
         list.iter()
-            .filter(|candidate| !excluded(candidate))
+            .filter(|candidate| !held(candidate) && !self.another_pair(candidate.item, owned))
             .map(|candidate| ItemCandidate {
                 item: candidate.item,
                 share: candidate.share,
                 minute: candidate.minute,
+                skipped: candidate.minute < reached,
                 builds_from: &candidate.builds_from,
                 name: self.name_of(candidate.item),
             })
             .collect()
+    }
+
+    /// Whether every inventory slot holds a completed item or boots, so none is left to fill.
+    pub(crate) fn full(&self, owned: &[u32]) -> bool {
+        owned
+            .iter()
+            .filter(|item| self.completed.contains(item) || self.boots.contains(item))
+            .count()
+            >= SLOTS
     }
 
     /// Whether `item` is boots `owned` cannot take, since it already holds a pair.

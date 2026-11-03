@@ -14,7 +14,7 @@ use lollipop_core::live::ShownAdvice;
 use serde_json::{json, Value};
 
 use support::fake_openai::{FakeOpenAi, Reply};
-use support::item_game::{item_table, magic_heavy, settle, ItemGame, SETTLING_POLLS};
+use support::item_game::{item_table, magic_heavy, settle, ItemGame};
 use support::loading_game::{Updates, ME};
 
 const KILLER: &str = "Foe2#EUW";
@@ -147,36 +147,18 @@ async fn a_purchase_before_one_thirty_asks_nothing() {
     assert!(openai.requests().is_empty());
 }
 
+// A respawn timer is when most shopping happens, and death Advice rarely names an item.
 #[tokio::test]
-async fn a_purchase_while_dead_asks_nothing() {
-    let openai = FakeOpenAi::advising(&answer(Some(TIP), None)).await;
+async fn a_purchase_while_dead_shows_advice() {
+    let openai = FakeOpenAi::advising(&answer(Some(TIP), Some(3157))).await;
     let (game, mut updates) = game_at(300.0, &openai).await;
     game.die_to(KILLER, &[], 30.0);
     settle(&mut updates, &openai).await;
     game.buy(&[ROD], ROD_COST);
-    settle(&mut updates, &openai).await;
+    let shown = settle(&mut updates, &openai).await.unwrap();
 
-    assert!(openai.requests().is_empty());
-}
-
-#[tokio::test]
-async fn a_purchase_15_seconds_after_respawn_asks_nothing_and_one_later_asks() {
-    let openai = FakeOpenAi::advising(&answer(Some(TIP), None)).await;
-    let (game, mut updates) = game_at(300.0, &openai).await;
-    game.die_to(KILLER, &[], 30.0);
-    settle(&mut updates, &openai).await;
-    game.respawn();
-    settle(&mut updates, &openai).await;
-    game.set_time(315.0);
-    game.buy(&[ROD], ROD_COST);
-    settle(&mut updates, &openai).await;
-    assert!(openai.requests().is_empty());
-
-    game.set_time(316.0);
-    game.buy(&[(3020, "Сапоги чародея")], 0.0);
-    game.buy(&[(1052, "Усиливающий фолиант")], 400.0);
-    settle(&mut updates, &openai).await;
     assert_eq!(openai.requests().len(), 1);
+    assert_eq!(shown.trigger, Trigger::BackToBase);
 }
 
 #[tokio::test]
@@ -222,24 +204,6 @@ async fn an_answer_over_10_seconds_after_the_purchase_is_dropped() {
 }
 
 #[tokio::test]
-async fn an_answer_after_a_death_is_dropped() {
-    let openai = FakeOpenAi::advising_when_released(&answer(Some(TIP), None)).await;
-    let (game, mut updates) = game_at(300.0, &openai).await;
-    game.buy(&[ROD], ROD_COST);
-    while openai.requests().is_empty() {
-        updates.recv().await.unwrap();
-    }
-    game.die_to(KILLER, &[], 2.0);
-    for _ in 0..SETTLING_POLLS {
-        updates.recv().await.unwrap();
-    }
-    game.respawn();
-    openai.release();
-
-    assert_eq!(settle(&mut updates, &openai).await, None);
-}
-
-#[tokio::test]
 async fn the_back_to_base_switch_off_asks_nothing() {
     let openai = FakeOpenAi::advising(&answer(Some(TIP), None)).await;
     let game = ItemGame::running_at(300.0, &item_table(&magic_heavy())).await;
@@ -269,7 +233,7 @@ async fn death_advice_replaces_back_to_base_advice() {
     assert_eq!(shown.trigger, Trigger::Death);
 }
 
-// Death Advice from 5:00 still shows at 5:16, the first moment after respawn that asks.
+// Death Advice from 5:00 still shows at 5:16.
 #[tokio::test]
 async fn back_to_base_advice_does_not_replace_death_advice() {
     let openai = FakeOpenAi::replying(vec![
@@ -309,4 +273,59 @@ async fn an_item_death_advice_showed_goes_in_the_prompt() {
     assert!(inputs[1].contains("Earlier recommended: Покров банши, not bought\n"));
     // The Rod bought builds into Zhonya's, so the inventory outranks Banshee's shown.
     assert!(inputs[1].contains("Item to build: 3157 Песочные часы Жони"));
+}
+
+#[tokio::test]
+async fn a_purchase_that_fills_the_inventory_asks_nothing() {
+    let openai = FakeOpenAi::advising(&answer(Some(TIP), None)).await;
+    let (game, mut updates) = game_at(1800.0, &openai).await;
+    game.give_items(
+        ME,
+        &[
+            (3157, "Песочные часы Жони"),
+            (3102, "Покров банши"),
+            (3020, "Сапоги чародея"),
+            (3089, "Смертельная шляпа Рабадона"),
+            (3135, "Посох пустоты"),
+        ],
+    );
+    game.set_gold(4000.0);
+    settle(&mut updates, &openai).await;
+    game.buy(&[(3003, "Посох архангела")], 2900.0);
+    settle(&mut updates, &openai).await;
+
+    assert!(openai.requests().is_empty());
+}
+
+// An item the Cell buys before one the player holds was passed by, and naming it late
+// in the game advised an early item for the last slot.
+#[tokio::test]
+async fn an_item_bought_before_a_held_one_gives_way_to_a_later_one() {
+    let openai = FakeOpenAi::advising(&answer(Some(TIP), None)).await;
+    let (game, mut updates) = game_at(1200.0, &openai).await;
+    game.give_items(ME, &[(3157, "Песочные часы Жони")]);
+    game.set_gold(2000.0);
+    settle(&mut updates, &openai).await;
+    game.buy(&[(1026, "Взрывная палочка")], 850.0);
+    settle(&mut updates, &openai).await;
+
+    let inputs = inputs(&openai);
+    assert_eq!(inputs.len(), 1);
+    assert!(inputs[0].contains("Item to build: 3003 Посох архангела"));
+}
+
+// With every item left passed by, the latest is the nearest to where the build is.
+#[tokio::test]
+async fn with_every_item_passed_by_the_latest_is_named() {
+    let openai = FakeOpenAi::advising(&answer(Some(TIP), None)).await;
+    let (game, mut updates) = game_at(1500.0, &openai).await;
+    game.give_items(ME, &[(3003, "Посох архангела")]);
+    game.set_gold(2000.0);
+    settle(&mut updates, &openai).await;
+    game.buy(&[(1026, "Взрывная палочка")], 850.0);
+    settle(&mut updates, &openai).await;
+
+    let inputs = inputs(&openai);
+    assert_eq!(inputs.len(), 1);
+    assert!(inputs[0].contains("Item to build: 3157 Песочные часы Жони"));
 }
