@@ -53,6 +53,11 @@ function mockTable() {
 const DEATH_AT_S = 40;
 const RESPAWN_S = 15;
 
+// At this game time the mock player buys a Blasting Wand, a Back to base.
+const BUY_AT_S = 120;
+const WAND = { itemID: 1026, count: 1, displayName: "Blasting Wand" };
+const WAND_COST = 850;
+
 // The first seconds are the loading screen, which asks for loading screen Advice.
 const LOADING_SCREEN_S = 5;
 
@@ -63,6 +68,7 @@ function mockAdvice(answer) {
 
 const LANE_PLAN = { advice: "Mock Advice: trade when Zed uses W, then back off.", item: null };
 const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, Zhonya's Hourglass answers it.", item: 3157 };
+const BACK_TO_BASE_ADVICE = { advice: "Mock Advice: build toward Banshee's Veil, Zed's ult is your threat.", item: 3102 };
 
 function liveClientData() {
   // Starts at 0:00 game time after the loading screen, so the notices of the first 10 s show.
@@ -71,13 +77,14 @@ function liveClientData() {
   const gameTime = loading ? 0 : elapsed - LOADING_SCREEN_S;
   const minutes = gameTime / 60;
   const isDead = gameTime >= DEATH_AT_S && gameTime < DEATH_AT_S + RESPAWN_S;
+  const hasBought = gameTime >= BUY_AT_S;
   const death = { EventName: "ChampionKill", EventTime: DEATH_AT_S, KillerName: "Rival#DEV", VictimName: "Me#DEV", Assisters: [] };
   const events = loading ? [] : [{ EventName: "GameStart", EventTime: 0 }];
   if (gameTime >= DEATH_AT_S) {
     events.push(death);
   }
   return {
-    activePlayer: { riotId: "Me#DEV", currentGold: 500 + gameTime * 3 },
+    activePlayer: { riotId: "Me#DEV", currentGold: 500 + gameTime * 3 - (hasBought ? WAND_COST : 0) },
     allPlayers: [
       {
         riotId: "Rival#DEV",
@@ -96,7 +103,7 @@ function liveClientData() {
         level: Math.min(18, 1 + Math.floor(minutes)),
         isDead,
         respawnTimer: isDead ? DEATH_AT_S + RESPAWN_S - gameTime : 0,
-        items: [],
+        items: hasBought ? [WAND] : [],
         // The API floors CS to 10.
         scores: {
           creepScore: Math.floor(minutes * 0.6) * 10,
@@ -120,6 +127,14 @@ function failAdvice(res) {
   res.end(JSON.stringify(body));
 }
 
+// Tells the Triggers apart by the moment their prompt names.
+function adviceFor(prompt) {
+  if (prompt.includes("just killed")) {
+    return DEATH_ADVICE;
+  }
+  return prompt.includes("back to base") ? BACK_TO_BASE_ADVICE : LANE_PLAN;
+}
+
 writeFileSync(lockfile, `LeagueClient:0:${PORT}:mock:http`);
 writeFileSync(benchmarkTable, JSON.stringify(mockTable()));
 
@@ -140,8 +155,7 @@ createServer((req, res) => {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
-      const isDeath = body.includes("just killed");
-      res.end(JSON.stringify(mockAdvice(isDeath ? DEATH_ADVICE : LANE_PLAN)));
+      res.end(JSON.stringify(mockAdvice(adviceFor(body))));
     });
     return;
   }
