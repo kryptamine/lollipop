@@ -41,13 +41,31 @@ export type Notices = string[];
 export type WidgetSwitches = {
   markerStrip: boolean;
   timingHints: boolean;
+  adviceWidget: boolean;
 };
 
 export type WidgetId = keyof WidgetSwitches;
 
+export type TriggerSwitches = {
+  loadingScreen: boolean;
+};
+
+export type TriggerId = keyof TriggerSwitches;
+
+export type AdviceLanguage = 'system' | 'en' | 'ru';
+
 export type Switches = {
   launchAtLogin: boolean;
   widgets: WidgetSwitches;
+  triggers: TriggerSwitches;
+  adviceLanguage: AdviceLanguage;
+};
+
+// What the Advice Widget shows; `timeLeft` runs from 1 down to 0 over its time on screen.
+export type ShownAdvice = {
+  trigger: TriggerId;
+  text: string;
+  timeLeft: number;
 };
 
 // Each answers with the switches as kept, which may differ from what was asked.
@@ -58,6 +76,15 @@ export const setWidget = (id: WidgetId, isOn: boolean): Promise<Switches> =>
     id,
     isOn,
   });
+
+export const setTrigger = (id: TriggerId, isOn: boolean): Promise<Switches> =>
+  invoke<Switches>('set_trigger', {
+    id,
+    isOn,
+  });
+
+export const setAdviceLanguage = (language: AdviceLanguage): Promise<Switches> =>
+  invoke<Switches>('set_advice_language', { language });
 
 export const setLaunchAtLogin = (isOn: boolean): Promise<Switches> =>
   invoke<Switches>('set_launch_at_login', { isOn });
@@ -131,6 +158,14 @@ export const onNotices = (handler: (notices: Notices) => void): (() => void) =>
   stopWith(
     listen<Notices>('notices', ({ payload }) => {
       handler(payload);
+    }),
+  );
+
+// The app sends null while no Advice is showing.
+export const onAdvice = (handler: (advice: ShownAdvice | undefined) => void): (() => void) =>
+  stopWith(
+    listen<ShownAdvice | null>('advice', ({ payload }) => {
+      handler(payload ?? undefined);
     }),
   );
 

@@ -1,3 +1,5 @@
+import type { ComponentChildren } from 'preact';
+
 import { KeyField } from './KeyField';
 import type { KeyFailure } from './bridge';
 import type { OpenAiKeyControls } from './use-open-ai-key';
@@ -10,12 +12,19 @@ const FAILURE_TEXT: Record<KeyFailure, string> = {
 
 type AdviceTabProps = {
   openAiKey: OpenAiKeyControls;
+  isWidgetOn: boolean;
   onUsageOpen: () => void;
+  onOverlayOpen: () => void;
+  // The groups under the key, greyed by their own components while the Widget is off.
+  children: ComponentChildren;
 };
 
 export const AdviceTab = ({
   openAiKey: { saved, isChecking, failure, onKeyEntered, onRemove },
+  isWidgetOn,
   onUsageOpen,
+  onOverlayOpen,
+  children,
 }: AdviceTabProps) => (
   <>
     <div class="caption">OpenAI</div>
@@ -41,5 +50,14 @@ export const AdviceTab = ({
         </div>
       )}
     </div>
+    {!isWidgetOn && (
+      <div class="banner">
+        The Advice Widget is off.{' '}
+        <button type="button" class="link" onClick={onOverlayOpen}>
+          Turn it on in Overlay
+        </button>
+      </div>
+    )}
+    {children}
   </>
 );

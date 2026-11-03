@@ -5,6 +5,7 @@ pub mod fake_lcu;
 pub mod fake_openai;
 pub mod game_clock;
 pub mod hint_game;
+pub mod loading_game;
 pub mod marker_game;
 pub mod polling;
 pub mod recorded_game;

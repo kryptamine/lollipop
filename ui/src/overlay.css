@@ -107,3 +107,38 @@ body {
   color: #ff5c5c;
   content: '▼';
 }
+
+/* Right edge, just above League's minimap. */
+#advice-widget {
+  position: fixed;
+  right: 24px;
+  bottom: 300px;
+  width: 300px;
+  box-sizing: border-box;
+  padding: 8px 14px 9px;
+  border-radius: 10px;
+  background: rgba(10, 14, 20, 0.78);
+  color: #e8edf2;
+  font:
+    500 14px/1.4 -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+.advice-kicker {
+  color: #9aa6b2;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.advice-time {
+  height: 2px;
+  margin-top: 6px;
+  background: rgba(232, 237, 242, 0.12);
+}
+
+.advice-time > div {
+  height: 100%;
+  background: #9aa6b2;
+}

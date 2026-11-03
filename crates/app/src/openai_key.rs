@@ -37,6 +37,15 @@ impl OpenAiKey {
         }
     }
 
+    pub(crate) fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    /// The full key, which only an Advice call may be given.
+    pub(crate) fn current(&self) -> Option<String> {
+        self.lock().clone()
+    }
+
     pub(crate) fn masked(&self) -> Option<String> {
         self.lock().as_deref().map(masked_key)
     }

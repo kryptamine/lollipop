@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use super::markers::Markers;
 use super::notice::Notice;
+use super::shown_advice::ShownAdvice;
 use super::shown_benchmarks::ShownBenchmarks;
 use super::snapshot::Snapshot;
 use super::timing_hint::TimingHint;
@@ -17,6 +18,7 @@ pub struct LiveGame {
     pub markers: Markers,
     pub benchmarks: ShownBenchmarks,
     pub hints: Vec<TimingHint>,
+    pub advice: Option<ShownAdvice>,
     pub(super) notices: Arc<[Notice]>,
     pub(super) game_time: f64,
 }

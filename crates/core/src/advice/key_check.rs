@@ -3,10 +3,9 @@ use std::time::Duration;
 use reqwest::header::HeaderValue;
 use reqwest::StatusCode;
 
-use super::MODEL;
+use super::{MODEL, USER_AGENT};
 
 const CHECK_TIMEOUT: Duration = Duration::from_secs(10);
-const USER_AGENT: &str = concat!("lollipop/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyCheck {

@@ -4,4 +4,10 @@ pub struct Widget {
     pub id: &'static str,
 }
 
-pub const WIDGETS: [Widget; 2] = [Widget { id: "markerStrip" }, Widget { id: "timingHints" }];
+pub const ADVICE_WIDGET: &str = "adviceWidget";
+
+pub const WIDGETS: [Widget; 3] = [
+    Widget { id: "markerStrip" },
+    Widget { id: "timingHints" },
+    Widget { id: ADVICE_WIDGET },
+];

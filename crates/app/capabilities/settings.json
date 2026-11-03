@@ -3,8 +3,11 @@
   "identifier": "settings",
   "windows": ["settings"],
   "permissions": [
+    "core:event:default",
     "allow-read-switches",
     "allow-set-widget",
+    "allow-set-trigger",
+    "allow-set-advice-language",
     "allow-set-launch-at-login",
     "allow-read-openai-key",
     "allow-save-openai-key",

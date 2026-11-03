@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod advice_source;
 mod key_save;
 #[cfg(target_os = "macos")]
 mod keychain;
@@ -21,7 +22,7 @@ use std::sync::Arc;
 
 use lollipop_core::delivery::TableFile;
 use lollipop_core::game_inputs::LOCKFILE_PATH;
-use lollipop_core::live::{poll, status_line, LiveUpdate, SystemClock, LIVE_CLIENT_URL};
+use lollipop_core::live::{poll, status_line, League, LiveUpdate, SystemClock, LIVE_CLIENT_URL};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
 use openai_key::OpenAiKey;
 use overlay::Overlay;
@@ -53,6 +54,7 @@ async fn publish_live_client(
     status: MenuItem<Wry>,
     benchmark_table: Arc<TableFile>,
 ) {
+    let advisor = advice_source::advisor(store.clone(), app.state::<OpenAiKey>().inner().clone());
     let mut shown_status = status_line(None);
     let on_update = move |update: LiveUpdate| {
         let LiveUpdate {
@@ -67,6 +69,7 @@ async fn publish_live_client(
             let _ = app.emit("benchmarks", game.benchmarks);
             let _ = app.emit("notices", game.shown_notices());
             let _ = app.emit("timing-hints", &game.hints);
+            let _ = app.emit("advice", &game.advice);
             let _ = app.emit("snapshot", &game.snapshot);
         }
         overlay.set_match_running(running);
@@ -81,14 +84,11 @@ async fn publish_live_client(
     };
     let url = dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL);
     let lockfile = dev_setting("LOLLIPOP_LOCKFILE", LOCKFILE_PATH);
-    poll(
-        &url,
-        Path::new(&lockfile),
-        &benchmark_table,
-        &SystemClock,
-        on_update,
-    )
-    .await;
+    let league = League {
+        live_client_url: &url,
+        lockfile: Path::new(&lockfile),
+    };
+    poll(league, &benchmark_table, &advisor, &SystemClock, on_update).await;
 }
 
 #[allow(
@@ -112,6 +112,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             settings_commands::read_switches,
             settings_commands::set_widget,
+            settings_commands::set_trigger,
+            settings_commands::set_advice_language,
             settings_commands::set_launch_at_login,
             openai_key_commands::read_openai_key,
             openai_key_commands::save_openai_key,

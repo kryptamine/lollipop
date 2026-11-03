@@ -1,14 +1,20 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
+use lollipop_core::advice::Advisor;
 use lollipop_core::delivery::TableFile;
-use lollipop_core::live::{poll, LiveGame, LiveUpdate, Snapshot};
+use lollipop_core::live::{poll, League, LiveGame, LiveUpdate, Snapshot};
 use tokio::sync::mpsc;
 
 use super::game_clock::GameClock;
 use super::server::serve;
 
 const NO_TABLE: &str = "/nonexistent/benchmark-table.json";
+
+/// Advice with every Trigger off, so no test reaches OpenAI by accident.
+pub fn no_advice() -> Advisor {
+    Advisor::new("http://127.0.0.1:9", |_| None)
+}
 
 /// Runs the poll loop on `clock` and returns updates, stamped with game time, as they arrive.
 pub fn start_polling(
@@ -20,9 +26,12 @@ pub fn start_polling(
     tokio::spawn(async move {
         let stamp = clock.clone();
         poll(
-            &url,
-            &no_client,
+            League {
+                live_client_url: &url,
+                lockfile: &no_client,
+            },
             &TableFile::new(NO_TABLE.into()),
+            &no_advice(),
             &clock,
             move |update: LiveUpdate| {
                 let snapshot = update.game.map(|game| game.snapshot);
@@ -52,9 +61,12 @@ pub fn start_watching(url: String, lockfile: &Path) -> mpsc::UnboundedReceiver<O
     tokio::spawn(async move {
         let clock = GameClock::starting_at(0.0);
         poll(
-            &url,
-            &lockfile,
+            League {
+                live_client_url: &url,
+                lockfile: &lockfile,
+            },
             &TableFile::new(NO_TABLE.into()),
+            &no_advice(),
             &clock,
             move |update: LiveUpdate| {
                 let _ = updates.send(update.game);
@@ -88,9 +100,12 @@ pub fn start_playing_on(
     tokio::spawn(async move {
         let stamp = clock.clone();
         poll(
-            &url,
-            &lockfile,
+            League {
+                live_client_url: &url,
+                lockfile: &lockfile,
+            },
             &table,
+            &no_advice(),
             &clock,
             move |update: LiveUpdate| {
                 let _ = updates.send((stamp.now(), update.game));
@@ -109,9 +124,12 @@ pub async fn between_games_over(bodies: Vec<Option<&str>>) -> Vec<bool> {
     let (updates, mut received) = mpsc::unbounded_channel();
     tokio::spawn(async move {
         poll(
-            &url,
-            Path::new("/nonexistent/lockfile"),
+            League {
+                live_client_url: &url,
+                lockfile: Path::new("/nonexistent/lockfile"),
+            },
             &TableFile::new(NO_TABLE.into()),
+            &no_advice(),
             &GameClock::starting_at(0.0),
             move |update: LiveUpdate| {
                 let _ = updates.send(update.between_games);
