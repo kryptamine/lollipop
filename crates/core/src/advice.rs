@@ -31,7 +31,10 @@ macro_rules! instructions {
         concat!(
             "You coach a League of Legends player in their game. Answer with one concrete \
 idea the player can act on, at most 120 characters, written in the language the input \
-names, as `advice`. ",
+names, as `advice`. Ground it in what the input says of this game, such as the enemies' \
+items and the score. Never a tip that fits any game, such as to play safe, ward more or \
+watch the map. When no idea would change what the player does next, `advice` is null: \
+silence beats a weak idea. ",
             $own
         )
     };

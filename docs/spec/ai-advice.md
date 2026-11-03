@@ -83,6 +83,9 @@ Settled in [#88](https://github.com/kryptamine/lollipop/issues/88), measured in
   and a strict `json_schema` that is the same on every call: a nullable `advice`
   string and a nullable `item` id. The base URL is configurable for the fake.
 - **Prompt:** never Riot IDs or summoner names, never enemy ranks.
+- **Silence:** every Trigger may answer a null `advice`. The instructions ground an
+  idea in the game's input, rule out tips that fit any game, and ask for null when
+  no idea would change what the player does next.
 - **Measured:** about 1,950 input tokens, median 1.4 s, worst 3.7 s (first calls).
   Prompt caching applies by itself. About $0.005 per game.
 - **Answer checks:** JSON outside the schema, `advice` over 120 characters, or an
@@ -171,6 +174,7 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 
 - **Says:** why the player died and what to change, naming the
   [Item to build](#item-to-build). The model never picks another item.
+  `advice` is null when the death teaches nothing, as in a fair trade.
 - **Fires:** on a `ChampionKill` whose `VictimName` is the active player and whose
   killer is an enemy champion. A death to a turret, minion or monster gets none.
 - **Prompt:** the player's champion, role, level, items and `currentGold`; the

@@ -11,7 +11,8 @@ use crate::benchmarks::ItemCandidate;
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player has just died to an enemy champion: `advice` says why and what to \
 change, and names the Item to build when the input gives one. `item` is that item's id, \
-or null when the input gives none. Never advise another item."
+or null when the input gives none. Never advise another item. When the death teaches \
+nothing, as in a fair trade, `advice` and `item` are null."
 );
 
 pub(super) fn input(
