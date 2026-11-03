@@ -197,3 +197,9 @@ main {
   color: inherit;
   font: inherit;
 }
+
+.footer {
+  margin: 6px 4px;
+  color: #8d8d92;
+  font-size: 11px;
+}

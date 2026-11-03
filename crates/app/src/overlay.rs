@@ -3,18 +3,25 @@ use std::sync::{Arc, Mutex, PoisonError};
 use lollipop_core::overlay::Visibility;
 use tauri::WebviewWindow;
 
+use crate::voiceover::Voiceover;
+
 /// Applies `Visibility` to the window. Both inputs run on the main thread, so a
 /// slower poll can never overwrite a newer frontmost change.
 #[derive(Clone)]
 pub(crate) struct Overlay {
     window: WebviewWindow,
     visibility: Arc<Mutex<Visibility>>,
+    voiceover: Voiceover,
 }
 
 impl Overlay {
-    pub(crate) fn new(window: WebviewWindow, game_bundle_id: &str) -> Self {
+    pub(crate) fn new(window: WebviewWindow, game_bundle_id: &str, voiceover: Voiceover) -> Self {
         let visibility = Arc::new(Mutex::new(Visibility::new(game_bundle_id)));
-        Self { window, visibility }
+        Self {
+            window,
+            visibility,
+            voiceover,
+        }
     }
 
     #[cfg(target_os = "macos")]
@@ -36,6 +43,7 @@ impl Overlay {
             let was_shown = visibility.shown();
             change(&mut visibility);
             if visibility.shown() != was_shown {
+                this.voiceover.set_overlay_shown(visibility.shown());
                 #[cfg(target_os = "macos")]
                 let _ = crate::platform::set_shown(&this.window, visibility.shown());
             }

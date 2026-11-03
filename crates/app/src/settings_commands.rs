@@ -10,6 +10,7 @@ use tauri::{AppHandle, State};
 
 use crate::launch_at_login;
 use crate::settings_store::SettingsStore;
+use crate::voiceover::Voiceover;
 
 #[tauri::command]
 pub(crate) fn read_switches(store: State<'_, SettingsStore>) -> Switches {
@@ -48,4 +49,16 @@ pub(crate) fn set_launch_at_login(
         store.change(|settings| settings.launch_at_login = is_on);
     }
     store.read(Settings::switches)
+}
+
+#[tauri::command]
+pub(crate) fn set_voiceover(store: State<'_, SettingsStore>, is_on: bool) -> Switches {
+    store.change(|settings| settings.voiceover = is_on);
+    store.read(Settings::switches)
+}
+
+/// For the Advice language as kept now; the window asks again when it changes.
+#[tauri::command]
+pub(crate) fn read_voice_installed(voiceover: State<'_, Voiceover>) -> bool {
+    voiceover.voice_installed()
 }

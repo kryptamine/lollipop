@@ -16,6 +16,7 @@ mod settings_store;
 mod settings_window;
 mod table_downloads;
 mod updates;
+mod voiceover;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -31,6 +32,7 @@ use tauri::menu::MenuItem;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Wry};
 use tauri_plugin_autostart::MacosLauncher;
 use updates::Updates;
+use voiceover::Voiceover;
 
 // Debug builds can point at scripts/mock-live-client.mjs and stand in another app
 // for the game; release builds ignore the environment.
@@ -55,15 +57,21 @@ async fn publish_live_client(
     benchmark_table: Arc<TableFile>,
 ) {
     let key = app.state::<OpenAiKey>().inner().clone();
+    let voiceover = app.state::<Voiceover>().inner().clone();
     let advisor = advice_source::advisor(app.clone(), store.clone(), key);
     app.manage(advisor.clone());
     let mut shown_status = status_line(None);
+    let mut was_running = false;
     let on_update = move |update: LiveUpdate| {
         let LiveUpdate {
             game,
             between_games,
         } = update;
         let running = game.is_some();
+        if running && !was_running {
+            voiceover.warm_up();
+        }
+        was_running = running;
         // Before the snapshot: the view draws no Widget until it knows its switch.
         store.publish_switches();
         if let Some(game) = &game {
@@ -74,6 +82,7 @@ async fn publish_live_client(
             let _ = app.emit("advice", &game.advice);
             let _ = app.emit("snapshot", &game.snapshot);
         }
+        voiceover.show_advice(game.as_ref().and_then(|game| game.advice.clone()));
         overlay.set_match_running(running);
         if let Some(updates) = app.try_state::<Updates>() {
             updates.set_between_games(between_games);
@@ -117,6 +126,8 @@ fn main() {
             settings_commands::set_trigger,
             settings_commands::set_advice_language,
             settings_commands::set_launch_at_login,
+            settings_commands::set_voiceover,
+            settings_commands::read_voice_installed,
             openai_key_commands::read_openai_key,
             openai_key_commands::read_openai_key_failure,
             openai_key_commands::save_openai_key,
@@ -124,20 +135,8 @@ fn main() {
             openai_key_commands::open_openai_usage,
         ])
         .setup(|app| {
-            let window = overlay_window(app.handle());
-            let game_bundle_id = dev_setting("LOLLIPOP_GAME_BUNDLE", GAME_BUNDLE_ID);
-            let overlay = Overlay::new(window.clone(), &game_bundle_id);
-            #[cfg(target_os = "macos")]
-            {
-                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-                platform::order_in_hidden(&window)?;
-                let frontmost = overlay.clone();
-                platform::watch_frontmost(move |bundle_id| frontmost.set_frontmost(bundle_id));
-            }
-            cover_primary_display(&window)?;
-            // Clicks must always reach the game, never the overlay.
-            window.set_ignore_cursor_events(true)?;
             let store = SettingsStore::open(app.handle())?;
+            let overlay = open_overlay(app, &store)?;
             // A login item removed outside the app comes back: the settings file decides.
             let launch_on_login = store.read(|settings| settings.launch_at_login);
             let _ = launch_at_login::apply(app.handle(), launch_on_login);
@@ -166,6 +165,25 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running Lollipop");
+}
+
+fn open_overlay(app: &mut tauri::App, store: &SettingsStore) -> tauri::Result<Overlay> {
+    let window = overlay_window(app.handle());
+    let game_bundle_id = dev_setting("LOLLIPOP_GAME_BUNDLE", GAME_BUNDLE_ID);
+    let voiceover = Voiceover::new(window.clone(), store.clone());
+    app.manage(voiceover.clone());
+    let overlay = Overlay::new(window.clone(), &game_bundle_id, voiceover);
+    #[cfg(target_os = "macos")]
+    {
+        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+        platform::order_in_hidden(&window)?;
+        let frontmost = overlay.clone();
+        platform::watch_frontmost(move |bundle_id| frontmost.set_frontmost(bundle_id));
+    }
+    cover_primary_display(&window)?;
+    // Clicks must always reach the game, never the overlay.
+    window.set_ignore_cursor_events(true)?;
+    Ok(overlay)
 }
 
 fn cover_primary_display(window: &WebviewWindow) -> tauri::Result<()> {

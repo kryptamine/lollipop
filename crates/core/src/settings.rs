@@ -25,6 +25,7 @@ pub struct Settings {
     triggers: BTreeMap<String, bool>,
     pub launch_at_login: bool,
     pub advice_language: AdviceLanguage,
+    pub voiceover: bool,
 }
 
 impl Settings {
@@ -89,6 +90,12 @@ impl Settings {
         })
     }
 
+    /// Voiceover reads only what the Advice Widget shows, so it needs the Widget on.
+    #[must_use]
+    pub fn reads_aloud(&self) -> bool {
+        self.voiceover && self.widget_on(ADVICE_WIDGET)
+    }
+
     /// Every Widget by id, the payload the view draws from.
     #[must_use]
     pub fn widget_switches(&self) -> BTreeMap<&'static str, bool> {
@@ -108,6 +115,7 @@ impl Settings {
                 .map(|&trigger| (trigger.id(), self.trigger_on(trigger)))
                 .collect(),
             advice_language: self.advice_language,
+            voiceover: self.voiceover,
         }
     }
 }

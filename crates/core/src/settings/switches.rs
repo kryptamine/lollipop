@@ -12,4 +12,5 @@ pub struct Switches {
     pub(super) widgets: BTreeMap<&'static str, bool>,
     pub(super) triggers: BTreeMap<&'static str, bool>,
     pub(super) advice_language: AdviceLanguage,
+    pub(super) voiceover: bool,
 }
