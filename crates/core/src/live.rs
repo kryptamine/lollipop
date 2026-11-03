@@ -23,6 +23,7 @@ mod held_marker;
 mod inputs_of_game;
 mod item_prompt;
 mod item_widget;
+mod kill_score;
 mod lane_opponent;
 mod league;
 mod live_game;

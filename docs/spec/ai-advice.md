@@ -83,6 +83,9 @@ Settled in [#88](https://github.com/kryptamine/lollipop/issues/88), measured in
   and a strict `json_schema` that is the same on every call: a nullable `advice`
   string and a nullable `item` id. The base URL is configurable for the fake.
 - **Prompt:** never Riot IDs or summoner names, never enemy ranks.
+- **Silence:** every Trigger may answer a null `advice`. The instructions ground an
+  idea in the game's input, rule out tips that fit any game, and ask for null when
+  no idea would change what the player does next.
 - **Measured:** about 1,950 input tokens, median 1.4 s, worst 3.7 s (first calls).
   Prompt caching applies by itself. About $0.005 per game.
 - **Answer checks:** JSON outside the schema, `advice` over 120 characters, or an
@@ -171,6 +174,7 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 
 - **Says:** why the player died and what to change, naming the
   [Item to build](#item-to-build). The model never picks another item.
+  `advice` is null when the death teaches nothing, as in a fair trade.
 - **Fires:** on a `ChampionKill` whose `VictimName` is the active player and whose
   killer is an enemy champion. A death to a turret, minion or monster gets none.
 - **Only when it teaches:** the killer has killed the player before this game, or
@@ -179,9 +183,9 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 - **Prompt:** the player's champion, role, level, items and `currentGold`; the
   killer and assisters (champion, position, level, items, KDA); the whole enemy
   team's champions, items and levels; `gameTime`; how many times this killer has
-  killed the player; the Item to build; items earlier Advice in this game
-  recommended, and whether the player bought them, less boots passed over for
-  another pair.
+  killed the player; the [kill score](#kill-score); the Item to build; items
+  earlier Advice in this game recommended, and whether the player bought them,
+  less boots passed over for another pair.
 - **Item:** the [Item to build](#item-to-build), held by code. Not filtered by gold:
   the model sees `currentGold` and may say to build toward it.
 - **Another death:** sends a new request, whose answer replaces the one showing.
@@ -201,7 +205,8 @@ Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
   not visible.
 - **Prompt:** the player's champion, role, level, items, KDA and `currentGold`; the
   items bought in this visit; the whole enemy team's champions, items, levels and
-  KDA; `gameTime`; the Item to build; earlier recommended items and whether bought, as on death.
+  KDA; `gameTime`; the [kill score](#kill-score); the Item to build; earlier
+  recommended items and whether bought, as on death.
 - **Item:** as for death. The first one comes on the first Back to base.
 
 ### Turning point
@@ -232,9 +237,14 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
 - **Prompt:** the player's champion, role, level, items, KDA and `currentGold`;
   both teams' champions, items, levels and KDA; which moment fired and which team
   took it; the objective score from `eventdata` (dragons by type per team, Herald,
-  Baron, turrets and inhibitors per side); `gameTime`; the texts of earlier Advice
-  in this game. No candidates.
+  Baron, turrets and inhibitors per side); the [kill score](#kill-score);
+  `gameTime`; the texts of earlier Advice in this game. No candidates.
 - **Dropped** also after the player dies, when they were alive at the moment.
+
+### Kill score
+
+- **Counts** each team's `ChampionKill` events whose killer is a champion of that
+  team, as the scoreboard does: an execution by a turret or minion counts for none.
 
 ## Item candidates
 
