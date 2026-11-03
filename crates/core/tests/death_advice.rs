@@ -102,7 +102,7 @@ async fn the_prompt_describes_the_death_without_names() {
     assert!(input.contains("Game time: 5:00\n"));
     assert!(input
         .contains("Player: Ahri, MIDDLE, level 1, KDA 1/2/3, items Кольцо Дорана, gold 1250\n"));
-    assert!(input.contains("Killer: Zed, MIDDLE, level 1, KDA 1/2/3, items Затмение\n"));
+    assert!(input.contains("Killer: Zed, MIDDLE, level 1, KDA 5/1/0, items Затмение\n"));
     assert!(input.contains("Assister: LeeSin, JUNGLE"));
     assert!(input.contains("Deaths to this killer this game: 1\n"));
     assert_eq!(input.matches("Enemy: ").count(), 5);
@@ -288,6 +288,25 @@ async fn deaths_to_the_same_killer_are_counted() {
         .as_str()
         .unwrap()
         .contains("Deaths to this killer this game: 2\n"));
+}
+
+// A lone death to an even opponent teaches little; dying to them again is a pattern.
+#[tokio::test]
+async fn an_even_killer_asks_only_on_the_second_death() {
+    let openai = FakeOpenAi::advising(&answer(TIP, None)).await;
+    let (game, mut updates) = game_at_five_minutes(&item_table(&magic_heavy()), &openai).await;
+    game.die_to(ASSISTER, &[], RESPAWN);
+    settle(&mut updates, &openai).await;
+    assert!(openai.requests().is_empty());
+
+    game.respawn();
+    game.set_time(400.0);
+    settle(&mut updates, &openai).await;
+    game.die_to(ASSISTER, &[], RESPAWN);
+    let shown = settle(&mut updates, &openai).await;
+
+    assert_eq!(openai.requests().len(), 1);
+    assert_eq!(shown.unwrap().text, TIP);
 }
 
 // A turret, a minion or a monster gets no Advice, and neither does an ally's death.
