@@ -198,11 +198,10 @@ Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
   otherwise "build toward it". `advice` is null when nothing changed since the
   last Advice.
 - **Fires:** on the first purchase of a visit: a new item in `items` and
-  `currentGold` down by at least 300 in the same poll, while alive. The 300 floor
+  `currentGold` down by at least 300 in the same poll, dead or alive. The 300 floor
   drops wards, potions and trinket swaps; an undo raises gold and never fires.
-- **Does not fire:** before 1:30 `gameTime`; while `isDead`; within 15 s after a
-  respawn; within 30 s after the last Back to base. A recall that buys nothing is
-  not visible.
+- **Does not fire:** before 1:30 `gameTime`; within 30 s after the last Back to
+  base; once the inventory is full. A recall that buys nothing is not visible.
 - **Prompt:** the player's champion, role, level, items, KDA and `currentGold`; the
   items bought in this visit; the whole enemy team's champions, items, levels and
   KDA; `gameTime`; the [kill score](#kill-score); the Item to build; earlier
@@ -271,8 +270,11 @@ Settled in [#152](https://github.com/kryptamine/lollipop/issues/152).
   showed, not bought, and not left: the player has finished no other item of
   `completed` since it showed. A death never breaks it.
 - **Then never shown,** and an item shown and left comes last.
-- **Else** by the earliest `minute`, ties to the larger `share`.
-- **None** when no candidate is left, and `item` stays null.
+- **Then not skipped:** a candidate is skipped when its `minute` comes before that
+  of a candidate the player holds. The rest go by the earliest `minute`, skipped
+  ones by the latest, ties to the larger `share`.
+- **None** when no candidate is left, or when six held items are of `completed`
+  or `boots`, and `item` stays null.
 
 ### In the Benchmark table
 

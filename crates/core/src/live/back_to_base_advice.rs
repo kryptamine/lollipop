@@ -33,10 +33,6 @@ impl BackToBaseAdvice {
         advisor: &Advisor,
         widget: &mut ItemWidget<'_>,
     ) {
-        // A death drops the answer: the shop it would advise on has closed.
-        if player.is_dead {
-            self.end_game();
-        }
         if let Some(back) = self.watch.seen(data, player) {
             let visit = Visit {
                 data,
@@ -56,10 +52,14 @@ impl BackToBaseAdvice {
 
     fn ask(&mut self, visit: &Visit<'_>, advisor: &Advisor, items: &AdvisedItems) {
         self.end_game();
+        let Visit { data, player, back } = visit;
+        // A full inventory leaves nothing to buy next.
+        if items.full(player) {
+            return;
+        }
         let Some(call) = advisor.call_for(Trigger::BackToBase) else {
             return;
         };
-        let Visit { data, player, back } = visit;
         let to_build = items.to_build(player, data.enemies_of(player));
         let recommended = items.recommended(player);
         let input = input(call.language, visit, to_build.as_ref(), &recommended);

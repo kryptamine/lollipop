@@ -34,7 +34,8 @@ impl AdvisedItems {
 
     /// The one candidate item Advice may name: the one most held components build into,
     /// then one Advice showed and the player has not left for another finished item,
-    /// then the earliest by minute.
+    /// then the earliest by minute not skipped, then the latest skipped. `None` once
+    /// the inventory is full.
     pub(super) fn to_build<'a>(
         &self,
         player: &Player,
@@ -44,6 +45,9 @@ impl AdvisedItems {
             return None;
         };
         let owned = player.item_ids();
+        if self.table.full(&owned) {
+            return None;
+        }
         let finished = self.table.finished(&owned);
         let enemies = enemies.filter_map(Player::cell_champion);
         let candidates = self.table.candidates(champion, role, enemies, &owned);
@@ -69,12 +73,22 @@ impl AdvisedItems {
                 Standing::InProgress(index)
             }
         };
+        // A skipped item sorts by its minute negated: late in a build, the latest one
+        // left is the nearest to where the player is.
+        let by_minute = |candidate: &ItemCandidate<'_>| {
+            if candidate.skipped {
+                -candidate.minute
+            } else {
+                candidate.minute
+            }
+        };
         // `min_by` keeps the first of equals, so a tie goes to the larger share.
         candidates.into_iter().min_by(|a, b| {
             held(b)
                 .cmp(&held(a))
                 .then_with(|| standing(a).cmp(&standing(b)))
-                .then(a.minute.total_cmp(&b.minute))
+                .then(a.skipped.cmp(&b.skipped))
+                .then(by_minute(a).total_cmp(&by_minute(b)))
         })
     }
 
@@ -92,6 +106,11 @@ impl AdvisedItems {
                 bought: owned.contains(&item),
             })
             .collect()
+    }
+
+    /// Whether every slot holds a completed item or boots.
+    pub(super) fn full(&self, player: &Player) -> bool {
+        self.table.full(&player.item_ids())
     }
 
     pub(super) fn icon_url(&self, item: u32) -> Option<String> {

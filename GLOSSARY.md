@@ -10,7 +10,7 @@ A recommendation a model writes for the active player, such as a game plan or an
 _Avoid_: Hint, tip, suggestion
 
 **Back to base**:
-A visit the living player makes to the shop, seen by its first purchase.
+A visit the player makes to the shop, alive or dead, seen by its first purchase.
 _Avoid_: Recall
 
 **Benchmark**:
@@ -38,7 +38,7 @@ A completed item or boots that players of a champion and role commonly buy again
 _Avoid_: Recommended item, suggestion
 
 **Item to build**:
-The one Item candidate a Trigger's Advice may name, chosen by code: the one the player's components build into most, then the item in progress (shown by earlier Advice, not bought, and not left for another finished item), else the earliest by median minute.
+The one Item candidate a Trigger's Advice may name, chosen by code: the one the player's components build into most, then the item in progress (shown by earlier Advice, not bought, and not left for another finished item), then the earliest by median minute among those not bought before a held candidate, else the latest of those. None once the inventory is full.
 _Avoid_: Next item, target item
 
 **Lane opponent**:
