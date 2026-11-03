@@ -12,5 +12,12 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
+    // One page per Tauri window: the overlay and the settings window.
+    rolldownOptions: {
+      input: {
+        overlay: decodeURIComponent(new URL('ui/index.html', import.meta.url).pathname),
+        settings: decodeURIComponent(new URL('ui/settings.html', import.meta.url).pathname),
+      },
+    },
   },
 });

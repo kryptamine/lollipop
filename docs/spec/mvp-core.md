@@ -184,17 +184,23 @@ no Markers, so it shows only `Patch unknown` and the schedule line.
 
 ## Menu bar
 
-The menu bar menu is the only settings surface. There is no settings window and
-no hotkey.
+The menu bar menu holds no switches: they live in the settings window it opens
+([`ai-advice.md`](ai-advice.md#settings-window),
+[ADR 0014](../adr/0014-settings-window-takes-focus-on-demand.md)). There is no
+global hotkey.
 
 - **Status line:** at the top, what was detected, such as
   `Master Yi · Mid · Gold`, with a reason in place of a missing value:
   `Role unknown`, `League client unavailable`, `Tier unknown`, `Unranked`, and
   `Queue unknown` or `Patch unknown` added at the end, then the table's and the
   schedule's notice lines, all game.
-- **Switches:** one per Widget, on by default, including Widgets added later.
-- **Launch at login:** off by default.
+- **Settings…** (Cmd-, while the menu is open): opens the settings window, or
+  raises it.
 - **Quit.**
+
+The settings window's General tab holds **Launch at login**, off by default. Its
+Overlay tab holds one switch per Widget, on by default, including Widgets added
+later.
 
 A change applies at once, including during a game. Markers keep being computed
 while the strip is off. Settings are kept in a local file, `settings.json` in the
@@ -369,6 +375,9 @@ These were not tested and can reopen a decision.
   rows, a second display, contrast and placement.
 - **Menu bar:** reachable over League in Fullscreen, and whether opening it takes
   focus.
+- **Settings window:** opened over League in Fullscreen, closing it hands focus
+  back to League and the overlay returns. The overlay window opts out of the app
+  being hidden; if it still disappears, closing reopens ADR 0014.
 - **Detection:** role and tier in a real ranked game, including a lane swap and an
   unranked player, and `position` in draft and blind. Also whether
   `/lol-champ-select/v1/session` still answers at game start: the probe read it only

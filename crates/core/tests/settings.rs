@@ -110,3 +110,30 @@ fn the_view_is_told_about_every_widget() {
         json!({ "markerStrip": false, "timingHints": false })
     );
 }
+
+// The settings window reads this shape: see Switches in ui/src/bridge.ts.
+#[test]
+fn the_settings_window_is_told_every_switch() {
+    let mut settings = Settings::default();
+    settings.launch_at_login = true;
+    settings.set_widget("timingHints", false);
+    assert_eq!(
+        serde_json::to_value(settings.switches()).unwrap(),
+        json!({
+            "launchAtLogin": true,
+            "widgets": { "markerStrip": true, "timingHints": false },
+        })
+    );
+}
+
+// The window's ids arrive over IPC, and a stray one must not land in the file.
+#[test]
+fn a_switch_for_no_widget_is_not_stored() {
+    let (_dir, path) = settings_file();
+    let mut settings = Settings::default();
+    settings.set_widget("notAWidget", false);
+    settings.save(&path).unwrap();
+
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(saved["widgets"], json!({}));
+}

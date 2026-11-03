@@ -1,5 +1,6 @@
-//! What the player chose in the menu bar menu, kept in a local file.
+//! What the player chose in the settings window, kept in a local file.
 
+mod switches;
 mod widget;
 
 use std::collections::BTreeMap;
@@ -8,6 +9,7 @@ use std::{fs, io};
 
 use serde::{Deserialize, Serialize};
 
+pub use switches::Switches;
 pub use widget::{Widget, WIDGETS};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -44,8 +46,11 @@ impl Settings {
         self.widgets.get(id).copied().unwrap_or(true)
     }
 
+    /// An id no Widget has is ignored, so the view cannot write junk into the file.
     pub fn set_widget(&mut self, id: &str, on: bool) {
-        self.widgets.insert(id.to_string(), on);
+        if WIDGETS.iter().any(|widget| widget.id == id) {
+            self.widgets.insert(id.to_string(), on);
+        }
     }
 
     /// Every Widget by id, the payload the view draws from.
@@ -55,5 +60,13 @@ impl Settings {
             .iter()
             .map(|widget| (widget.id, self.widget_on(widget.id)))
             .collect()
+    }
+
+    #[must_use]
+    pub fn switches(&self) -> Switches {
+        Switches {
+            launch_at_login: self.launch_at_login,
+            widgets: self.widget_switches(),
+        }
     }
 }

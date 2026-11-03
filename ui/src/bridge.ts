@@ -1,4 +1,5 @@
 // The only module that may import Tauri; components stay unaware of it.
+import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 export type Scores = {
@@ -41,6 +42,25 @@ export type WidgetSwitches = {
   markerStrip: boolean;
   timingHints: boolean;
 };
+
+export type WidgetId = keyof WidgetSwitches;
+
+export type Switches = {
+  launchAtLogin: boolean;
+  widgets: WidgetSwitches;
+};
+
+// Each answers with the switches as kept, which may differ from what was asked.
+export const readSwitches = (): Promise<Switches> => invoke<Switches>('read_switches');
+
+export const setWidget = (id: WidgetId, isOn: boolean): Promise<Switches> =>
+  invoke<Switches>('set_widget', {
+    id,
+    isOn,
+  });
+
+export const setLaunchAtLogin = (isOn: boolean): Promise<Switches> =>
+  invoke<Switches>('set_launch_at_login', { isOn });
 
 const stopWith = (unlisten: Promise<UnlistenFn>): (() => void) => {
   const stopListening = async () => {
