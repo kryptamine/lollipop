@@ -123,7 +123,7 @@ fn the_settings_window_is_told_every_switch() {
         json!({
             "launchAtLogin": true,
             "widgets": { "adviceWidget": true, "markerStrip": true, "timingHints": false },
-            "triggers": { "loadingScreen": true },
+            "triggers": { "death": true, "loadingScreen": true },
             "adviceLanguage": "system",
         })
     );

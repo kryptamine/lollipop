@@ -48,6 +48,7 @@ export type WidgetId = keyof WidgetSwitches;
 
 export type TriggerSwitches = {
   loadingScreen: boolean;
+  death: boolean;
 };
 
 export type TriggerId = keyof TriggerSwitches;
@@ -65,6 +66,8 @@ export type Switches = {
 export type ShownAdvice = {
   trigger: TriggerId;
   text: string;
+  // The advised item's icon on the Data Dragon CDN.
+  icon: string | null;
   timeLeft: number;
 };
 

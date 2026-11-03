@@ -18,6 +18,8 @@ pub enum Reply {
     Silence,
     /// Closes the connection unanswered, as a network error does.
     Hangup,
+    /// Gives `reply` after `wait`.
+    Delayed { wait: Duration, reply: Box<Self> },
 }
 
 impl Reply {
@@ -170,6 +172,10 @@ async fn answer(mut stream: TcpStream, reply: Reply) {
             let _ = stream.read(&mut [0; 1]).await;
         }
         Reply::Hangup => drop(stream),
+        Reply::Delayed { wait, reply } => {
+            tokio::time::sleep(wait).await;
+            Box::pin(answer(stream, *reply)).await;
+        }
     }
 }
 

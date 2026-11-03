@@ -14,7 +14,7 @@ type AdviceGroupProps = {
 export const AdviceGroup = ({
   isWidgetOn,
   language,
-  triggers: { loadingScreen },
+  triggers: { loadingScreen, death },
   onLanguageChange,
   onTriggerChange,
 }: AdviceGroupProps) => (
@@ -28,6 +28,14 @@ export const AdviceGroup = ({
         isDisabled={!isWidgetOn}
         onChange={(isOn) => {
           onTriggerChange('loadingScreen', isOn);
+        }}
+      />
+      <SwitchRow
+        label="Death"
+        isOn={death}
+        isDisabled={!isWidgetOn}
+        onChange={(isOn) => {
+          onTriggerChange('death', isOn);
         }}
       />
     </div>

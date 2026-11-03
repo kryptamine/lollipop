@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use super::cell_benchmarks::CellBenchmarks;
 use super::champion_key::champion_key;
+use super::item_table::ItemTable;
 use super::minute_entry::MinuteEntry;
 use crate::game_inputs::{Patch, Role, Tier};
 
@@ -15,6 +16,8 @@ pub struct BenchmarkTable {
     max_patch: Option<Patch>,
     patch_window: Vec<Patch>,
     cells: Vec<CellEntry>,
+    #[serde(flatten)]
+    items: ItemTable,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,6 +52,10 @@ impl BenchmarkTable {
                 .iter()
                 .max()
                 .is_some_and(|newest| newest.is_followed_by(patch))
+    }
+
+    pub(crate) fn take_items(&mut self) -> ItemTable {
+        std::mem::take(&mut self.items)
     }
 
     /// The build already pooled a thin Cell's adjacent tiers into its entry, so no entry

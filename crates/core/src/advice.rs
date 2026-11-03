@@ -25,6 +25,19 @@ pub use masked_key::masked_key;
 pub(crate) use question::Question;
 pub use trigger::{Trigger, TRIGGERS};
 
+/// What every Trigger tells the model, followed by its own part.
+macro_rules! instructions {
+    ($own:literal) => {
+        concat!(
+            "You coach a League of Legends player in their game. Answer with one concrete \
+idea the player can act on, at most 120 characters, written in the language the input \
+names, as `advice`. ",
+            $own
+        )
+    };
+}
+pub(crate) use instructions;
+
 pub const OPENAI_URL: &str = "https://api.openai.com";
 
 // Fixed in code: the cost line in the Advice tab is measured on this model.
