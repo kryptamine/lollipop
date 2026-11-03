@@ -85,14 +85,14 @@ impl ComparedGame {
             level: self.level.update(level),
             scores: self.scores.update(scores),
         };
-        let ahead = self.cell.at_minute_ahead(game_time);
+        let behind = self.cell.at_minute_behind(game_time);
         let shown = ShownBenchmarks {
-            cs: cs_benchmarks.and(ahead).map(|b| b.cs),
-            gold: gold_benchmarks.and(ahead).map(|b| b.gold),
-            level: benchmarks.and(ahead).map(|b| b.level),
+            cs: cs_benchmarks.and(behind).map(|b| b.cs),
+            gold: gold_benchmarks.and(behind).map(|b| b.gold),
+            level: benchmarks.and(behind).map(|b| b.level),
             scores: score_benchmarks
                 .and(snapshot.scores)
-                .and(ahead)
+                .and(behind)
                 .and_then(|b| b.scores),
         };
         (markers, shown)
