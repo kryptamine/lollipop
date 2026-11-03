@@ -4,6 +4,7 @@ use std::fmt::Write;
 
 use super::back_to_base::BackToBase;
 use super::item_prompt::{clock, describe, item_lines};
+use super::kill_score::KillScore;
 use super::payload::{AllGameData, Item, Player};
 use super::recommended_item::RecommendedItem;
 use crate::advice::{instructions, Language};
@@ -51,6 +52,9 @@ pub(super) fn input(
         .map(Item::shown_name)
         .collect();
     let _ = writeln!(lines, "Bought in this visit: {}", bought.join(", "));
+    if let Some(score) = KillScore::of(data, player) {
+        let _ = writeln!(lines, "Kills: {score}");
+    }
     for enemy in data.enemies_of(player) {
         let _ = writeln!(lines, "Enemy: {}", describe(enemy));
     }
