@@ -40,6 +40,8 @@ struct CandidateEntry {
     /// The transforms that hold `item`.
     #[serde(default)]
     owned_as: Vec<u32>,
+    #[serde(default)]
+    builds_from: Vec<u32>,
 }
 
 impl ItemTable {
@@ -75,6 +77,7 @@ impl ItemTable {
                 item: candidate.item,
                 share: candidate.share,
                 minute: candidate.minute,
+                builds_from: &candidate.builds_from,
                 name: self.name_of(candidate.item),
             })
             .collect()

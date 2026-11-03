@@ -216,11 +216,15 @@ fn body(state: &State) -> String {
 }
 
 /// A schema 2 table with no Cells and Ahri's Item candidates for the middle lane: one
-/// list for each Damage profile bucket, with `magic_share` per enemy champion.
+/// list for each Damage profile bucket, with `magic_share` per enemy champion. Zhonya's
+/// builds from the Rod, and Banshee's comes first by its minute.
 pub fn item_table(magic_share: &Value) -> Value {
-    let candidate = |item: u32, share: f64| json!({ "item": item, "share": share, "minute": 18.0 });
-    let mut seraphs = candidate(3003, 0.4);
+    let candidate = |item: u32, share: f64, minute: f64, builds_from: &[u32]| json!({ "item": item, "share": share, "minute": minute, "builds_from": builds_from });
+    let zhonyas = candidate(3157, 0.6, 20.0, &[1052, 1058, 2420]);
+    let mut seraphs = candidate(3003, 0.4, 22.0, &[1027, 3070]);
     seraphs["owned_as"] = json!([3040]);
+    // No `builds_from`, as a table built before components were listed.
+    let boots = |item: u32| json!({ "item": item, "share": 0.5, "minute": 12.0 });
     json!({
         "schema_version": 2,
         "patch_window": ["16.20", "16.21"],
@@ -233,9 +237,13 @@ pub fn item_table(magic_share: &Value) -> Value {
         "item_candidates": [{
             "champion": "Ahri",
             "role": "MIDDLE",
-            "physical_heavy": [candidate(3157, 0.6), candidate(3047, 0.5)],
-            "mixed": [candidate(3157, 0.6), candidate(3020, 0.5)],
-            "magic_heavy": [candidate(3157, 0.6), candidate(3102, 0.45), seraphs],
+            "physical_heavy": [zhonyas, boots(3047)],
+            "mixed": [zhonyas, boots(3020)],
+            "magic_heavy": [
+                zhonyas,
+                candidate(3102, 0.45, 14.0, &[1033, 1052, 4632]),
+                seraphs,
+            ],
         }],
         "data_dragon_version": DATA_DRAGON_VERSION,
         "item_names": {

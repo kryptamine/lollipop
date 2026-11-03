@@ -30,18 +30,38 @@ impl AdvisedItems {
         }
     }
 
-    /// The player's list for the Damage profile bucket of `enemies`, less what they own.
-    pub(super) fn candidates<'a>(
+    /// The one candidate item Advice may name: an item Advice showed and the player has not
+    /// bought, else the one most held components build into, else the earliest by minute.
+    pub(super) fn to_build<'a>(
         &self,
         player: &Player,
         enemies: impl Iterator<Item = &'a Player>,
-    ) -> Vec<ItemCandidate<'_>> {
+    ) -> Option<ItemCandidate<'_>> {
         let (Some(role), Some(champion)) = (self.role, player.cell_champion()) else {
-            return Vec::new();
+            return None;
         };
+        let owned = player.item_ids();
         let enemies = enemies.filter_map(Player::cell_champion);
-        self.table
-            .candidates(champion, role, enemies, &player.item_ids())
+        let mut candidates = self.table.candidates(champion, role, enemies, &owned);
+        let shown = self.shown.iter().find_map(|&item| {
+            candidates
+                .iter()
+                .position(|candidate| candidate.item == item)
+        });
+        if let Some(shown) = shown {
+            return Some(candidates.swap_remove(shown));
+        }
+        let held = |candidate: &ItemCandidate<'_>| {
+            candidate
+                .builds_from
+                .iter()
+                .filter(|item| owned.contains(item))
+                .count()
+        };
+        // `min_by` keeps the first of equals, so a tie goes to the larger share.
+        candidates
+            .into_iter()
+            .min_by(|a, b| held(b).cmp(&held(a)).then(a.minute.total_cmp(&b.minute)))
     }
 
     /// Items earlier Advice in this game showed, and whether `player` bought them.

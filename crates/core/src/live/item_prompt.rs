@@ -8,27 +8,27 @@ use super::recommended_item::RecommendedItem;
 use crate::advice::Language;
 use crate::benchmarks::{ItemCandidate, ItemName};
 
-/// The Item candidates, then the items earlier Advice recommended.
+/// The Item to build, then the items earlier Advice recommended.
 pub(super) fn item_lines(
     lines: &mut String,
     language: Language,
-    candidates: &[ItemCandidate<'_>],
+    to_build: Option<&ItemCandidate<'_>>,
     recommended: &[RecommendedItem<'_>],
 ) {
-    if candidates.is_empty() {
-        let _ = writeln!(lines, "Item candidates: none");
-    } else {
-        let _ = writeln!(lines, "Item candidates:");
-    }
-    for candidate in candidates {
-        let _ = writeln!(
-            lines,
-            "- {} {}: bought in {:.0}% of games, first at minute {:.0}",
-            candidate.item,
-            item_name(candidate.item, candidate.name, language),
-            candidate.share * 100.0,
-            candidate.minute
-        );
+    match to_build {
+        Some(candidate) => {
+            let _ = writeln!(
+                lines,
+                "Item to build: {} {}, bought in {:.0}% of games, first at minute {:.0}",
+                candidate.item,
+                item_name(candidate.item, candidate.name, language),
+                candidate.share * 100.0,
+                candidate.minute
+            );
+        }
+        None => {
+            let _ = writeln!(lines, "Item to build: none");
+        }
     }
     for earlier in recommended {
         let bought = if earlier.bought {

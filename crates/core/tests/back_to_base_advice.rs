@@ -61,14 +61,14 @@ fn inputs(openai: &FakeOpenAi) -> Vec<String> {
 
 #[tokio::test]
 async fn a_purchase_shows_advice_with_the_item_icon() {
-    let (shown, _openai) = shown_after_purchase(&answer(Some(TIP), Some(3102))).await;
+    let (shown, _openai) = shown_after_purchase(&answer(Some(TIP), Some(3157))).await;
     let shown = shown.unwrap();
 
     assert_eq!(shown.trigger, Trigger::BackToBase);
     assert_eq!(shown.text, TIP);
     assert_eq!(
         shown.icon.as_deref(),
-        Some("https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3102.png")
+        Some("https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3157.png")
     );
 }
 
@@ -93,7 +93,10 @@ async fn the_prompt_describes_the_visit_without_names() {
     assert!(input.contains("Bought in this visit: Огромный жезл\n"));
     assert_eq!(input.matches("Enemy: ").count(), 5);
     assert!(input.contains("Enemy: Zed, MIDDLE"));
-    assert!(input.contains("- 3102 Покров банши: bought in 45% of games, first at minute 18\n"));
+    // The Rod just bought builds into Zhonya's, which takes over from Banshee's minute.
+    assert!(input.contains(
+        "Item to build: 3157 Песочные часы Жони, bought in 60% of games, first at minute 20\n"
+    ));
     for name in ["#EUW", "Foe", "Friend", "Me,"] {
         assert!(!input.contains(name), "{name} is in the prompt");
     }
@@ -303,4 +306,6 @@ async fn an_item_death_advice_showed_goes_in_the_prompt() {
     assert_eq!(inputs.len(), 2);
     assert!(inputs[1].contains("Moment: the player is back to base"));
     assert!(inputs[1].contains("Earlier recommended: Покров банши, not bought\n"));
+    // The Rod bought builds into Zhonya's, yet Banshee's death Advice showed stays held.
+    assert!(inputs[1].contains("Item to build: 3102 Покров банши"));
 }

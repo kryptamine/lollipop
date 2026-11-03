@@ -10,15 +10,14 @@ use crate::benchmarks::ItemCandidate;
 
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player has just died to an enemy champion: `advice` says why and what to \
-change. `item` is the id of the one item candidate that answers this death, named in \
-`advice`, or null when none does: not every death needs an item. Advise an earlier \
-recommended item again only if the game still calls for it."
+change, and names the Item to build when the input gives one. `item` is that item's id, \
+or null when the input gives none. Never advise another item."
 );
 
 pub(super) fn input(
     language: Language,
     death: &Death<'_>,
-    candidates: &[ItemCandidate<'_>],
+    to_build: Option<&ItemCandidate<'_>>,
     recommended: &[RecommendedItem<'_>],
 ) -> String {
     let data = death.data;
@@ -47,6 +46,6 @@ pub(super) fn input(
     for enemy in death.enemies() {
         let _ = writeln!(lines, "Enemy: {}", describe(enemy));
     }
-    item_lines(&mut lines, language, candidates, recommended);
+    item_lines(&mut lines, language, to_build, recommended);
     lines
 }

@@ -169,27 +169,25 @@ Settled in [#94](https://github.com/kryptamine/lollipop/issues/94).
 
 Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 
-- **Says:** why the player died and what to change. The model decides whether an
-  item answers it.
+- **Says:** why the player died and what to change, naming the
+  [Item to build](#item-to-build). The model never picks another item.
 - **Fires:** on a `ChampionKill` whose `VictimName` is the active player and whose
   killer is an enemy champion. A death to a turret, minion or monster gets none.
 - **Prompt:** the player's champion, role, level, items and `currentGold`; the
   killer and assisters (champion, position, level, items, KDA); the whole enemy
   team's champions, items and levels; `gameTime`; how many times this killer has
-  killed the player; the candidates; items earlier Advice in this game recommended,
-  and whether the player bought them.
-- **Candidates:** see [Item candidates](#item-candidates). Not filtered by gold: the
-  model sees `currentGold` and may name an item to build toward.
-- **Repeats:** the model repeats an earlier item only when the situation still
-  calls for it.
+  killed the player; the Item to build; items earlier Advice in this game
+  recommended, and whether the player bought them.
+- **Item:** the [Item to build](#item-to-build), held by code. Not filtered by gold:
+  the model sees `currentGold` and may say to build toward it.
 - **Another death:** sends a new request, whose answer replaces the one showing.
 
 ### Back to base
 
 Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
 
-- **Says:** one idea with an optional item. One the player can afford now is "buy it
-  now", otherwise "build toward it". `advice` is null when nothing changed since the
+- **Says:** the Item to build. One the player can afford now is "buy it now",
+  otherwise "build toward it". `advice` is null when nothing changed since the
   last Advice.
 - **Fires:** on the first purchase of a visit: a new item in `items` and
   `currentGold` down by at least 300 in the same poll, while alive. The 300 floor
@@ -199,8 +197,8 @@ Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
   not visible.
 - **Prompt:** the player's champion, role, level, items, KDA and `currentGold`; the
   items bought in this visit; the whole enemy team's champions, items, levels and
-  KDA; `gameTime`; the candidates; earlier recommended items and whether bought.
-- **Candidates:** as for death.
+  KDA; `gameTime`; the Item to build; earlier recommended items and whether bought.
+- **Item:** as for death. The first one comes on the first Back to base.
 
 ### Turning point
 
@@ -239,12 +237,23 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
 Settled in [#126](https://github.com/kryptamine/lollipop/issues/126). Research:
 [`item-statistics.md`](../research/item-statistics.md).
 
-Item Advice is hybrid: the Benchmark table supplies the candidates, the model
-picks one, and code rejects anything else.
+Item Advice is hybrid: the Benchmark table supplies the candidates, code picks the
+Item to build among them, the model explains it, and code rejects anything else.
 
 - **In the app:** sum the five enemies' magic share from `allPlayers` and read the
   Damage profile bucket. The candidates are the list for the player's champion,
   role and bucket, minus items the player owns, `owned_as` included.
+
+### Item to build
+
+Settled in [#152](https://github.com/kryptamine/lollipop/issues/152).
+
+- **In progress first:** the oldest candidate earlier Advice showed and the player
+  has not bought. A death never breaks it, whatever killed the player.
+- **Then components:** the candidate whose `builds_from` the player's items hit
+  most, ties to the earlier `minute`.
+- **Else** the candidate with the earliest `minute`, ties to the larger `share`.
+- **None** when no candidate is left, and `item` stays null.
 
 ### In the Benchmark table
 
@@ -274,6 +283,8 @@ picks one, and code rejects anything else.
   source through Data Dragon `specialRecipe`, else a lone `from`; a candidate carries
   optional `owned_as` ids. A completed item whose `into` holds only transforms (items
   of map 11 no shop sells) stays completed.
+- **Components:** a candidate carries optional `builds_from`, every id down its
+  Data Dragon `from` tree. A table without it ties no component to a candidate.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
   translation repeats the English one. `data_dragon_version` is that version.

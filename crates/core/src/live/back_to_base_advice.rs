@@ -60,10 +60,10 @@ impl BackToBaseAdvice {
             return;
         };
         let Visit { data, player, back } = visit;
-        let candidates = items.candidates(player, data.enemies_of(player));
+        let to_build = items.to_build(player, data.enemies_of(player));
         let recommended = items.recommended(player);
-        let input = input(call.language, visit, &candidates, &recommended);
-        let ids: Vec<u32> = candidates.iter().map(|candidate| candidate.item).collect();
+        let input = input(call.language, visit, to_build.as_ref(), &recommended);
+        let ids: Vec<u32> = to_build.iter().map(|candidate| candidate.item).collect();
         let deadline = Instant::now() + Duration::from_secs_f64(DROP_AFTER);
         let advisor = advisor.clone();
         self.asking = Some(Asking {
