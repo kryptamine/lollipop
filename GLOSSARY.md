@@ -69,7 +69,7 @@ A pop-up shown shortly before an objective spawns.
 _Avoid_: Timer, alert, notification
 
 **Turning point**:
-A moment that changes the game plan, such as an objective taken, an inhibitor down, an Ace, the end of the laning phase or a key level of the player.
+A moment that changes the game plan, such as an objective taken, an inhibitor down, an Ace or the first turret of the game.
 _Avoid_: Periodic, milestone
 
 **Trigger**:
