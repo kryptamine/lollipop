@@ -28,7 +28,7 @@ function mockTable() {
     scores_n: 300,
   }));
   return {
-    schema_version: 1,
+    schema_version: 2,
     patch_window: ["16.20", "16.21"],
     cells: [{ champion: "Ahri", role: "MIDDLE", tier: "GOLD", minutes }],
   };

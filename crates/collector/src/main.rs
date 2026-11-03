@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 use lollipop_collector::{
     build_table, check_schedule, collect, manifest_public_key, publish, rollback, Config,
-    PublishConfig, RollbackConfig, SeedTier, SystemClock, TableConfig,
+    PublishConfig, RollbackConfig, SeedTier, SystemClock, TableConfig, DATA_DRAGON_URL,
+    MIN_CANDIDATE_GAMES,
 };
 use lollipop_core::game_inputs::Patch;
 
@@ -62,6 +63,18 @@ struct BuildTableArgs {
     /// A game patch above this, such as 16.24, makes the table stale.
     #[arg(long, value_parser = parse_patch)]
     max_patch: Option<Patch>,
+    #[command(flatten)]
+    items: ItemArgs,
+}
+
+#[derive(Args)]
+struct ItemArgs {
+    /// Serves `api/versions.json` and each version's `item.json`.
+    #[arg(long, default_value = DATA_DRAGON_URL)]
+    data_dragon_url: String,
+    /// A damage profile bucket with fewer games takes the list pooled over buckets.
+    #[arg(long, default_value_t = MIN_CANDIDATE_GAMES)]
+    min_candidate_games: usize,
 }
 
 #[derive(Args)]
@@ -85,6 +98,8 @@ struct PublishArgs {
     work_dir: PathBuf,
     #[arg(long, default_value = SIGNING_KEY)]
     signing_key_file: PathBuf,
+    #[command(flatten)]
+    items: ItemArgs,
 }
 
 #[derive(Args)]
@@ -110,11 +125,7 @@ fn parse_patch(value: &str) -> Result<Patch, String> {
     Patch::parse(value).ok_or_else(|| format!("{value} is not a patch such as 16.24"))
 }
 
-#[allow(
-    clippy::future_not_send,
-    reason = "runs on a current-thread runtime, and a rusqlite Connection is not Sync"
-)]
-async fn run_collect(args: CollectArgs) -> Result<(), String> {
+fn run_collect(args: CollectArgs) -> Result<(), String> {
     let key = std::fs::read_to_string(&args.key_file)
         .map_err(|error| format!("cannot read {}: {error}", args.key_file.display()))?;
     let config = Config {
@@ -124,7 +135,12 @@ async fn run_collect(args: CollectArgs) -> Result<(), String> {
         platform_url: args.platform_url,
         regional_url: args.regional_url,
     };
-    Err(collect(&config, &SystemClock).await.to_string())
+    // Only this command runs one: Data Dragon's blocking client panics inside a runtime.
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|error| format!("cannot start the runtime: {error}"))?;
+    Err(runtime.block_on(collect(&config, &SystemClock)).to_string())
 }
 
 #[allow(
@@ -137,6 +153,8 @@ fn run_build_table(args: BuildTableArgs) -> Result<(), String> {
         reworks: args.reworks,
         output: args.output,
         max_patch: args.max_patch,
+        data_dragon_url: args.items.data_dragon_url,
+        min_candidate_games: args.items.min_candidate_games,
     };
     let report = build_table(&config).map_err(|error| error.to_string())?;
     println!("{report}");
@@ -156,6 +174,8 @@ fn run_publish(args: PublishArgs) -> Result<(), String> {
         bucket: args.bucket,
         work_dir: args.work_dir,
         signing_key: args.signing_key_file,
+        data_dragon_url: args.items.data_dragon_url,
+        min_candidate_games: args.items.min_candidate_games,
     };
     let published = publish(&config).map_err(|error| error.to_string())?;
     println!("{published}");
@@ -179,10 +199,9 @@ fn run_manifest_public_key(args: &ManifestPublicKeyArgs) -> Result<(), String> {
     Ok(())
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), String> {
+fn main() -> Result<(), String> {
     match Cli::parse().command {
-        Command::Collect(args) => run_collect(args).await,
+        Command::Collect(args) => run_collect(args),
         Command::BuildTable(args) => run_build_table(args),
         Command::Publish(args) => run_publish(args),
         Command::Rollback(args) => run_rollback(args),

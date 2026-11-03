@@ -13,7 +13,7 @@ const MANIFEST_CACHE: &str = "Cache-Control: public, max-age=60";
 // A version is never reused, so its file never changes.
 const TABLE_CACHE: &str = "Cache-Control: public, max-age=31536000, immutable";
 
-/// The public bucket of one schema: its `v1` prefix is the app's `v1/manifest.json` path.
+/// The public bucket of one schema: its `v2` prefix is the app's `v2/manifest.json` path.
 pub(super) struct TableBucket {
     prefix: String,
 }

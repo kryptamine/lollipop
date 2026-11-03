@@ -91,7 +91,7 @@ async fn a_download_cut_short_keeps_the_previous_file() {
 // A checksum proves the bytes are the ones published, not that this app can read them.
 #[tokio::test]
 async fn a_table_that_does_not_read_keeps_the_previous_file() {
-    for unreadable in ["not a table", r#"{ "schema_version": 2, "cells": [] }"#] {
+    for unreadable in ["not a table", r#"{ "schema_version": 3, "cells": [] }"#] {
         let mut bench = DeliveryBench::at(Stage::Unanswered).await;
         let previous = table_with_cs(100.0);
         bench.write_live(&previous);
@@ -134,7 +134,7 @@ async fn a_manifest_that_does_not_read_keeps_the_previous_file() {
 async fn a_manifest_without_a_valid_signature_keeps_the_previous_file() {
     let table = table_with_cs(200.0);
     let sha256 = sha256_of(&table);
-    let genuine = message(1, 2, &sha256);
+    let genuine = message(2, 2, &sha256);
     let not_signed = serde_json::json!({ "version": 2, "sha256": sha256 }).to_string();
     let forged = [
         (
@@ -145,15 +145,15 @@ async fn a_manifest_without_a_valid_signature_keeps_the_previous_file() {
         ("not hex", manifest_body(2, &sha256, "zz")),
         (
             "another table",
-            manifest_body(2, &sha256, &sign_with_this_bucket(&message(1, 2, "abc"))),
+            manifest_body(2, &sha256, &sign_with_this_bucket(&message(2, 2, "abc"))),
         ),
         (
             "another version",
-            manifest_body(2, &sha256, &sign_with_this_bucket(&message(1, 3, &sha256))),
+            manifest_body(2, &sha256, &sign_with_this_bucket(&message(2, 3, &sha256))),
         ),
         (
             "another schema",
-            manifest_body(2, &sha256, &sign_with_this_bucket(&message(2, 2, &sha256))),
+            manifest_body(2, &sha256, &sign_with_this_bucket(&message(3, 2, &sha256))),
         ),
     ];
     for (case, manifest) in forged {

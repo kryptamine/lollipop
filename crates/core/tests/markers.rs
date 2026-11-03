@@ -543,7 +543,7 @@ async fn no_table_or_a_table_that_does_not_read_means_no_markers() {
         TIER,
         &flat_minutes(100.0, 1000.0, 10.0),
     )];
-    let body = serde_json::json!({ "schema_version": 2, "cells": cells }).to_string();
+    let body = serde_json::json!({ "schema_version": 3, "cells": cells }).to_string();
     later_schema.write_table(&body);
     assert_eq!(
         later_schema.markers_for(&[Moment::at(100.0)]).await[0],

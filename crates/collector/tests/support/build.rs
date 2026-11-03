@@ -3,11 +3,23 @@ use std::process::{Command, Output};
 
 use serde_json::Value;
 
+use super::fake_data_dragon::FakeDataDragon;
+
 pub fn output_in(dir: &Path) -> PathBuf {
     dir.join("table.json")
 }
 
 pub fn run_build(database: &Path, reworks: &Path, dir: &Path, extra: &[&str]) -> Build {
+    run_build_on(&FakeDataDragon::start(), database, reworks, dir, extra)
+}
+
+pub fn run_build_on(
+    data_dragon: &FakeDataDragon,
+    database: &Path,
+    reworks: &Path,
+    dir: &Path,
+    extra: &[&str],
+) -> Build {
     let output = Command::new(env!("CARGO_BIN_EXE_lollipop-collector"))
         .arg("build-table")
         .arg("--database")
@@ -16,6 +28,7 @@ pub fn run_build(database: &Path, reworks: &Path, dir: &Path, extra: &[&str]) ->
         .arg(reworks)
         .arg("--output")
         .arg(output_in(dir))
+        .args(["--data-dragon-url", &data_dragon.url])
         .args(extra)
         .output()
         .unwrap();
@@ -24,6 +37,8 @@ pub fn run_build(database: &Path, reworks: &Path, dir: &Path, extra: &[&str]) ->
         .map(|body| serde_json::from_slice(&body).unwrap());
     Build { output, table }
 }
+
+pub type Candidate = (u32, f64, f64);
 
 pub struct Build {
     pub output: Output,
@@ -58,6 +73,24 @@ impl Build {
             .unwrap()
             .iter()
             .find(|entry| entry["minute"] == minute)
+    }
+
+    /// The candidates for a champion and role facing one Damage profile bucket, as
+    /// `(item, share, minute)`; `None` when the file has no entry for them.
+    pub fn candidates(&self, champion: &str, role: &str, bucket: &str) -> Option<Vec<Candidate>> {
+        let entry = self.table()["item_candidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|entry| entry["champion"] == champion && entry["role"] == role)?;
+        let list = entry[bucket].as_array().unwrap().iter().map(|candidate| {
+            (
+                u32::try_from(candidate["item"].as_u64().unwrap()).unwrap(),
+                candidate["share"].as_f64().unwrap(),
+                candidate["minute"].as_f64().unwrap(),
+            )
+        });
+        Some(list.collect())
     }
 
     /// The `n` of a minute, and 0 when the Cell or the minute is not in the file.

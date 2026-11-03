@@ -208,7 +208,8 @@ Built offline and shipped as one versioned file
 - **Cell:** champion, role and tier. Eight tiers with Master and above merged,
   regions pooled. Matchup, map side and stored percentiles are not included.
 - **File:** JSON with `schema_version`, `patch_window` and `cells`, written by
-  `lollipop-collector build-table`.
+  `lollipop-collector build-table`. Schema 2 adds `damage_profile` and
+  `item_candidates`, described in the [AI Advice spec](ai-advice.md#in-the-benchmark-table).
 - **Contents per minute:** median CS, median `totalGold`, mean level and n. Timeline
   frames are aligned to the minute by linear interpolation, and a game counts only
   towards the minutes it reached.
@@ -297,9 +298,9 @@ A Rust CLI, the `collector` crate, runs continuously on a small VPS with SQLite.
 
 ### Delivery to the app
 
-- **Manifest:** `v1/manifest.json` holds the table version, its sha256 and an Ed25519
+- **Manifest:** `v2/manifest.json` holds the table version, its sha256 and an Ed25519
   signature over both and the schema, next to the table. The path carries the schema
-  version. `v1/` is a prefix in the public bucket, beside `v1/benchmark-table-<version>.json`,
+  version. `v2/` is a prefix in the public bucket, beside `v2/benchmark-table-<version>.json`,
   and the version is an integer that only grows. The manifest is cached for 60 s, and a
   table for a year, as its file never changes.
 - **Checks:** at launch and after every game. Downloads run in the background and

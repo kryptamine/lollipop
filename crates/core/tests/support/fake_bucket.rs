@@ -60,7 +60,7 @@ impl FakeBucket {
     /// The manifest names `table`, whatever the object of that version actually holds.
     pub fn point_manifest_at(&self, version: u32, table: &str) {
         let sha256 = sha256_of(table);
-        let signature = sign_with_this_bucket(&message(1, version, &sha256));
+        let signature = sign_with_this_bucket(&message(2, version, &sha256));
         self.write_manifest(&manifest_body(version, &sha256, &signature));
     }
 
@@ -147,7 +147,7 @@ fn reply_to(request: &str, state: &mut State) -> Reply {
     state.saw_credentials |= request.contains("authorization: ");
     let path = request.split(' ').nth(1).unwrap_or_default();
     // Counted with the choice of body, so a test that saw the count can republish safely.
-    if path == "/v1/manifest.json" {
+    if path == "/v2/manifest.json" {
         state.manifest_downloads += 1;
         return state
             .manifest
@@ -155,7 +155,7 @@ fn reply_to(request: &str, state: &mut State) -> Reply {
             .map_or(Reply::with_status("404 Not Found"), Reply::ok);
     }
     let Some(version) = path
-        .strip_prefix("/v1/benchmark-table-")
+        .strip_prefix("/v2/benchmark-table-")
         .and_then(|name| name.strip_suffix(".json"))
         .and_then(|version| version.parse().ok())
     else {

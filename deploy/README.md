@@ -51,7 +51,7 @@ fine and every app keeps its old table. The first deploy with signing needs step
 ## Check the table bucket by hand
 
 ```sh
-curl -si https://pub-e9b7200aa7d442d79809d68c2fc9912e.r2.dev/v1/manifest.json
+curl -si https://pub-e9b7200aa7d442d79809d68c2fc9912e.r2.dev/v2/manifest.json
 ```
 
 ## Check a backup by hand

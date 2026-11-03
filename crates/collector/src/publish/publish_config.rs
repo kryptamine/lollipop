@@ -13,4 +13,6 @@ pub struct PublishConfig {
     pub bucket: String,
     pub work_dir: PathBuf,
     pub signing_key: PathBuf,
+    pub data_dragon_url: String,
+    pub min_candidate_games: usize,
 }

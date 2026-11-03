@@ -121,6 +121,8 @@ fn built_table(
         reworks: config.reworks.clone(),
         output: output.clone(),
         max_patch: config.max_patch.or(still_in_force(inherited, config)?),
+        data_dragon_url: config.data_dragon_url.clone(),
+        min_candidate_games: config.min_candidate_games,
     };
     print_report(&build_table(&table)?);
     report_schedule(config, issues)?;

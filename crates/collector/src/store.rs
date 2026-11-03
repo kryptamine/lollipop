@@ -5,6 +5,7 @@ mod kept_matches;
 mod match_queue;
 mod played_games;
 mod rate_limit_state;
+mod stored_payloads;
 
 use std::path::Path;
 

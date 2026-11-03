@@ -1,6 +1,8 @@
+pub mod archived_match;
 pub mod bucket_bench;
 pub mod build;
 pub mod failure;
+pub mod fake_data_dragon;
 pub mod fake_riot;
 pub mod frame;
 pub mod game;

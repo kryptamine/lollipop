@@ -7,7 +7,7 @@ use super::champion_key::champion_key;
 use super::minute_entry::MinuteEntry;
 use crate::game_inputs::{Patch, Role, Tier};
 
-pub(crate) const SCHEMA_VERSION: u32 = 1;
+pub(crate) const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Deserialize)]
 pub struct BenchmarkTable {

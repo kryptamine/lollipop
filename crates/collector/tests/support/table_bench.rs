@@ -3,9 +3,15 @@ use std::path::PathBuf;
 use rusqlite::{params, Connection};
 use tempfile::TempDir;
 
-use super::build::{output_in, run_build, Build};
+use super::archived_match::ArchivedMatch;
+use super::build::{output_in, run_build, run_build_on, Build};
+use super::fake_data_dragon::FakeDataDragon;
 use super::frame::Frame;
 use super::played::Played;
+
+fn compressed(body: &serde_json::Value) -> Vec<u8> {
+    zstd::bulk::compress(&serde_json::to_vec(body).unwrap(), 1).unwrap()
+}
 
 /// A database holding exactly the games a test names, and runs of the built binary on it.
 pub struct TableBench {
@@ -86,8 +92,48 @@ impl TableBench {
         }
     }
 
+    /// A match with only its archived payloads: it gives Item candidates, and no Cell.
+    pub fn add_archived(&mut self, count: u32, archived: &ArchivedMatch) {
+        let game = compressed(&archived.game_body());
+        let timeline = compressed(&archived.timeline_body());
+        for _ in 0..count {
+            self.next_match += 1;
+            let id = self.next_match;
+            self.connection
+                .execute(
+                    "INSERT INTO matches (id, match_id, patch_major, patch_minor, tier)
+                     VALUES (?, ?, ?, ?, 'GOLD')",
+                    params![id, format!("EUW1_{id}"), archived.patch.0, archived.patch.1],
+                )
+                .unwrap();
+            self.connection
+                .execute(
+                    "INSERT INTO match_payloads (match, game, timeline) VALUES (?, ?, ?)",
+                    params![id, game, timeline],
+                )
+                .unwrap();
+        }
+    }
+
+    /// Stores a blob that is no zstd, as a damaged archive would hold.
+    pub fn damage_archives(&self) {
+        self.connection
+            .execute("UPDATE match_payloads SET timeline = x'00'", [])
+            .unwrap();
+    }
+
     pub fn build(&self, extra: &[&str]) -> Build {
         run_build(&self.database(), &self.reworks(), self.dir.path(), extra)
+    }
+
+    pub fn build_on(&self, data_dragon: &FakeDataDragon, extra: &[&str]) -> Build {
+        run_build_on(
+            data_dragon,
+            &self.database(),
+            &self.reworks(),
+            self.dir.path(),
+            extra,
+        )
     }
 
     pub fn database(&self) -> PathBuf {

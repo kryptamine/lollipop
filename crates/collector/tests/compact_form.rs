@@ -120,7 +120,7 @@ fn archived(scenario: &Scenario) -> (Value, Value) {
 }
 
 // Without the bodies, every statistic a later table reads would wait a Patch window of
-// new matches. A field no code reads yet, such as an item bought, must survive.
+// new matches. A field no code reads yet, such as gold earned, must survive.
 #[tokio::test]
 async fn archives_the_match_and_timeline_bodies() {
     let scenario = one_stored_game().await;

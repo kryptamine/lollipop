@@ -49,7 +49,7 @@ fn assert_manifest_signs_table(bench: &BucketBench, version: u32) {
     hex::decode_to_slice(SIGNING_PUBLIC_KEY, &mut key).unwrap();
     let mut signature = [0; 64];
     hex::decode_to_slice(manifest["signature"].as_str().unwrap(), &mut signature).unwrap();
-    let message = format!("lollipop-manifest\nv1\n{version}\n{sha256}");
+    let message = format!("lollipop-manifest\nv2\n{version}\n{sha256}");
     VerifyingKey::from_bytes(&key)
         .unwrap()
         .verify_strict(message.as_bytes(), &Signature::from_bytes(&signature))
@@ -78,7 +78,7 @@ fn assert_refused(bench: &mut BucketBench, table: &Value) {
         .contains("Benchmark table publish refused"));
 }
 
-// The app builds the path from this: `v1/manifest.json` next to the table, whose sha256
+// The app builds the path from this: `v2/manifest.json` next to the table, whose sha256
 // it checks before a swap. A wrong hash would make it throw away every download.
 #[test]
 fn a_first_publish_puts_a_table_and_its_manifest_in_the_bucket() {
@@ -236,7 +236,7 @@ fn a_file_that_is_not_json_leaves_the_old_table() {
 fn a_file_the_app_cannot_read_leaves_the_old_table() {
     let mut bench = bench_on_version_1(3);
     let mut other_schema = table_of(3, &WINDOW);
-    other_schema["schema_version"] = json!(2);
+    other_schema["schema_version"] = json!(1);
     assert_refused(&mut bench, &other_schema);
 }
 
