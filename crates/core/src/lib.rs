@@ -6,3 +6,4 @@ pub mod live;
 pub mod overlay;
 pub mod settings;
 pub mod updates;
+pub mod voiceover;

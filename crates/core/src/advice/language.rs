@@ -20,6 +20,15 @@ impl Language {
         }
     }
 
+    /// The BCP 47 tag of the voice that reads it; any region of the language will do.
+    #[must_use]
+    pub const fn voice_tag(self) -> &'static str {
+        match self {
+            Self::English => "en-US",
+            Self::Russian => "ru-RU",
+        }
+    }
+
     /// How the prompt names it.
     pub(crate) const fn name(self) -> &'static str {
         match self {

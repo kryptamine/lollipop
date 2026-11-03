@@ -6,6 +6,7 @@ import {
   setAdviceLanguage,
   setLaunchAtLogin,
   setTrigger,
+  setVoiceover,
   setWidget,
   type AdviceLanguage,
   type Switches,
@@ -19,6 +20,7 @@ export type SwitchControls = {
   onTriggerChange: (id: TriggerId, isOn: boolean) => void;
   onLanguageChange: (language: AdviceLanguage) => void;
   onLaunchAtLoginChange: (isOn: boolean) => void;
+  onVoiceoverChange: (isOn: boolean) => void;
 };
 
 // The switches as the app kept them, `undefined` until it has answered.
@@ -65,6 +67,9 @@ export const useSwitches = (): SwitchControls | undefined => {
     },
     onLaunchAtLoginChange: (isOn) => {
       void show(setLaunchAtLogin(isOn));
+    },
+    onVoiceoverChange: (isOn) => {
+      void show(setVoiceover(isOn));
     },
   };
 };

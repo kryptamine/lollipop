@@ -2,8 +2,10 @@ import { AdviceTab } from './AdviceTab';
 import { GeneralTab } from './GeneralTab';
 import { OverlayTab } from './OverlayTab';
 import { AdviceGroup } from './AdviceGroup';
+import { VoiceoverGroup } from './VoiceoverGroup';
 import type { SettingsTab } from './SettingsToolbar';
 import type { SwitchControls } from './use-switches';
+import { useVoiceInstalled } from './use-voice-installed';
 import type { OpenAiKeyControls } from './use-open-ai-key';
 
 type ShownTabProps = {
@@ -16,11 +18,20 @@ type ShownTabProps = {
 
 export const ShownTab = ({
   tab,
-  controls: { switches, onWidgetChange, onTriggerChange, onLanguageChange, onLaunchAtLoginChange },
+  controls: {
+    switches,
+    onWidgetChange,
+    onTriggerChange,
+    onLanguageChange,
+    onLaunchAtLoginChange,
+    onVoiceoverChange,
+  },
   openAiKey,
   onUsageOpen,
   onOverlayOpen,
 }: ShownTabProps) => {
+  const isVoiceInstalled = useVoiceInstalled(switches.adviceLanguage);
+
   if (tab === 'general') {
     return (
       <GeneralTab
@@ -54,6 +65,12 @@ export const ShownTab = ({
         triggers={switches.triggers}
         onLanguageChange={onLanguageChange}
         onTriggerChange={onTriggerChange}
+      />
+      <VoiceoverGroup
+        isWidgetOn={isWidgetOn}
+        isVoiceInstalled={isVoiceInstalled}
+        isOn={switches.voiceover}
+        onChange={onVoiceoverChange}
       />
     </AdviceTab>
   );

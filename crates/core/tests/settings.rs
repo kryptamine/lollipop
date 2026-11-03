@@ -130,6 +130,7 @@ fn the_settings_window_is_told_every_switch() {
                 "turningPoint": true,
             },
             "adviceLanguage": "system",
+            "voiceover": false,
         })
     );
 }
@@ -240,6 +241,27 @@ fn the_language_is_kept_as_the_view_names_it() {
         Settings::load(&path).advice_language,
         AdviceLanguage::Russian
     );
+}
+
+#[test]
+fn voiceover_starts_off_and_survives_a_restart() {
+    let (_dir, path) = settings_file();
+    let mut settings = Settings::load(&path);
+    assert!(!settings.voiceover);
+    assert!(!settings.reads_aloud());
+
+    settings.voiceover = true;
+    settings.save(&path).unwrap();
+    assert!(Settings::load(&path).reads_aloud());
+}
+
+// Voiceover reads only what the Widget shows, so the Widget off silences it.
+#[test]
+fn voiceover_is_silent_with_the_advice_widget_off() {
+    let mut settings = Settings::default();
+    settings.voiceover = true;
+    settings.set_widget(ADVICE_WIDGET, false);
+    assert!(!settings.reads_aloud());
 }
 
 // The key reaches OpenAI only, so no log line may print it.

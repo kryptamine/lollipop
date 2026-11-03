@@ -62,6 +62,7 @@ export type Switches = {
   widgets: WidgetSwitches;
   triggers: TriggerSwitches;
   adviceLanguage: AdviceLanguage;
+  voiceover: boolean;
 };
 
 // What the Advice Widget shows; `timeLeft` runs from 1 down to 0 over its time on screen.
@@ -93,6 +94,12 @@ export const setAdviceLanguage = (language: AdviceLanguage): Promise<Switches> =
 
 export const setLaunchAtLogin = (isOn: boolean): Promise<Switches> =>
   invoke<Switches>('set_launch_at_login', { isOn });
+
+export const setVoiceover = (isOn: boolean): Promise<Switches> =>
+  invoke<Switches>('set_voiceover', { isOn });
+
+// For the Advice language the app keeps now, so ask again once it changes.
+export const isVoiceInstalled = (): Promise<boolean> => invoke<boolean>('read_voice_installed');
 
 type SaveFailure = 'rejected' | 'unreachable' | 'notKept';
 
