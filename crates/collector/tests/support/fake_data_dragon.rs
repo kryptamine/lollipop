@@ -11,6 +11,17 @@ pub const PLATED_STEELCAPS: u32 = 3047;
 pub const BOOTS: u32 = 1001;
 pub const DORANS_BLADE: u32 = 1055;
 pub const ARCHANGELS_STAFF: u32 = 3003;
+/// Archangel's Staff with full mana, named by `specialRecipe`.
+pub const SERAPHS_EMBRACE: u32 = 3040;
+pub const MANAMUNE: u32 = 3004;
+/// Manamune with full mana, named by its lone `from`.
+pub const MURAMANA: u32 = 3042;
+/// A completed item that transforms twice, as the support item does.
+pub const QUEST_ITEM: u32 = 6800;
+pub const QUEST_ITEM_STEP_1: u32 = 6801;
+pub const QUEST_ITEM_STEP_2: u32 = 6802;
+/// Over 2200 gold, and still a component of Infinity Edge.
+pub const COSTLY_COMPONENT: u32 = 6632;
 pub const HEALTH_POTION: u32 = 2003;
 pub const ARENA_ITEM: u32 = 443_054;
 /// Completed on 16.20 only, as an item that left the game with 16.21.
@@ -57,13 +68,10 @@ fn answer(stream: TcpStream) -> std::io::Result<()> {
         line.clear();
     }
     let path = request_line.split(' ').nth(1).unwrap_or_default();
-    let body = match path {
-        "/api/versions.json" => Some(json!(["16.21.1", "16.20.1", "16.19.1", "16.1.1"])),
-        "/cdn/16.20.1/data/en_US/item.json" => Some(items(true)),
-        _ if path.starts_with("/cdn/") && path.ends_with("/data/en_US/item.json") => {
-            Some(items(false))
-        }
-        _ => None,
+    let body = if path == "/api/versions.json" {
+        Some(json!(["16.21.1", "16.20.1", "16.19.1", "16.1.1"]))
+    } else {
+        item_document(path)
     };
     let mut stream = stream;
     let Some(body) = body else {
@@ -77,9 +85,29 @@ fn answer(stream: TcpStream) -> std::io::Result<()> {
     )
 }
 
+/// The `en_US` document in full, and the `ru_RU` one as just names, less Zhonya's.
+fn item_document(path: &str) -> Option<Value> {
+    let rest = path.strip_prefix("/cdn/")?.strip_suffix("/item.json")?;
+    let (version, language) = rest.split_once("/data/")?;
+    let mut document = items(version == "16.20.1");
+    match language {
+        "en_US" => Some(document),
+        "ru_RU" => {
+            let data = document["data"].as_object_mut()?;
+            data.remove(&ZHONYAS.to_string());
+            for (id, item) in data.iter_mut() {
+                *item = json!({ "name": format!("Предмет {id}") });
+            }
+            Some(document)
+        }
+        _ => None,
+    }
+}
+
 fn items(older_patch: bool) -> Value {
     let mut data = Map::new();
-    let mut add = |id: u32, item: Value| {
+    let mut add = |id: u32, mut item: Value| {
+        item["name"] = json!(format!("Item {id}"));
         data.insert(id.to_string(), item);
     };
     add(INFINITY_EDGE, item(3450, &["CriticalStrike"], &[], None));
@@ -90,9 +118,25 @@ fn items(older_patch: bool) -> Value {
     add(BOOTS, item(300, &["Boots"], &["3111", "3047"], None));
     add(DORANS_BLADE, item(450, &["Lane"], &[], None));
     add(
+        COSTLY_COMPONENT,
+        item(2300, &["Damage"], &["3031"], Some(2)),
+    );
+    add(
         ARCHANGELS_STAFF,
         item(2900, &["SpellDamage"], &["3040"], Some(3)),
     );
+    add(
+        SERAPHS_EMBRACE,
+        transform(&["SpellDamage"], Some(ARCHANGELS_STAFF), &["3003"]),
+    );
+    add(MANAMUNE, item(2900, &["Damage"], &["3042"], Some(3)));
+    add(MURAMANA, transform(&["Damage"], None, &["3004"]));
+    add(QUEST_ITEM, item(2500, &["GoldPer"], &["6801"], None));
+    add(
+        QUEST_ITEM_STEP_1,
+        transform(&["GoldPer"], Some(QUEST_ITEM), &[]),
+    );
+    add(QUEST_ITEM_STEP_2, transform(&["GoldPer"], None, &["6801"]));
     add(HEALTH_POTION, item(50, &["Consumable"], &[], None));
     let mut arena = item(3000, &["Damage"], &[], None);
     arena["maps"] = json!({ "11": false, "30": true });
@@ -114,7 +158,6 @@ fn items(older_patch: bool) -> Value {
 
 fn item(total: u32, tags: &[&str], into: &[&str], depth: Option<u32>) -> Value {
     let mut item = json!({
-        "name": "An item",
         "gold": { "base": 100, "purchasable": true, "total": total, "sell": total / 2 },
         "tags": tags,
         "maps": { "11": true, "12": true },
@@ -124,6 +167,23 @@ fn item(total: u32, tags: &[&str], into: &[&str], depth: Option<u32>) -> Value {
     }
     if let Some(depth) = depth {
         item["depth"] = json!(depth);
+    }
+    item
+}
+
+/// An item no shop sells, which `special_recipe`, else its lone `from`, becomes.
+fn transform(tags: &[&str], special_recipe: Option<u32>, from: &[&str]) -> Value {
+    let mut item = json!({
+        "gold": { "base": 0, "purchasable": false, "total": 3000, "sell": 2100 },
+        "tags": tags,
+        "maps": { "11": true, "12": true },
+        "inStore": false,
+    });
+    if let Some(source) = special_recipe {
+        item["specialRecipe"] = json!(source);
+    }
+    if !from.is_empty() {
+        item["from"] = json!(from);
     }
     item
 }
