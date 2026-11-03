@@ -4,7 +4,7 @@ pub const ENOUGH_GAMES: u32 = 300;
 
 /// A Benchmark table file as `lollipop-collector build-table` writes it.
 pub fn table_of(cells: &[Value]) -> String {
-    json!({ "schema_version": 1, "patch_window": ["16.20", "16.21"], "cells": cells }).to_string()
+    json!({ "schema_version": 2, "patch_window": ["16.20", "16.21"], "cells": cells }).to_string()
 }
 
 pub fn cell(champion: &str, role: &str, tier: &str, minutes: &[Value]) -> Value {

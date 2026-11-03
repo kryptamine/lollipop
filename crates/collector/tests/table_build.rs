@@ -542,7 +542,7 @@ fn the_file_carries_its_schema_version_and_patch_window() {
     let build = bench.build(&[]);
 
     let table = build.table();
-    assert_eq!(table["schema_version"], json!(1));
+    assert_eq!(table["schema_version"], json!(2));
     assert_eq!(table["patch_window"], json!(["16.20", "16.21"]));
     assert!(table.get("max_patch").is_none());
 }

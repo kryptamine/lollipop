@@ -1,5 +1,7 @@
 use serde_json::{json, Value};
 
+use super::fake_data_dragon::{DORANS_BLADE, INFINITY_EDGE};
+
 const PARTICIPANTS: u32 = 10;
 
 /// One game on the fake Match-V5, shaped as the pilot's scrubbed samples are, with the
@@ -71,6 +73,10 @@ impl Game {
                     "teamPosition": if id == 5 { "UTILITY" } else { "TOP" },
                     "gameEndedInEarlySurrender": self.early_surrender && id == 7,
                     "goldEarned": 12000,
+                    "teamId": if id <= 5 { 100 } else { 200 },
+                    "magicDamageDealtToChampions": 1000 * id,
+                    "physicalDamageDealtToChampions": 10_000 - 1000 * id,
+                    "totalDamageDealtToChampions": 10_000,
                 })
             })
             .collect();
@@ -92,8 +98,19 @@ impl Game {
     pub fn timeline_body(&self) -> Value {
         let kills = self.kills.as_ref().map_or_else(default_kills, Clone::clone);
         let (first, second) = kills.split_at(kills.iter().filter(|kill| kill.0 < 60_000).count());
-        let purchase = json!({ "type": "ITEM_PURCHASED", "timestamp": 30_000, "itemId": 1055 });
-        let first = [vec![purchase], champion_kills(), elites(first)].concat();
+        let purchases = (1..=PARTICIPANTS).flat_map(|id| {
+            [(30_000, DORANS_BLADE), (45_000 + id, INFINITY_EDGE)].map(|(timestamp, item)| {
+                json!({
+                    "type": "ITEM_PURCHASED",
+                    "timestamp": timestamp,
+                    "participantId": id,
+                    "itemId": item,
+                })
+            })
+        });
+        let mut purchases: Vec<Value> = purchases.collect();
+        purchases.sort_by_key(|event| event["timestamp"].as_u64());
+        let first = [purchases, champion_kills(), elites(first)].concat();
         let mut frames = vec![
             frame(0, 0, &[json!({ "type": "PAUSE_END", "realTimestamp": 5 })]),
             frame(60_011, 1, &first),

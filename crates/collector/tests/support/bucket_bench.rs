@@ -6,6 +6,8 @@ use std::process::{Command, Output};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 
+use super::fake_data_dragon::FakeDataDragon;
+
 // RFC 8032, test 1: the public key is known without asking the code under test.
 const BUCKET: &str = "test-bucket";
 const SIGNING_SEED: &str = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
@@ -112,10 +114,14 @@ impl BucketBench {
     }
 
     fn run_publish(&self, args: &[OsString]) -> Output {
-        self.run(
-            "publish",
-            &[&[OsString::from("--reworks"), self.reworks().into()], args].concat(),
-        )
+        let data_dragon = FakeDataDragon::start();
+        let options = [
+            OsString::from("--reworks"),
+            self.reworks().into(),
+            OsString::from("--data-dragon-url"),
+            data_dragon.url.into(),
+        ];
+        self.run("publish", &[&options, args].concat())
     }
 
     pub fn rollback(&self, version: u32) -> Output {
@@ -152,7 +158,7 @@ impl BucketBench {
 
     // The schema's prefix is pinned here: it is the path the app reads.
     fn assets_dir(&self) -> PathBuf {
-        self.dir.path().join("remote").join(BUCKET).join("v1")
+        self.dir.path().join("remote").join(BUCKET).join("v2")
     }
 
     pub fn asset_names(&self) -> Vec<String> {
@@ -198,7 +204,7 @@ impl BucketBench {
 /// A table of `count` Cells of one window, as Champion0, Champion1 and so on.
 pub fn table_of(count: usize, window: &[&str]) -> Value {
     json!({
-        "schema_version": 1,
+        "schema_version": 2,
         "patch_window": window,
         "cells": (0..count).map(|index| cell(&format!("Champion{index}"))).collect::<Vec<_>>(),
     })

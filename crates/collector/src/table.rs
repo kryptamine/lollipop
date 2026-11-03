@@ -1,16 +1,28 @@
 //! Aggregates the stored matches into the Benchmark table file.
 
 mod aligned_minute;
+mod archived_game;
+mod archived_timeline;
 mod average;
 mod benchmark_file;
+mod candidate_list;
 mod cell_drift;
 mod cell_samples;
+mod damage_profile;
+mod data_dragon;
 mod drift_comparison;
 mod drift_report;
+mod first_purchase;
+mod item_candidates;
+mod item_class;
+mod match_items;
 mod minute_samples;
+mod participant_items;
 mod patch_medians;
 mod played_game;
+mod profile_bucket;
 mod reworks;
+mod stored_payloads;
 mod table_config;
 mod table_error;
 
@@ -23,13 +35,18 @@ use crate::store::Store;
 use benchmark_file::{BenchmarkFile, CellEntry};
 use cell_drift::CellDrift;
 use cell_samples::CellSamples;
+use damage_profile::DamageProfile;
+use data_dragon::item_classes;
 use drift_comparison::DriftComparison;
+use item_candidates::item_candidates;
+use match_items::MatchItems;
 
 pub(crate) use benchmark_file::SCHEMA_VERSION;
 pub use drift_report::DriftReport;
 pub(crate) use played_game::PlayedGame;
 pub(crate) use reworks::Reworks;
-pub use table_config::TableConfig;
+pub(crate) use stored_payloads::StoredPayloads;
+pub use table_config::{TableConfig, DATA_DRAGON_URL, MIN_CANDIDATE_GAMES};
 pub use table_error::TableError;
 
 /// Writes the table and answers the drift report.
@@ -50,6 +67,7 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
         drifts: Vec::new(),
         open: None,
     };
+    let classes = item_classes(&config.data_dragon_url, &patches)?;
     store.for_each_played_game(|game: PlayedGame| {
         if game.patch < floor || reworks.drops(&game.champion, game.patch) {
             return Ok::<(), TableError>(());
@@ -57,7 +75,22 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
         build.add(&game)
     })?;
     build.close_open_group();
-    let file = BenchmarkFile::new(config.max_patch, &patches, build.cells);
+    let mut matches = Vec::new();
+    store.for_each_stored_payloads(floor, |stored| {
+        matches.push(MatchItems::read(&stored, &classes)?);
+        Ok::<(), TableError>(())
+    })?;
+    let profile = DamageProfile::of(&matches, &reworks);
+    let candidates = profile.as_ref().map_or_else(Vec::new, |profile| {
+        item_candidates(&matches, profile, &reworks, config.min_candidate_games)
+    });
+    let file = BenchmarkFile::new(
+        config.max_patch,
+        &patches,
+        build.cells,
+        profile.map(DamageProfile::entry),
+        candidates,
+    );
     write_atomically(&config.output, &file)?;
     Ok(DriftReport::new(&patches, comparison, &build.drifts))
 }

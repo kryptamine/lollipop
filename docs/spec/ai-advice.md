@@ -243,20 +243,26 @@ picks one, and code rejects anything else.
 
 - **Same file,** `schema_version` 2, published under `v2/`, with one manifest and
   one signature, never swapped mid-game. v1 gets no new tables.
-- **No extra Riot calls:** built from the timeline's item events and the final
-  builds the collector already fetches.
-- **Key:** champion + role, no tier, in a section beside `cells`. `cells` stay as
-  they are.
-- **Damage profile:** a per-champion magic share (magic / total damage dealt to
-  champions) and two bucket bounds the collector sets at the terciles. Buckets:
-  physical-heavy, mixed, magic-heavy.
+- **No extra Riot calls:** `build-table` reads the match and timeline payloads the
+  collector archives. A purchase is an `ITEM_PURCHASED` not taken back by an
+  `ITEM_UNDO`. A match stored before archiving gives no candidates. Final builds
+  matter only for transforms, below.
+- **Key:** champion + role, no tier, in `item_candidates` beside `cells`, one entry
+  with `physical_heavy`, `mixed` and `magic_heavy` lists. `cells` stay as they are.
+- **Damage profile:** `damage_profile.magic_share`, per champion magic / total damage
+  dealt to champions over the Patch window. A team's profile is the sum of its five
+  shares; `mixed_from` and `magic_heavy_from` are terciles of that sum over every
+  stored team, each the lowest sum of its bucket. A champion with no share counts 0.
 - **Fields:** `item` (id), `share` (games bought, in that bucket), `minute` (median
   first purchase). No slot, no win rate.
 - **List:** completed items up to 90% coverage, at most 12, plus tier-2 boots up to
-  90%, at most 3, in one list.
+  90%, at most 3, in one list by share. Classes come from Data Dragon's `item.json`
+  for each patch of the window: completed is on map 11, purchasable, no `into`, at
+  least 2200 gold, and not boots, a consumable or a trinket; tier-2 boots have the
+  `Boots` tag and `depth` 2. A build that cannot reach Data Dragon writes no table.
 - **Thin groups:** a bucket under 50 games uses the champion+role list pooled over
-  buckets; under 50 pooled, no candidates and `item` stays null. Threshold in
-  `table_config`.
+  buckets; under 50 pooled, no entry and `item` stays null. Threshold in
+  `table_config`, and `--min-candidate-games` on `build-table` and `publish`.
 - **Transforms:** Seraph's, Muramana and support upgrades map to their purchasable
   source through Data Dragon `specialRecipe` / `from`; a candidate carries optional
   `owned_as` ids.

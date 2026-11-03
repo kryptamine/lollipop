@@ -37,4 +37,6 @@ pub use publish::{
 };
 pub use schedule_check::{check_schedule, ScheduleCheck};
 pub use seed_tier::SeedTier;
-pub use table::{build_table, DriftReport, TableConfig, TableError};
+pub use table::{
+    build_table, DriftReport, TableConfig, TableError, DATA_DRAGON_URL, MIN_CANDIDATE_GAMES,
+};

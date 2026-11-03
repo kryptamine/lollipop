@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use lollipop_core::game_inputs::Patch;
 
 use super::aligned_minute::align_to_minutes;
-use super::average::{mean, median};
+use super::average::{mean, median, rounded};
 use super::benchmark_file::{CellEntry, MinuteEntry, ScoresEntry};
 use super::cell_drift::CellDrift;
 use super::drift_comparison::DriftComparison;
@@ -153,9 +153,4 @@ fn scores_entry(pooled: &MinuteSamples) -> Option<ScoresEntry> {
         assists: rounded(mean(&pooled.assists)),
         scores_n: pooled.kills.len(),
     })
-}
-
-// Two decimals is finer than any Neutral zone, and keeps noise digits out of the file.
-fn rounded(value: f64) -> f64 {
-    (value * 100.0).round() / 100.0
 }

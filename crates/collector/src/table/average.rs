@@ -19,3 +19,8 @@ pub(super) fn median(values: &[f64]) -> Option<f64> {
 pub(super) fn mean(values: &[f64]) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64
 }
+
+// Two decimals is finer than any Neutral zone, and keeps noise digits out of the file.
+pub(super) fn rounded(value: f64) -> f64 {
+    (value * 100.0).round() / 100.0
+}

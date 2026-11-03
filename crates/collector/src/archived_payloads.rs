@@ -14,7 +14,8 @@ const IDENTITY_KEYS: [&str; 7] = [
 const FRAME_STAT_KEYS: [&str; 2] = ["championStats", "damageStats"];
 const ZSTD_LEVEL: i32 = 19;
 
-/// A match's Match-V5 bodies as zstd JSON, kept for statistics no table reads yet.
+/// A match's Match-V5 bodies as zstd JSON: Item candidates read them at table build, and
+/// later statistics can too.
 pub(crate) struct ArchivedPayloads {
     pub(crate) game: Vec<u8>,
     pub(crate) timeline: Vec<u8>,

@@ -27,7 +27,7 @@ fn seat_cell() -> Value {
 
 fn table_serving(window: &[&str], max_patch: Option<&str>) -> String {
     let mut table = json!({
-        "schema_version": 1,
+        "schema_version": 2,
         "patch_window": window,
         "cells": [seat_cell()],
     });
