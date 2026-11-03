@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use lollipop_core::settings::Settings;
 use tauri::{AppHandle, Emitter, Manager};
 
-/// The settings of this run, shared by the menu and the poll loop.
+/// The settings of this run, shared by the settings window and the poll loop.
 #[derive(Clone)]
 pub(crate) struct SettingsStore {
     app: AppHandle,
