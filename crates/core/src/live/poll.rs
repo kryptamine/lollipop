@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use super::advice_slot::AdviceSlot;
 use super::advised_items::AdvisedItems;
+use super::back_to_base_advice::BackToBaseAdvice;
 use super::clock::Clock;
 use super::death_advice::DeathAdvice;
 use super::game_hints::GameHints;
@@ -60,6 +61,7 @@ pub async fn poll(
         hints: GameHints::default(),
         loading_screen: LoadingScreenAdvice::new(&http, league.lockfile),
         death: DeathAdvice::default(),
+        back_to_base: BackToBaseAdvice::default(),
         items: AdvisedItems::default(),
         slot: AdviceSlot::default(),
         notices: Arc::from([]),
@@ -102,6 +104,7 @@ struct CurrentGame<'a> {
     hints: GameHints,
     loading_screen: LoadingScreenAdvice,
     death: DeathAdvice,
+    back_to_base: BackToBaseAdvice,
     items: AdvisedItems,
     slot: AdviceSlot,
     notices: Arc<[Notice]>,
@@ -124,6 +127,7 @@ impl CurrentGame<'_> {
             if data.game_ended() {
                 self.loading_screen.end_game();
                 self.death.end_game();
+                self.back_to_base.end_game();
                 self.slot.clear();
                 self.advisor.end_game();
             }
@@ -150,6 +154,9 @@ impl CurrentGame<'_> {
             slot: &mut self.slot,
         };
         self.death.at(data, player, self.advisor, &mut widget).await;
+        self.back_to_base
+            .at(data, player, self.advisor, &mut widget)
+            .await;
         Some(LiveGame {
             snapshot,
             inputs,
@@ -179,6 +186,8 @@ impl CurrentGame<'_> {
         self.notices = notices_of(&inputs, table.as_ref()).into();
         self.death.end_game();
         self.death = DeathAdvice::default();
+        self.back_to_base.end_game();
+        self.back_to_base = BackToBaseAdvice::default();
         self.items = AdvisedItems::start(table.as_mut(), &inputs);
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);

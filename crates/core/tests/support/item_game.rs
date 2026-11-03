@@ -2,12 +2,13 @@ use std::sync::{Arc, Mutex};
 
 use lollipop_core::advice::{AdviceCall, Advisor, Language, Trigger};
 use lollipop_core::delivery::TableFile;
-use lollipop_core::live::{poll, League, LiveUpdate};
+use lollipop_core::live::{poll, League, LiveUpdate, ShownAdvice};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 use tokio::sync::mpsc;
 
 use super::fake_lcu::FakeLcu;
+use super::fake_openai::FakeOpenAi;
 use super::game_clock::GameClock;
 use super::loading_game::{lineup, Updates, KEY, ME};
 use super::server::serve;
@@ -19,20 +20,21 @@ pub const DATA_DRAGON_VERSION: &str = "16.21.1";
 struct State {
     loading: bool,
     game_time: f64,
+    gold: f64,
     players: Vec<Value>,
     events: Vec<Value>,
 }
 
 /// Live Client Data and the League client for a game of Ahri in the middle lane,
 /// with a Benchmark table on disk.
-pub struct DeathGame {
+pub struct ItemGame {
     state: Arc<Mutex<State>>,
     lcu: FakeLcu,
     dir: TempDir,
     url: String,
 }
 
-impl DeathGame {
+impl ItemGame {
     /// A running game at `game_time`, its table holding `table`.
     pub async fn running_at(game_time: f64, table: &Value) -> Self {
         Self::serving(false, game_time, table).await
@@ -56,6 +58,7 @@ impl DeathGame {
         let state = Arc::new(Mutex::new(State {
             loading,
             game_time,
+            gold: 1250.0,
             players,
             events: Vec::new(),
         }));
@@ -111,6 +114,26 @@ impl DeathGame {
         self.set_player(riot_id, "items", json!(items));
     }
 
+    /// The active player adds `items` and pays `cost`, seen in one poll as League shows it.
+    pub fn buy(&self, items: &[(u32, &str)], cost: f64) {
+        let mut state = self.state.lock().unwrap();
+        state.gold -= cost;
+        let player = state
+            .players
+            .iter_mut()
+            .find(|p| p["riotId"] == ME)
+            .unwrap();
+        let held = player["items"].as_array_mut().unwrap();
+        for (id, name) in items {
+            held.push(json!({ "itemID": id, "count": 1, "displayName": name }));
+        }
+        drop(state);
+    }
+
+    pub fn set_gold(&self, gold: f64) {
+        self.state.lock().unwrap().gold = gold;
+    }
+
     fn set_player(&self, riot_id: &str, field: &str, value: Value) {
         let players = &mut self.state.lock().unwrap().players;
         players.iter_mut().find(|p| p["riotId"] == riot_id).unwrap()[field] = value;
@@ -155,6 +178,24 @@ impl DeathGame {
     }
 }
 
+pub const SETTLING_POLLS: usize = 8;
+
+/// Polls until OpenAI has answered every request and the poll loop has had time to take
+/// the answers, and gives the Widget then.
+pub async fn settle(updates: &mut Updates, openai: &FakeOpenAi) -> Option<ShownAdvice> {
+    let mut last = None;
+    for _ in 0..SETTLING_POLLS {
+        last = updates.recv().await.unwrap();
+    }
+    while openai.answered() < openai.requests().len() {
+        last = updates.recv().await.unwrap();
+    }
+    for _ in 0..3 {
+        last = updates.recv().await.unwrap();
+    }
+    last.and_then(|game| game.advice)
+}
+
 fn body(state: &State) -> String {
     let mut events = vec![];
     if !state.loading {
@@ -162,7 +203,7 @@ fn body(state: &State) -> String {
     }
     events.extend(state.events.iter().cloned());
     json!({
-        "activePlayer": { "riotId": ME, "currentGold": 1250.0 },
+        "activePlayer": { "riotId": ME, "currentGold": state.gold },
         "allPlayers": state.players,
         "events": { "Events": events },
         "gameData": { "gameTime": if state.loading { 0.0 } else { state.game_time } },

@@ -160,6 +160,12 @@ impl AllGameData {
         &self.all_players
     }
 
+    pub(super) fn enemies_of<'a>(&'a self, player: &'a Player) -> impl Iterator<Item = &'a Player> {
+        self.all_players
+            .iter()
+            .filter(|other| other.team().is_some() && other.team() != player.team())
+    }
+
     pub(super) const fn full_runes(&self) -> Option<&FullRunes> {
         self.active_player.full_runes.as_ref()
     }

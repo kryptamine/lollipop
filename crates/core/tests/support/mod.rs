@@ -1,11 +1,11 @@
 pub mod benchmark_file;
-pub mod death_game;
 pub mod delivery_bench;
 pub mod fake_bucket;
 pub mod fake_lcu;
 pub mod fake_openai;
 pub mod game_clock;
 pub mod hint_game;
+pub mod item_game;
 pub mod loading_game;
 pub mod marker_game;
 pub mod polling;
