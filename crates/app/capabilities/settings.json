@@ -9,7 +9,10 @@
     "allow-set-trigger",
     "allow-set-advice-language",
     "allow-set-launch-at-login",
+    "allow-set-voiceover",
+    "allow-read-voice-installed",
     "allow-read-openai-key",
+    "allow-read-openai-key-failure",
     "allow-save-openai-key",
     "allow-remove-openai-key",
     "allow-open-openai-usage"
