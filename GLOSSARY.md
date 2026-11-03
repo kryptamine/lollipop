@@ -25,9 +25,17 @@ _Avoid_: Dataset, baseline
 One champion, role and tier combination, the group of games a player is compared to.
 _Avoid_: Bucket, segment, cohort
 
+**Damage profile**:
+How much of a team's damage to champions is magic, from what its champions usually deal.
+_Avoid_: Damage type, AP/AD split
+
 **Gold earned**:
 All gold a player has received in a game, starting gold included. Spending never lowers it, and selling an item never raises it.
 _Avoid_: Net worth, total gold
+
+**Item candidate**:
+A completed item or boots that players of a champion and role commonly buy against a Damage profile. Advice recommends no other item.
+_Avoid_: Recommended item, suggestion
 
 **Lane opponent**:
 The enemy, or for the bottom lane the enemy pair, playing the same position as the active player.
