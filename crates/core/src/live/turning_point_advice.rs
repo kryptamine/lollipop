@@ -5,12 +5,13 @@ use tokio::task::JoinHandle;
 use super::advice_slot::AdviceSlot;
 use super::answered::Answered;
 use super::arrival::Arrival;
+use super::fighting::fighting;
 use super::payload::{AllGameData, Player};
 use super::turning_point::{TurningPoint, TurningPointWatch};
 use super::turning_point_prompt::{input, Turn, INSTRUCTIONS};
 use crate::advice::{Advisor, Question, Trigger};
 
-// Seconds after the moment from which a late answer is dropped.
+// Seconds after the request from which a late answer is dropped.
 const DROP_AFTER: f64 = 15.0;
 // From the last Turning point shown, during which another one is skipped.
 const SPACING: f64 = 180.0;
@@ -24,11 +25,14 @@ pub(super) struct TurningPointAdvice {
     /// The `gameTime` of the last Turning point whose Advice showed. One dropped or
     /// answered null starts no window.
     shown_at: Option<f64>,
+    /// A Turning point seen while the player fights, asked once the fight has passed.
+    held: Option<TurningPoint>,
     asking: Option<Asking>,
 }
 
 struct Asking {
     game_time: f64,
+    asked_at: f64,
     alive: bool,
     answer: JoinHandle<Option<Answered>>,
 }
@@ -47,6 +51,11 @@ impl TurningPointAdvice {
         }
         if let Some(point) = self.watch.seen(data, player) {
             if self.spaced(point.game_time) {
+                self.held = Some(point);
+            }
+        }
+        if !fighting(data, player) {
+            if let Some(point) = self.held.take() {
                 let turn = Turn {
                     data,
                     player,
@@ -83,6 +92,7 @@ impl TurningPointAdvice {
         let advisor = advisor.clone();
         self.asking = Some(Asking {
             game_time,
+            asked_at: turn.data.game_time(),
             alive: !turn.player.is_dead,
             answer: tokio::spawn(async move {
                 let question = Question {
@@ -102,7 +112,7 @@ impl TurningPointAdvice {
         let Some(asking) = self.asking.take_if(|asking| asking.answer.is_finished()) else {
             return;
         };
-        if data.game_time() - asking.game_time > DROP_AFTER {
+        if data.game_time() - asking.asked_at > DROP_AFTER {
             return;
         }
         let Some(answered) = asking.answer.await.ok().flatten() else {

@@ -11,8 +11,9 @@ use crate::advice::{instructions, Language};
 
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here a moment has just changed the game plan: `advice` is one macro idea for the next \
-few minutes, where to be and what to prioritise. `item` is always null. When nothing is \
-worth saying, or an earlier Advice already says it, `advice` is null."
+few minutes: which objective to play for and what to prioritise. Where the player is on \
+the map is unknown, so never send them to a lane or to a named ally. `item` is always null. \
+When nothing is worth saying, or an earlier Advice already says it, `advice` is null."
 );
 
 /// The game at a Turning point, with the texts of the Advice this game showed before.
