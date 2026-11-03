@@ -32,10 +32,10 @@ impl CellBenchmarks {
         Some(before.blended_with(after, share))
     }
 
-    /// The Benchmarks at the next whole minute, which change once a minute rather than
-    /// on every poll. A whole minute reads as itself.
+    /// The Benchmarks at the last whole minute, which change once a minute rather than
+    /// on every poll, and which a player on pace is at or above.
     #[must_use]
-    pub fn at_minute_ahead(&self, game_time: f64) -> Option<BenchmarksAt> {
-        self.at((game_time / SECONDS_PER_MINUTE).ceil() * SECONDS_PER_MINUTE)
+    pub fn at_minute_behind(&self, game_time: f64) -> Option<BenchmarksAt> {
+        self.at((game_time / SECONDS_PER_MINUTE).floor() * SECONDS_PER_MINUTE)
     }
 }
