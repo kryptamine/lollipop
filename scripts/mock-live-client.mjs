@@ -1,5 +1,6 @@
 // Fake Live Client Data API and League client for developing without a running game.
 // Usage: make dev-mock, or MOCK_PATCH=16.24 make dev-mock to show a Stale table.
+// MOCK_OPENAI=down, rejected or quota makes every Advice call fail that way.
 import { writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 
@@ -7,6 +8,7 @@ const PORT = 2998;
 const [lockfile, benchmarkTable] = process.argv.slice(2);
 const startedAt = Date.now();
 const patch = process.env.MOCK_PATCH ?? "16.21";
+const openaiFailure = process.env.MOCK_OPENAI;
 
 const leagueClient = new Map([
   ["/lol-gameflow/v1/session", { gameData: { queue: { id: 420 } } }],
@@ -91,6 +93,15 @@ function liveClientData() {
   };
 }
 
+// The ways an Advice call can fail that the app tells the player about.
+function failAdvice(res) {
+  const quota = { error: { code: "insufficient_quota", type: "insufficient_quota" } };
+  const failures = { down: [503, {}], rejected: [401, {}], quota: [429, quota] };
+  const [status, body] = failures[openaiFailure] ?? failures.down;
+  res.statusCode = status;
+  res.end(JSON.stringify(body));
+}
+
 writeFileSync(lockfile, `LeagueClient:0:${PORT}:mock:http`);
 writeFileSync(benchmarkTable, JSON.stringify(mockTable()));
 
@@ -104,6 +115,10 @@ createServer((req, res) => {
   }
   if (req.method === "POST" && req.url === "/v1/responses") {
     req.resume();
+    if (openaiFailure !== undefined) {
+      failAdvice(res);
+      return;
+    }
     res.end(JSON.stringify(MOCK_ADVICE));
     return;
   }

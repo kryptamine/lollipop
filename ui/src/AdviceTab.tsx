@@ -8,6 +8,7 @@ const FAILURE_TEXT: Record<KeyFailure, string> = {
   rejected: 'OpenAI rejected the key',
   unreachable: 'Could not reach OpenAI, try again',
   notKept: 'The Keychain did not keep the key, try again',
+  noQuota: 'The key has no OpenAI quota left',
 };
 
 type AdviceTabProps = {

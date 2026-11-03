@@ -2,6 +2,7 @@
 
 use serde::Deserialize;
 
+use super::failure::Failure;
 use super::responses_request::ADVICE_LENGTH;
 
 /// What the model wrote, in the schema and within the Widget's length.
@@ -36,23 +37,34 @@ struct Content {
 }
 
 impl Answer {
-    /// `None` for anything outside the schema, a refusal, or advice over the length:
+    /// Fails for anything outside the schema, a refusal, or advice over the length:
     /// the whole Advice is dropped, never cut short.
-    pub(super) fn read(body: &str) -> Option<Self> {
-        let response: Response = serde_json::from_str(body).ok()?;
+    pub(super) fn read(body: &str) -> Result<Self, Failure> {
+        let response: Response = serde_json::from_str(body).map_err(|_| Failure::Schema)?;
         let text = response
             .output
             .iter()
             .filter(|item| item.kind == "message")
             .flat_map(|item| &item.content)
-            .find(|content| content.kind == "output_text")?
-            .text
-            .as_deref()?;
-        let answer: Self = serde_json::from_str(text).ok()?;
+            .find(|content| content.kind == "output_text")
+            .and_then(|content| content.text.as_deref())
+            .ok_or(Failure::Schema)?;
+        let answer: Self = serde_json::from_str(text).map_err(|_| Failure::Schema)?;
         let too_long = answer
             .advice
             .as_ref()
             .is_some_and(|advice| advice.chars().count() > ADVICE_LENGTH);
-        (!too_long).then_some(answer)
+        if too_long {
+            return Err(Failure::Length);
+        }
+        Ok(answer)
+    }
+
+    /// An item outside the candidates drops the whole Advice, as its text may name it.
+    pub(super) fn within(self, candidates: &[u32]) -> Result<Self, Failure> {
+        if self.item.is_some_and(|item| !candidates.contains(&item)) {
+            return Err(Failure::Candidate);
+        }
+        Ok(self)
     }
 }

@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 use tokio::task::JoinHandle;
 
@@ -6,7 +7,7 @@ use super::lane_opponent::lane_of;
 use super::loading_screen_prompt::{game_lines, input, INSTRUCTIONS};
 use super::payload::AllGameData;
 use super::shown_advice::ShownAdvice;
-use crate::advice::{Advisor, Trigger};
+use crate::advice::{Advisor, Asked, Question, Trigger};
 use crate::game_inputs::loading_tier;
 
 const SHOWN_FOR: f64 = 20.0;
@@ -53,16 +54,27 @@ impl LoadingScreenAdvice {
             return;
         };
         let game = game_lines(data, player, &lane);
-        let openai = advisor.openai();
+        // `gameTime` starts only after the loading screen, so the deadline is further off.
+        let deadline = Instant::now() + Duration::from_secs_f64(DROP_AFTER);
+        let advisor = advisor.clone();
         let http = http.clone();
         let lockfile = lockfile.to_path_buf();
         self.asking = Some(tokio::spawn(async move {
             let tier = loading_tier(&http, &lockfile).await;
             let input = input(call.language, tier, &game);
-            let answer = openai.ask(&call.key, INSTRUCTIONS, &input).await?;
-            // No item is a candidate here, so naming one drops the whole Advice.
-            let advice = answer.item.is_none().then_some(answer.advice).flatten();
-            advice.filter(|advice| !advice.trim().is_empty())
+            let question = Question {
+                trigger: Trigger::LoadingScreen,
+                instructions: INSTRUCTIONS,
+                input: &input,
+                // No item is a candidate here, so naming one drops the whole Advice.
+                candidates: &[],
+                deadline,
+            };
+            match advisor.ask(&call, &question).await {
+                Asked::Answered(answer) => answer.advice.filter(|advice| !advice.trim().is_empty()),
+                Asked::Unavailable(text) => Some(text.to_string()),
+                Asked::Nothing => None,
+            }
         }));
     }
 

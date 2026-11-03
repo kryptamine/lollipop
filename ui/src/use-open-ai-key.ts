@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'preact/hooks';
 
-import { readOpenAiKey, removeOpenAiKey, saveOpenAiKey, type KeyFailure } from './bridge';
+import {
+  onOpenAiKeyFailure,
+  readOpenAiKey,
+  readOpenAiKeyFailure,
+  removeOpenAiKey,
+  saveOpenAiKey,
+  type KeyFailure,
+} from './bridge';
 
 export type OpenAiKeyControls = {
   saved: string | undefined;
@@ -20,11 +27,15 @@ export const useOpenAiKey = (): OpenAiKeyControls | undefined => {
   useEffect(() => {
     const read = async () => {
       setSaved(await readOpenAiKey());
+      setFailure(await readOpenAiKeyFailure());
       setIsRead(true);
     };
 
     void read();
   }, []);
+
+  // A key OpenAI refuses in a game is marked while the tab is open.
+  useEffect(() => onOpenAiKeyFailure(setFailure), []);
 
   if (!isRead) {
     return undefined;

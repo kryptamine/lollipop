@@ -6,6 +6,7 @@
 
 use std::process::Command;
 
+use lollipop_core::advice::{Advisor, KeyFailure};
 use lollipop_core::settings::ADVICE_WIDGET;
 use tauri::{AppHandle, Manager, State};
 
@@ -20,11 +21,24 @@ pub(crate) fn read_openai_key(key: State<'_, OpenAiKey>) -> Option<String> {
     key.masked()
 }
 
+/// Why OpenAI refused the saved key in a game, if it did.
+#[tauri::command]
+pub(crate) fn read_openai_key_failure(key: State<'_, OpenAiKey>) -> Option<KeyFailure> {
+    key.failure()
+}
+
 // Takes the app rather than the state: an async command may not borrow its arguments.
 #[tauri::command]
 pub(crate) async fn save_openai_key(app: AppHandle, key: String) -> KeySave {
     let openai_key = app.state::<OpenAiKey>().inner().clone();
-    openai_key.save(key.trim()).await
+    let saved = openai_key.save(key.trim()).await;
+    if matches!(saved, KeySave::Saved { .. }) {
+        // No Advisor yet means no game polled yet, so none has stopped Advice.
+        if let Some(advisor) = app.try_state::<Advisor>() {
+            advisor.key_saved();
+        }
+    }
+    saved
 }
 
 /// Also turns the Advice Widget off, so a key saved later does not bring Advice back

@@ -54,7 +54,9 @@ async fn publish_live_client(
     status: MenuItem<Wry>,
     benchmark_table: Arc<TableFile>,
 ) {
-    let advisor = advice_source::advisor(store.clone(), app.state::<OpenAiKey>().inner().clone());
+    let key = app.state::<OpenAiKey>().inner().clone();
+    let advisor = advice_source::advisor(app.clone(), store.clone(), key);
+    app.manage(advisor.clone());
     let mut shown_status = status_line(None);
     let on_update = move |update: LiveUpdate| {
         let LiveUpdate {
@@ -116,6 +118,7 @@ fn main() {
             settings_commands::set_advice_language,
             settings_commands::set_launch_at_login,
             openai_key_commands::read_openai_key,
+            openai_key_commands::read_openai_key_failure,
             openai_key_commands::save_openai_key,
             openai_key_commands::remove_openai_key,
             openai_key_commands::open_openai_usage,
