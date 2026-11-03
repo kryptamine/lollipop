@@ -60,10 +60,10 @@ impl BackToBaseAdvice {
         let Some(call) = advisor.call_for(Trigger::BackToBase) else {
             return;
         };
-        let to_build = items.to_build(player, data.enemies_of(player));
+        let options = items.options(player, data.enemies_of(player));
         let recommended = items.recommended(player);
-        let input = input(call.language, visit, to_build.as_ref(), &recommended);
-        let ids: Vec<u32> = to_build.iter().map(|candidate| candidate.item).collect();
+        let input = input(call.language, visit, &options, &recommended);
+        let ids: Vec<u32> = options.iter().map(|option| option.item).collect();
         let deadline = Instant::now() + Duration::from_secs_f64(DROP_AFTER);
         let advisor = advisor.clone();
         self.asking = Some(Asking {

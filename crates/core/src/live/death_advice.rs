@@ -10,8 +10,8 @@ use super::item_widget::ItemWidget;
 use super::payload::{AllGameData, Player};
 use crate::advice::{Advisor, Question, Trigger};
 
-/// Advice on a death to an enemy champion that teaches something, which may name the
-/// Item to build.
+/// Advice on a death to an enemy champion that teaches something, which may name one of
+/// the Item options.
 #[derive(Default)]
 pub(super) struct DeathAdvice {
     /// `ChampionKill` events already seen, `None` before the game's first poll.
@@ -60,10 +60,10 @@ impl DeathAdvice {
         let Some(call) = advisor.call_for(Trigger::Death) else {
             return;
         };
-        let to_build = items.to_build(player, death.enemies());
+        let options = items.options(player, death.enemies());
         let recommended = items.recommended(player);
-        let input = input(call.language, death, to_build.as_ref(), &recommended);
-        let ids: Vec<u32> = to_build.iter().map(|candidate| candidate.item).collect();
+        let input = input(call.language, death, &options, &recommended);
+        let ids: Vec<u32> = options.iter().map(|option| option.item).collect();
         let deadline = Instant::now() + Duration::from_secs_f64(player.respawn_timer);
         let advisor = advisor.clone();
         self.asking = Some(tokio::spawn(async move {

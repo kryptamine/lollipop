@@ -11,15 +11,16 @@ use crate::benchmarks::ItemCandidate;
 
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player has just died to an enemy champion: `advice` says why and what to \
-change, and names the Item to build when the input gives one. `item` is that item's id, \
-or null when the input gives none. Never advise another item. When the death teaches \
-nothing, as in a fair trade, `advice` and `item` are null."
+change, and names one of the Item options when the input gives them: the first unless \
+the enemy team's items, levels or the kill score call for another. `item` is that item's \
+id, or null when the input gives none. Never advise an item outside the options. When \
+the death teaches nothing, as in a fair trade, `advice` and `item` are null."
 );
 
 pub(super) fn input(
     language: Language,
     death: &Death<'_>,
-    to_build: Option<&ItemCandidate<'_>>,
+    options: &[ItemCandidate<'_>],
     recommended: &[RecommendedItem<'_>],
 ) -> String {
     let data = death.data;
@@ -51,6 +52,6 @@ pub(super) fn input(
     for enemy in death.enemies() {
         let _ = writeln!(lines, "Enemy: {}", describe(enemy));
     }
-    item_lines(&mut lines, language, to_build, recommended);
+    item_lines(&mut lines, language, options, recommended);
     lines
 }

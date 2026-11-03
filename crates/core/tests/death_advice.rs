@@ -109,10 +109,21 @@ async fn an_item_outside_the_candidates_drops_the_whole_advice() {
     assert_eq!(shown_after_death(&answer(TIP, Some(3047))).await, None);
 }
 
-// Code holds the Item to build: the model only explains it, so another candidate is out.
+// The model may pass over the first option when the enemy team calls for another.
 #[tokio::test]
-async fn a_candidate_other_than_the_item_to_build_drops_the_whole_advice() {
-    assert_eq!(shown_after_death(&answer(TIP, Some(3157))).await, None);
+async fn the_model_may_pick_another_item_option() {
+    let shown = shown_after_death(&answer(TIP, Some(3157))).await.unwrap();
+
+    assert_eq!(
+        shown.icon.as_deref(),
+        Some("https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3157.png")
+    );
+}
+
+// A fourth candidate, Rabadon's, is in the table but never an option.
+#[tokio::test]
+async fn a_candidate_past_the_third_option_drops_the_whole_advice() {
+    assert_eq!(shown_after_death(&answer(TIP, Some(3089))).await, None);
 }
 
 #[tokio::test]
@@ -132,9 +143,11 @@ async fn the_prompt_describes_the_death_without_names() {
     assert!(input.contains("Deaths to this killer this game: 1\n"));
     assert_eq!(input.matches("Enemy: ").count(), 5);
     assert!(input.contains(
-        "Item to build: 3102 Покров банши, bought in 45% of games, first at minute 14\n"
+        "Item option 1: 3102 Покров банши, bought in 45% of games, first at minute 14\n"
     ));
-    assert!(!input.contains("3157"));
+    assert!(input.contains("Item option 2: 3157 Песочные часы Жони"));
+    assert!(input.contains("Item option 3: 3003 Посох архангела"));
+    assert!(!input.contains("Item option 4"));
     for name in ["#EUW", "Foe", "Friend", "Me,"] {
         assert!(!input.contains(name), "{name} is in the prompt");
     }
@@ -168,13 +181,13 @@ async fn the_prompt_carries_the_kill_score_without_executions() {
 async fn the_candidates_follow_the_enemy_damage_profile() {
     let input = input_of_death(&item_table(&physical_heavy()), |_| {}).await;
 
-    assert!(input.contains("Item to build: 3047 Бронированные сапоги"));
+    assert!(input.contains("Item option 1: 3047 Бронированные сапоги"));
     assert!(!input.contains("3102"));
 }
 
 // Owning Seraph's Embrace is owning the Archangel's Staff it grew from.
 #[tokio::test]
-async fn an_owned_item_is_never_the_item_to_build() {
+async fn an_owned_item_is_never_an_item_option() {
     let input = input_of_death(&item_table(&magic_heavy()), |game| {
         game.give_items(
             ME,
@@ -186,24 +199,26 @@ async fn an_owned_item_is_never_the_item_to_build() {
         );
     })
     .await;
-    assert!(input.contains("Item to build: none\n"));
+    assert!(input.contains("Item option 1: 3089 Смертельная шляпа Рабадона"));
+    assert!(!input.contains("Item option 2"));
 
     let input = input_of_death(&item_table(&magic_heavy()), |game| {
         game.give_items(ME, &[(3102, "Покров банши"), (3040, "Объятия серафима")]);
     })
     .await;
-    assert!(input.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(input.contains(": 3157 Песочные часы Жони"));
+    assert!(!input.contains("3003"));
 }
 
 // A held Rod outranks a candidate with an earlier minute.
 #[tokio::test]
-async fn a_held_component_makes_its_item_the_item_to_build() {
+async fn a_held_component_makes_its_item_the_first_option() {
     let input = input_of_death(&item_table(&magic_heavy()), |game| {
         game.give_items(ME, &[(1058, "Огромный жезл")]);
     })
     .await;
 
-    assert!(input.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(input.contains("Item option 1: 3157 Песочные часы Жони"));
 }
 
 // A component two candidates share ties neither, so the earlier minute still leads.
@@ -213,7 +228,7 @@ async fn the_item_most_held_components_build_into_leads() {
         game.give_items(ME, &[(1052, "Усиливающий фолиант")]);
     })
     .await;
-    assert!(input.contains("Item to build: 3102 Покров банши"));
+    assert!(input.contains("Item option 1: 3102 Покров банши"));
 
     let input = input_of_death(&item_table(&magic_heavy()), |game| {
         game.give_items(
@@ -222,7 +237,7 @@ async fn the_item_most_held_components_build_into_leads() {
         );
     })
     .await;
-    assert!(input.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(input.contains("Item option 1: 3157 Песочные часы Жони"));
 }
 
 /// The inputs of two deaths to Zed, holding `before` at the first, whose Advice names
@@ -257,8 +272,33 @@ async fn an_item_shown_and_not_bought_wins_a_tie_in_components() {
     )
     .await;
 
-    assert!(first.contains("Item to build: 3157 Песочные часы Жони"));
-    assert!(second.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(first.contains("Item option 1: 3157 Песочные часы Жони"));
+    assert!(second.contains("Item option 1: 3157 Песочные часы Жони"));
+}
+
+// The model passing over the first option is the latest plan, so the next Advice
+// leads with its pick rather than with the item shown first.
+#[tokio::test]
+async fn the_models_latest_pick_leads_the_next_options() {
+    let openai = FakeOpenAi::replying(vec![
+        Reply::advising(&answer(TIP, Some(3102))),
+        Reply::advising(&answer(TIP, Some(3157))),
+        Reply::advising(&answer(TIP, None)),
+    ])
+    .await;
+    let (game, mut updates) = game_at_five_minutes(&item_table(&magic_heavy()), &openai).await;
+    for at in [400.0, 500.0, 600.0] {
+        game.die_to(KILLER, &[], RESPAWN);
+        settle(&mut updates, &openai).await;
+        game.respawn();
+        game.set_time(at);
+        settle(&mut updates, &openai).await;
+    }
+    let bodies = openai.bodies();
+    let third = bodies[2]["input"].as_str().unwrap();
+
+    assert!(third.contains("Item option 1: 3157 Песочные часы Жони"));
+    assert!(third.contains("Item option 2: 3102 Покров банши"));
 }
 
 // The inventory beats the plan: a player who started another item is not told to
@@ -267,29 +307,25 @@ async fn an_item_shown_and_not_bought_wins_a_tie_in_components() {
 async fn components_of_another_item_outrank_the_item_shown() {
     let [first, second] = inputs_of_two_deaths(3102, &[], &[(1058, "Огромный жезл")]).await;
 
-    assert!(first.contains("Item to build: 3102 Покров банши"));
-    assert!(second.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(first.contains("Item option 1: 3102 Покров банши"));
+    assert!(second.contains("Item option 1: 3157 Песочные часы Жони"));
 }
 
 // A player who finished another item has left the plan: the item shown before would
-// otherwise stay the Item to build for the rest of the game.
+// otherwise stay the first Item option for the rest of the game.
 #[tokio::test]
 async fn finishing_another_item_releases_the_item_shown() {
-    let [first, second] = inputs_of_two_deaths(
-        3157,
-        &[(1058, "Огромный жезл")],
-        &[(3089, "Смертельная шляпа Рабадона")],
-    )
-    .await;
+    let [first, second] =
+        inputs_of_two_deaths(3157, &[(1058, "Огромный жезл")], &[(3135, "Посох пустоты")]).await;
 
-    assert!(first.contains("Item to build: 3157 Песочные часы Жони"));
-    assert!(second.contains("Item to build: 3102 Покров банши"));
+    assert!(first.contains("Item option 1: 3157 Песочные часы Жони"));
+    assert!(second.contains("Item option 1: 3102 Покров банши"));
 }
 
 // A player holds one pair of boots: boots shown and then passed over for another pair
-// would otherwise stay the Item to build, and in the prompt, for the rest of the game.
+// would otherwise stay the first Item option, and in the prompt, for the rest of the game.
 #[tokio::test]
-async fn boots_are_never_the_item_to_build_once_the_player_owns_a_pair() {
+async fn boots_are_never_an_item_option_once_the_player_owns_a_pair() {
     let openai = FakeOpenAi::advising(&answer(TIP, Some(3047))).await;
     let (game, mut updates) = game_at_five_minutes(&item_table(&physical_heavy()), &openai).await;
     game.die_to(KILLER, &[], RESPAWN);
@@ -305,18 +341,18 @@ async fn boots_are_never_the_item_to_build_once_the_player_owns_a_pair() {
     assert!(bodies[0]["input"]
         .as_str()
         .unwrap()
-        .contains("Item to build: 3047 Бронированные сапоги"));
+        .contains("Item option 1: 3047 Бронированные сапоги"));
     let input = bodies[1]["input"].as_str().unwrap();
-    assert!(input.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(input.contains("Item option 1: 3157 Песочные часы Жони"));
     assert!(!input.contains("Бронированные сапоги"));
 }
 
 // Without a table for the game, a death still gets Advice, but no item.
 #[tokio::test]
-async fn no_table_gives_no_item_to_build() {
+async fn no_table_gives_no_item_options() {
     let input = input_of_death(&json!({}), |_| {}).await;
 
-    assert!(input.contains("Item to build: none\n"));
+    assert!(input.contains("Item options: none\n"));
 }
 
 #[tokio::test]

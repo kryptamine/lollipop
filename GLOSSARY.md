@@ -37,8 +37,12 @@ _Avoid_: Net worth, total gold
 A completed item or boots that players of a champion and role commonly buy against a Damage profile. Advice recommends no other item.
 _Avoid_: Recommended item, suggestion
 
+**Item options**:
+The three Item candidates code ranks first for a Trigger's Advice: the one the player's components build into most, then the latest item in progress (shown by earlier Advice, not bought, and not left for another finished item), then the earliest by median minute among those not bought before a held candidate, else the latest of those. None once the inventory is full.
+_Avoid_: Shortlist, top picks
+
 **Item to build**:
-The one Item candidate a Trigger's Advice may name, chosen by code: the one the player's components build into most, then the item in progress (shown by earlier Advice, not bought, and not left for another finished item), then the earliest by median minute among those not bought before a held candidate, else the latest of those. None once the inventory is full.
+The Item option a Trigger's Advice names, picked by the model: the first unless the enemy team's items, levels or the kill score call for another.
 _Avoid_: Next item, target item
 
 **Lane opponent**:

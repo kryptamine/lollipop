@@ -22,6 +22,9 @@ const TIP: &str = "Купи Покров банши сейчас: Lux и Zed б�
 const ROD: (u32, &str) = (1058, "Огромный жезл");
 const ROD_COST: f64 = 1200.0;
 const WARD: (u32, &str) = (3340, "Тотем-страж");
+// A component no candidate builds from.
+const BELT: (u32, &str) = (1011, "Пояс великана");
+const BELT_COST: f64 = 900.0;
 
 fn answer(text: Option<&str>, item: Option<u32>) -> String {
     json!({ "advice": text, "item": item }).to_string()
@@ -96,7 +99,7 @@ async fn the_prompt_describes_the_visit_without_names() {
     assert!(input.contains("Enemy: Zed, MIDDLE"));
     // The Rod just bought builds into Zhonya's, which takes over from Banshee's minute.
     assert!(input.contains(
-        "Item to build: 3157 Песочные часы Жони, bought in 60% of games, first at minute 20\n"
+        "Item option 1: 3157 Песочные часы Жони, bought in 60% of games, first at minute 20\n"
     ));
     for name in ["#EUW", "Foe", "Friend", "Me,"] {
         assert!(!input.contains(name), "{name} is in the prompt");
@@ -272,7 +275,7 @@ async fn an_item_death_advice_showed_goes_in_the_prompt() {
     assert!(inputs[1].contains("Moment: the player is back to base"));
     assert!(inputs[1].contains("Earlier recommended: Покров банши, not bought\n"));
     // The Rod bought builds into Zhonya's, so the inventory outranks Banshee's shown.
-    assert!(inputs[1].contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(inputs[1].contains("Item option 1: 3157 Песочные часы Жони"));
 }
 
 #[tokio::test]
@@ -306,12 +309,12 @@ async fn an_item_bought_before_a_held_one_gives_way_to_a_later_one() {
     game.give_items(ME, &[(3157, "Песочные часы Жони")]);
     game.set_gold(2000.0);
     settle(&mut updates, &openai).await;
-    game.buy(&[(1026, "Взрывная палочка")], 850.0);
+    game.buy(&[BELT], BELT_COST);
     settle(&mut updates, &openai).await;
 
     let inputs = inputs(&openai);
     assert_eq!(inputs.len(), 1);
-    assert!(inputs[0].contains("Item to build: 3003 Посох архангела"));
+    assert!(inputs[0].contains("Item option 1: 3003 Посох архангела"));
 }
 
 // With every item left passed by, the latest is the nearest to where the build is.
@@ -319,13 +322,13 @@ async fn an_item_bought_before_a_held_one_gives_way_to_a_later_one() {
 async fn with_every_item_passed_by_the_latest_is_named() {
     let openai = FakeOpenAi::advising(&answer(Some(TIP), None)).await;
     let (game, mut updates) = game_at(1500.0, &openai).await;
-    game.give_items(ME, &[(3003, "Посох архангела")]);
+    game.give_items(ME, &[(3089, "Смертельная шляпа Рабадона")]);
     game.set_gold(2000.0);
     settle(&mut updates, &openai).await;
-    game.buy(&[(1026, "Взрывная палочка")], 850.0);
+    game.buy(&[BELT], BELT_COST);
     settle(&mut updates, &openai).await;
 
     let inputs = inputs(&openai);
     assert_eq!(inputs.len(), 1);
-    assert!(inputs[0].contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(inputs[0].contains("Item option 1: 3003 Посох архангела"));
 }

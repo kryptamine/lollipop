@@ -5,6 +5,8 @@ use super::standing::Standing;
 use crate::benchmarks::{BenchmarkTable, ItemCandidate, ItemTable};
 use crate::game_inputs::{ClientInputs, GameInputs, Role};
 
+const MAX_OPTIONS: usize = 3;
+
 /// One game's Item candidates and the items its Advice showed, shared by every
 /// Trigger that may name an item.
 #[derive(Default)]
@@ -32,25 +34,24 @@ impl AdvisedItems {
         }
     }
 
-    /// The one candidate item Advice may name: the one most held components build into,
-    /// then one Advice showed and the player has not left for another finished item,
-    /// then the earliest by minute not skipped, then the latest skipped. `None` once
-    /// the inventory is full.
-    pub(super) fn to_build<'a>(
+    /// The Item options, best first: most held components, then the latest Advice showed
+    /// and the player has not left, then the earliest not skipped, then the latest skipped.
+    /// Empty once the inventory is full.
+    pub(super) fn options<'a>(
         &self,
         player: &Player,
         enemies: impl Iterator<Item = &'a Player>,
-    ) -> Option<ItemCandidate<'_>> {
+    ) -> Vec<ItemCandidate<'_>> {
         let (Some(role), Some(champion)) = (self.role, player.cell_champion()) else {
-            return None;
+            return Vec::new();
         };
         let owned = player.item_ids();
         if self.table.full(&owned) {
-            return None;
+            return Vec::new();
         }
         let finished = self.table.finished(&owned);
         let enemies = enemies.filter_map(Player::cell_champion);
-        let candidates = self.table.candidates(champion, role, enemies, &owned);
+        let mut candidates = self.table.candidates(champion, role, enemies, &owned);
         let held = |candidate: &ItemCandidate<'_>| {
             candidate
                 .builds_from
@@ -70,7 +71,7 @@ impl AdvisedItems {
             if shown.passed_over(&finished) {
                 Standing::PassedOver
             } else {
-                Standing::InProgress(index)
+                Standing::InProgress(self.shown.len() - index)
             }
         };
         // A skipped item sorts by its minute negated: late in a build, the latest one
@@ -82,14 +83,16 @@ impl AdvisedItems {
                 candidate.minute
             }
         };
-        // `min_by` keeps the first of equals, so a tie goes to the larger share.
-        candidates.into_iter().min_by(|a, b| {
+        // The sort is stable, so a tie goes to the larger share.
+        candidates.sort_by(|a, b| {
             held(b)
                 .cmp(&held(a))
                 .then_with(|| standing(a).cmp(&standing(b)))
                 .then(a.skipped.cmp(&b.skipped))
                 .then(by_minute(a).total_cmp(&by_minute(b)))
-        })
+        });
+        candidates.truncate(MAX_OPTIONS);
+        candidates
     }
 
     /// Items earlier Advice in this game showed, and whether `player` bought them,
@@ -117,12 +120,12 @@ impl AdvisedItems {
         self.table.icon_url(item)
     }
 
+    /// An item shown again moves to the end, as the latest plan.
     pub(super) fn show(&mut self, item: u32, player: &Player) {
-        if !self.shown.iter().any(|shown| shown.item == item) {
-            self.shown.push(ShownItem {
-                item,
-                finished_then: self.table.finished(&player.item_ids()),
-            });
-        }
+        self.shown.retain(|shown| shown.item != item);
+        self.shown.push(ShownItem {
+            item,
+            finished_then: self.table.finished(&player.item_ids()),
+        });
     }
 }
