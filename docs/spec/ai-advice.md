@@ -211,12 +211,14 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
   what to prioritise. `advice` is null when nothing is worth saying. Live Client
   Data has no map positions, so the instructions say the player's position is
   unknown: no lane and no named ally to join.
-- **Fires on,** either team: end of laning (the first turret kill or 14:00
-  `gameTime`, whichever comes first, once per game); `DragonKill` (Elder included),
-  `HeraldKill`, `BaronKill`; `InhibKilled`; `Ace`; the player's own level 6, 11
-  and 16.
-- **Does not fire on:** later turrets, Void Grubs, other players' kills,
-  multikills, first blood, inhibitor respawns.
+- **Fires on,** either team: the first turret kill of the game, before 14:00
+  `gameTime`; a `DragonKill` that gives its team a third or fourth drake (the soul
+  point and the Soul), or the Elder; `HeraldKill`, `BaronKill`; `InhibKilled`;
+  `Ace`.
+- **Does not fire on:** a team's first two drakes, 14:00 `gameTime`, the
+  player's levels, a first turret after 14:00, later turrets, Void Grubs, other
+  players' kills, multikills, first blood, inhibitor respawns. These rarely change
+  the plan, and their Advice was filler.
 - **Spacing:** at least 3 min from the last Turning point **shown**. A moment inside
   the window is skipped, not queued. One dropped by rank, by lateness or as null
   does not start the window. Within 30 s of a Turning point, a new one sends a new

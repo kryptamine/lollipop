@@ -21,7 +21,7 @@ const ALLY: &str = "Friend1#EUW";
 const KILLER: &str = "Foe2#EUW";
 const PLAN: &str = "Сдвигайся к барону: у врага нет двоих.";
 const NEXT_PLAN: &str = "Толкай нижнюю линию, пока барон у вас.";
-// Into the game, past the laning phase so no 14:00 moment interferes.
+// Into the game, past the laning phase so no first turret interferes.
 const LATE: f64 = 1200.0;
 
 fn answer(text: Option<&str>) -> String {
@@ -30,6 +30,10 @@ fn answer(text: Option<&str>) -> String {
 
 fn baron(at: f64, killer: &str) -> Value {
     json!({ "EventName": "BaronKill", "EventTime": at, "KillerName": killer })
+}
+
+fn drake(at: f64, kind: &str, killer: &str) -> Value {
+    json!({ "EventName": "DragonKill", "EventTime": at, "DragonType": kind, "KillerName": killer })
 }
 
 fn turret(at: f64, turret: &str, killer: &str) -> Value {
@@ -80,23 +84,19 @@ async fn a_baron_shows_turning_point_advice_without_an_icon() {
 async fn the_prompt_carries_the_moment_the_score_and_both_teams_without_names() {
     let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
     let game = ItemGame::running_at(LATE, &item_table(&magic_heavy())).await;
-    game.log_event(json!({ "EventName": "DragonKill", "EventTime": 400.0, "DragonType": "Fire", "KillerName": KILLER }));
+    game.log_event(drake(400.0, "Fire", KILLER));
     game.log_event(turret(
         600.0,
         "Turret_TChaos_L1_P3_2254202041_0",
         "Minion_T100L1S20N0100",
     ));
     game.log_event(json!({ "EventName": "HeraldKill", "EventTime": 800.0, "KillerName": ALLY }));
+    game.log_event(drake(900.0, "Water", ALLY));
+    game.log_event(drake(1000.0, "Air", ALLY));
     let mut updates = game.poll_with(&openai.url, |trigger| trigger == Trigger::TurningPoint);
     settle(&mut updates, &openai).await;
 
-    moment(
-        &game,
-        &mut updates,
-        &openai,
-        json!({ "EventName": "DragonKill", "EventTime": LATE, "DragonType": "Earth", "KillerName": ALLY }),
-    )
-    .await;
+    moment(&game, &mut updates, &openai, drake(LATE, "Earth", ALLY)).await;
 
     let inputs = inputs(&openai);
     assert_eq!(inputs.len(), 1);
@@ -110,7 +110,7 @@ async fn the_prompt_carries_the_moment_the_score_and_both_teams_without_names() 
     assert!(input.contains("Ally: Vi, JUNGLE"));
     assert!(input.contains("Enemy: Zed, MIDDLE, level 1, KDA 1/2/3, no items\n"));
     assert!(input.contains(
-        "Player's team has taken: dragons Earth; Herald 1; Baron 0; turrets 1; inhibitors 0\n"
+        "Player's team has taken: dragons Water, Air, Earth; Herald 1; Baron 0; turrets 1; inhibitors 0\n"
     ));
     assert!(input.contains(
         "Enemy team has taken: dragons Fire; Herald 0; Baron 0; turrets 0; inhibitors 0\n"
@@ -220,44 +220,57 @@ async fn the_first_turret_ends_the_laning_phase_once() {
     assert_eq!(openai.requests().len(), 1);
 }
 
+// 14:00 and levels fire nothing: they rarely change the plan, and their Advice was filler.
 #[tokio::test]
-async fn fourteen_minutes_ends_the_laning_phase_with_every_turret_up() {
+async fn fourteen_minutes_and_levels_ask_nothing() {
+    let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
+    let (game, mut updates) = game_at(830.0, &openai).await;
+    game.set_time(840.0);
+    game.set_level(6);
+    settle(&mut updates, &openai).await;
+    game.set_level(11);
+    settle(&mut updates, &openai).await;
+
+    assert!(openai.requests().is_empty());
+}
+
+// Laning ended at 14:00 even though nothing fired, so a later first turret is a later turret.
+#[tokio::test]
+async fn a_first_turret_after_fourteen_minutes_asks_nothing() {
     let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
     let (game, mut updates) = game_at(830.0, &openai).await;
     game.set_time(840.0);
     settle(&mut updates, &openai).await;
+    game.set_time(900.0);
+    moment(
+        &game,
+        &mut updates,
+        &openai,
+        turret(900.0, "Turret_TChaos_L1_P3_2254202041_0", ALLY),
+    )
+    .await;
 
-    let inputs = inputs(&openai);
-    assert_eq!(inputs.len(), 1);
-    assert!(inputs[0].contains("Moment: the laning phase ends at 14:00\n"));
-    assert!(!inputs[0].contains("Taken by"));
+    assert!(openai.requests().is_empty());
 }
 
+// A team's first two drakes rarely change the plan; the soul point and the Elder do.
 #[tokio::test]
-async fn levels_6_11_and_16_fire_and_others_do_not() {
-    let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
+async fn drakes_ask_from_a_teams_soul_point_and_the_elder_always() {
+    let openai = FakeOpenAi::advising(&answer(None)).await;
     let (game, mut updates) = game_at(LATE, &openai).await;
-    game.set_level(5);
-    settle(&mut updates, &openai).await;
+    moment(&game, &mut updates, &openai, drake(LATE, "Fire", ALLY)).await;
+    moment(&game, &mut updates, &openai, drake(LATE, "Water", KILLER)).await;
+    moment(&game, &mut updates, &openai, drake(LATE, "Air", ALLY)).await;
+    moment(&game, &mut updates, &openai, drake(LATE, "Earth", KILLER)).await;
     assert!(openai.requests().is_empty());
 
-    game.set_level(6);
-    settle(&mut updates, &openai).await;
-    game.set_time(LATE + 200.0);
-    game.set_level(10);
-    settle(&mut updates, &openai).await;
-    game.set_level(11);
-    settle(&mut updates, &openai).await;
-    game.set_time(LATE + 400.0);
-    game.set_level(16);
-    settle(&mut updates, &openai).await;
+    moment(&game, &mut updates, &openai, drake(LATE, "Earth", ALLY)).await;
+    moment(&game, &mut updates, &openai, drake(LATE, "Elder", KILLER)).await;
 
     let inputs = inputs(&openai);
-    assert_eq!(inputs.len(), 3);
-    assert!(inputs[0].contains("Moment: the player reached level 6\n"));
-    assert!(inputs[1].contains("Moment: the player reached level 11\n"));
-    assert!(inputs[2].contains("Moment: the player reached level 16\n"));
-    assert!(!inputs[0].contains("Taken by"));
+    assert_eq!(inputs.len(), 2);
+    assert!(inputs[0].contains("Moment: a drake was killed: Earth\nTaken by: the player's team\n"));
+    assert!(inputs[1].contains("Moment: the Elder Dragon was killed\nTaken by: the enemy team\n"));
 }
 
 #[tokio::test]
