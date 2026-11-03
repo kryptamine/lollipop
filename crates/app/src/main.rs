@@ -1,7 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod key_save;
+#[cfg(target_os = "macos")]
+mod keychain;
 mod launch_at_login;
 mod menu_bar;
+mod openai_key;
+mod openai_key_commands;
 mod overlay;
 #[cfg(target_os = "macos")]
 mod platform;
@@ -18,6 +23,7 @@ use lollipop_core::delivery::TableFile;
 use lollipop_core::game_inputs::LOCKFILE_PATH;
 use lollipop_core::live::{poll, status_line, LiveUpdate, SystemClock, LIVE_CLIENT_URL};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
+use openai_key::OpenAiKey;
 use overlay::Overlay;
 use settings_store::SettingsStore;
 use tauri::menu::MenuItem;
@@ -107,6 +113,10 @@ fn main() {
             settings_commands::read_switches,
             settings_commands::set_widget,
             settings_commands::set_launch_at_login,
+            openai_key_commands::read_openai_key,
+            openai_key_commands::save_openai_key,
+            openai_key_commands::remove_openai_key,
+            openai_key_commands::open_openai_usage,
         ])
         .setup(|app| {
             let window = overlay_window(app.handle());
@@ -127,6 +137,7 @@ fn main() {
             let launch_on_login = store.read(|settings| settings.launch_at_login);
             let _ = launch_at_login::apply(app.handle(), launch_on_login);
             app.manage(store.clone());
+            app.manage(OpenAiKey::open());
             let status = menu_bar::install(app.handle())?;
             // A debug build would replace itself with the latest release.
             if !cfg!(debug_assertions) {

@@ -2,6 +2,7 @@ pub mod benchmark_file;
 pub mod delivery_bench;
 pub mod fake_bucket;
 pub mod fake_lcu;
+pub mod fake_openai;
 pub mod game_clock;
 pub mod hint_game;
 pub mod marker_game;

@@ -1,4 +1,4 @@
-export type SettingsTab = 'general' | 'overlay';
+export type SettingsTab = 'general' | 'overlay' | 'advice';
 
 type ToolbarItem = {
   tab: SettingsTab;
@@ -16,6 +16,11 @@ const ITEMS: ToolbarItem[] = [
     tab: 'overlay',
     icon: '▣',
     label: 'Overlay',
+  },
+  {
+    tab: 'advice',
+    icon: '✦',
+    label: 'Advice',
   },
 ];
 

@@ -2123,6 +2123,8 @@ dependencies = [
  "block2",
  "lollipop-core",
  "objc2",
+ "security-framework",
+ "serde",
  "serde_json",
  "tauri",
  "tauri-build",

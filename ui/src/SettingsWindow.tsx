@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'preact/hooks';
 
+import { AdviceTab } from './AdviceTab';
 import { GeneralTab } from './GeneralTab';
 import { OverlayTab } from './OverlayTab';
+import { useOpenAiKey } from './use-open-ai-key';
 import { SettingsToolbar, type SettingsTab } from './SettingsToolbar';
-import { readSwitches, setLaunchAtLogin, setWidget, type Switches, type WidgetId } from './bridge';
+import {
+  openOpenAiUsage,
+  readSwitches,
+  setLaunchAtLogin,
+  setWidget,
+  type Switches,
+  type WidgetId,
+} from './bridge';
+
+const handleUsageOpen = () => {
+  void openOpenAiUsage();
+};
 
 export const SettingsWindow = () => {
   const [tab, setTab] = useState<SettingsTab>('general');
   const [switches, setSwitches] = useState<Switches>();
+  const openAiKey = useOpenAiKey();
 
   const show = async (kept: Promise<Switches>) => {
     setSwitches(await kept);
@@ -37,6 +51,9 @@ export const SettingsWindow = () => {
         )}
         {switches && tab === 'overlay' && (
           <OverlayTab widgets={switches.widgets} onWidgetChange={handleWidgetChange} />
+        )}
+        {openAiKey && tab === 'advice' && (
+          <AdviceTab openAiKey={openAiKey} onUsageOpen={handleUsageOpen} />
         )}
       </main>
     </>
