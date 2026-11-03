@@ -56,6 +56,10 @@ _Avoid_: Outdated, expired
 A pop-up shown shortly before an objective spawns.
 _Avoid_: Timer, alert, notification
 
+**Turning point**:
+A moment that changes the game plan, such as an objective taken, an inhibitor down, an Ace, the end of the laning phase or a key level of the player.
+_Avoid_: Periodic, milestone
+
 **Trigger**:
 A moment in a game that asks for Advice, such as the loading screen or the player's death.
 _Avoid_: Event, hook
