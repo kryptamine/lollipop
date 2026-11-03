@@ -9,6 +9,10 @@ compares, minute by minute, to how similar games usually go.
 A recommendation a model writes for the active player, such as a game plan or an item to buy.
 _Avoid_: Hint, tip, suggestion
 
+**Back to base**:
+A visit the living player makes to the shop, seen by its first purchase.
+_Avoid_: Recall
+
 **Benchmark**:
 The expected value of a metric at a given game minute, derived from match statistics.
 _Avoid_: Target, goal, norm
