@@ -97,6 +97,7 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
     let items = ItemsEntry {
         damage_profile: profile.map(DamageProfile::entry),
         item_names: item_names(&candidates, &catalog),
+        boots: catalog.boots,
         item_candidates: candidates,
         data_dragon_version: catalog.version,
     };

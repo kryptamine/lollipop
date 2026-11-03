@@ -1,6 +1,6 @@
 //! The part of the Benchmark table item Advice reads, beside its `cells`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::Deserialize;
 
@@ -21,6 +21,9 @@ pub(crate) struct ItemTable {
     // By the id as a string: a flattened map cannot read its keys as numbers.
     #[serde(default)]
     item_names: HashMap<String, ItemName>,
+    /// Every boots id past the first tier; empty in a table built before they were listed.
+    #[serde(default)]
+    boots: HashSet<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -46,7 +49,8 @@ struct CandidateEntry {
 
 impl ItemTable {
     /// The list for the bucket of the enemy team, less what `owned` holds, itself or
-    /// transformed. No list for the champion and role gives none: see ADR 0004.
+    /// transformed, and less every boots once it holds a pair. No list for the champion
+    /// and role gives none: see ADR 0004.
     pub(crate) fn candidates<'a>(
         &self,
         champion: &str,
@@ -68,11 +72,13 @@ impl ItemTable {
             ProfileBucket::Mixed => &entry.mixed,
             ProfileBucket::MagicHeavy => &entry.magic_heavy,
         };
+        let excluded = |candidate: &&CandidateEntry| {
+            owned.contains(&candidate.item)
+                || candidate.owned_as.iter().any(|item| owned.contains(item))
+                || self.another_pair(candidate.item, owned)
+        };
         list.iter()
-            .filter(|candidate| {
-                !owned.contains(&candidate.item)
-                    && !candidate.owned_as.iter().any(|item| owned.contains(item))
-            })
+            .filter(|candidate| !excluded(candidate))
             .map(|candidate| ItemCandidate {
                 item: candidate.item,
                 share: candidate.share,
@@ -81,6 +87,13 @@ impl ItemTable {
                 name: self.name_of(candidate.item),
             })
             .collect()
+    }
+
+    /// Whether `item` is boots `owned` cannot take, since it already holds a pair.
+    pub(crate) fn another_pair(&self, item: u32, owned: &[u32]) -> bool {
+        self.boots.contains(&item)
+            && !owned.contains(&item)
+            && owned.iter().any(|own| self.boots.contains(own))
     }
 
     pub(crate) fn name_of(&self, item: u32) -> Option<&ItemName> {

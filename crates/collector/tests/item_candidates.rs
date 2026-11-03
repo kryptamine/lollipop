@@ -23,7 +23,7 @@ use support::fake_data_dragon::{
     FakeDataDragon, ARCHANGELS_STAFF, ARENA_ITEM, BF_SWORD, BOOTS, COSTLY_COMPONENT, DEMOTED_ITEM,
     DORANS_BLADE, HEALTH_POTION, INFINITY_EDGE, LONG_SWORD, MANAMUNE, MERCURYS_TREADS, MORE_BOOTS,
     MORE_COMPLETED, MURAMANA, PLATED_STEELCAPS, QUEST_ITEM, QUEST_ITEM_STEP_1, QUEST_ITEM_STEP_2,
-    RABADONS, REMOVED_ITEM, SERAPHS_EMBRACE, ZHONYAS,
+    RABADONS, REMOVED_ITEM, SERAPHS_EMBRACE, TIER_3_BOOTS, ZHONYAS,
 };
 use support::game::Game;
 use support::played::Played;
@@ -254,6 +254,20 @@ fn a_candidate_carries_every_component_it_builds_from() {
     );
     assert_eq!(builds_from(MERCURYS_TREADS), Some(json!([BOOTS])));
     assert_eq!(builds_from(RABADONS), None);
+}
+
+// A player holds one pair of boots: without every pair listed, the app would advise
+// other boots to a player who owns a pair no candidate list names.
+#[test]
+fn the_file_lists_every_boots_past_the_first_tier_tagged_or_not() {
+    let mut bench = TableBench::new();
+    bench.add_archived(1, &ahri_match().buys(1, RABADONS, 12));
+
+    let build = build(&bench, 1);
+
+    let mut expected = vec![PLATED_STEELCAPS, MERCURYS_TREADS, TIER_3_BOOTS];
+    expected.extend((0..5).map(|index| MORE_BOOTS + index));
+    assert_eq!(build.table()["boots"], json!(expected));
 }
 
 // The prompt names items to the model in the player's language, and the file is all the

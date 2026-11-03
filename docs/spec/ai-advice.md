@@ -177,7 +177,8 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
   killer and assisters (champion, position, level, items, KDA); the whole enemy
   team's champions, items and levels; `gameTime`; how many times this killer has
   killed the player; the Item to build; items earlier Advice in this game
-  recommended, and whether the player bought them.
+  recommended, and whether the player bought them, less boots passed over for
+  another pair.
 - **Item:** the [Item to build](#item-to-build), held by code. Not filtered by gold:
   the model sees `currentGold` and may say to build toward it.
 - **Another death:** sends a new request, whose answer replaces the one showing.
@@ -197,7 +198,7 @@ Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
   not visible.
 - **Prompt:** the player's champion, role, level, items, KDA and `currentGold`; the
   items bought in this visit; the whole enemy team's champions, items, levels and
-  KDA; `gameTime`; the Item to build; earlier recommended items and whether bought.
+  KDA; `gameTime`; the Item to build; earlier recommended items and whether bought, as on death.
 - **Item:** as for death. The first one comes on the first Back to base.
 
 ### Turning point
@@ -242,7 +243,8 @@ Item to build among them, the model explains it, and code rejects anything else.
 
 - **In the app:** sum the five enemies' magic share from `allPlayers` and read the
   Damage profile bucket. The candidates are the list for the player's champion,
-  role and bucket, minus items the player owns, `owned_as` included.
+  role and bucket, minus items the player owns, `owned_as` included, and minus
+  every boots once the player owns any id of `boots`.
 
 ### Item to build
 
@@ -285,6 +287,10 @@ Settled in [#152](https://github.com/kryptamine/lollipop/issues/152).
   of map 11 no shop sells) stays completed.
 - **Components:** a candidate carries optional `builds_from`, every id down its
   Data Dragon `from` tree. A table without it ties no component to a candidate.
+- **Boots:** `boots` lists every Data Dragon item of map 11 whose `from` tree holds
+  an item with the `Boots` tag, candidate or not, since a player holds one pair.
+  The tree catches Gunmetal Greaves, which has no tag. A table without it leaves
+  boots among the candidates.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
   translation repeats the English one. `data_dragon_version` is that version.

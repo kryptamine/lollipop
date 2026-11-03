@@ -13,4 +13,6 @@ pub(super) struct ItemCatalog {
     /// Every component down each item's `from` tree, in id order.
     pub(super) builds_from: HashMap<u32, Vec<u32>>,
     pub(super) names: HashMap<u32, ItemNameEntry>,
+    /// Every boots of the Rift past the first tier, in id order.
+    pub(super) boots: Vec<u32>,
 }

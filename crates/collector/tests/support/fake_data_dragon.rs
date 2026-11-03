@@ -9,6 +9,8 @@ pub const ZHONYAS: u32 = 3157;
 pub const MERCURYS_TREADS: u32 = 3111;
 pub const PLATED_STEELCAPS: u32 = 3047;
 pub const BOOTS: u32 = 1001;
+/// The tier-3 boots Mercury's Treads build into, with no `Boots` tag as Gunmetal Greaves.
+pub const TIER_3_BOOTS: u32 = 3172;
 pub const DORANS_BLADE: u32 = 1055;
 pub const ARCHANGELS_STAFF: u32 = 3003;
 /// Archangel's Staff with full mana, named by `specialRecipe`.
@@ -123,12 +125,7 @@ fn items(older_patch: bool) -> Value {
     );
     add(RABADONS, item(3600, &["SpellDamage"], &[], None));
     add(ZHONYAS, item(3250, &["SpellDamage", "Armor"], &[], None));
-    add(
-        MERCURYS_TREADS,
-        built_from(item(1250, &["Boots"], &["3172"], Some(2)), &["1001"]),
-    );
-    add(PLATED_STEELCAPS, item(1200, &["Boots"], &["3174"], Some(2)));
-    add(BOOTS, item(300, &["Boots"], &["3111", "3047"], None));
+    add_boots(&mut add);
     add(DORANS_BLADE, item(450, &["Lane"], &[], None));
     add(
         COSTLY_COMPONENT,
@@ -159,9 +156,6 @@ fn items(older_patch: bool) -> Value {
     for index in 0..16 {
         add(MORE_COMPLETED + index, item(3000, &["Damage"], &[], None));
     }
-    for index in 0..5 {
-        add(MORE_BOOTS + index, item(1100, &["Boots"], &[], Some(2)));
-    }
     if older_patch {
         add(REMOVED_ITEM, item(3000, &["Damage"], &[], None));
         add(DEMOTED_ITEM, item(3000, &["Damage"], &[], None));
@@ -169,6 +163,26 @@ fn items(older_patch: bool) -> Value {
         add(DEMOTED_ITEM, item(1300, &["Damage"], &["3031"], Some(2)));
     }
     json!({ "type": "item", "version": "16.21.1", "data": data })
+}
+
+fn add_boots(add: &mut impl FnMut(u32, Value)) {
+    add(
+        MERCURYS_TREADS,
+        built_from(item(1250, &["Boots"], &["3172"], Some(2)), &["1001"]),
+    );
+    add(
+        TIER_3_BOOTS,
+        built_from(item(1750, &["AttackSpeed"], &[], Some(3)), &["3111"]),
+    );
+    add(
+        PLATED_STEELCAPS,
+        built_from(item(1200, &["Boots"], &["3174"], Some(2)), &["1001"]),
+    );
+    add(BOOTS, item(300, &["Boots"], &["3111", "3047"], None));
+    for index in 0..5 {
+        let more = item(1100, &["Boots"], &[], Some(2));
+        add(MORE_BOOTS + index, built_from(more, &["1001"]));
+    }
 }
 
 fn item(total: u32, tags: &[&str], into: &[&str], depth: Option<u32>) -> Value {
