@@ -25,6 +25,10 @@ _Avoid_: Bucket, segment, cohort
 All gold a player has received in a game, starting gold included. Spending never lowers it, and selling an item never raises it.
 _Avoid_: Net worth, total gold
 
+**Lane opponent**:
+The enemy, or for the bottom lane the enemy pair, playing the same position as the active player.
+_Avoid_: Matchup, counterpart
+
 **Marker**:
 The glyph beside a metric: a green or red triangle when the player is above or below its Benchmark by more than the Neutral zone, and nothing within it.
 _Avoid_: Arrow, indicator, delta
