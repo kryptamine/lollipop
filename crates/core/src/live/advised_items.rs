@@ -5,7 +5,7 @@ use super::standing::Standing;
 use crate::benchmarks::{BenchmarkTable, ItemCandidate, ItemTable};
 use crate::game_inputs::{ClientInputs, GameInputs, Role};
 
-const OPTIONS: usize = 3;
+const MAX_OPTIONS: usize = 3;
 
 /// One game's Item candidates and the items its Advice showed, shared by every
 /// Trigger that may name an item.
@@ -34,9 +34,9 @@ impl AdvisedItems {
         }
     }
 
-    /// The Item options, best first: most held components, then one Advice showed and
-    /// the player has not left, then the earliest not skipped, then the latest skipped.
-    /// None once the inventory is full.
+    /// The Item options, best first: most held components, then the latest Advice showed
+    /// and the player has not left, then the earliest not skipped, then the latest skipped.
+    /// Empty once the inventory is full.
     pub(super) fn options<'a>(
         &self,
         player: &Player,
@@ -71,7 +71,7 @@ impl AdvisedItems {
             if shown.passed_over(&finished) {
                 Standing::PassedOver
             } else {
-                Standing::InProgress(index)
+                Standing::InProgress(self.shown.len() - index)
             }
         };
         // A skipped item sorts by its minute negated: late in a build, the latest one
@@ -91,7 +91,7 @@ impl AdvisedItems {
                 .then(a.skipped.cmp(&b.skipped))
                 .then(by_minute(a).total_cmp(&by_minute(b)))
         });
-        candidates.truncate(OPTIONS);
+        candidates.truncate(MAX_OPTIONS);
         candidates
     }
 
@@ -120,12 +120,12 @@ impl AdvisedItems {
         self.table.icon_url(item)
     }
 
+    /// An item shown again moves to the end, as the latest plan.
     pub(super) fn show(&mut self, item: u32, player: &Player) {
-        if !self.shown.iter().any(|shown| shown.item == item) {
-            self.shown.push(ShownItem {
-                item,
-                finished_then: self.table.finished(&player.item_ids()),
-            });
-        }
+        self.shown.retain(|shown| shown.item != item);
+        self.shown.push(ShownItem {
+            item,
+            finished_then: self.table.finished(&player.item_ids()),
+        });
     }
 }

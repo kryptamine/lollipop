@@ -276,6 +276,31 @@ async fn an_item_shown_and_not_bought_wins_a_tie_in_components() {
     assert!(second.contains("Item option 1: 3157 Песочные часы Жони"));
 }
 
+// The model passing over the first option is the latest plan, so the next Advice
+// leads with its pick rather than with the item shown first.
+#[tokio::test]
+async fn the_models_latest_pick_leads_the_next_options() {
+    let openai = FakeOpenAi::replying(vec![
+        Reply::advising(&answer(TIP, Some(3102))),
+        Reply::advising(&answer(TIP, Some(3157))),
+        Reply::advising(&answer(TIP, None)),
+    ])
+    .await;
+    let (game, mut updates) = game_at_five_minutes(&item_table(&magic_heavy()), &openai).await;
+    for at in [400.0, 500.0, 600.0] {
+        game.die_to(KILLER, &[], RESPAWN);
+        settle(&mut updates, &openai).await;
+        game.respawn();
+        game.set_time(at);
+        settle(&mut updates, &openai).await;
+    }
+    let bodies = openai.bodies();
+    let third = bodies[2]["input"].as_str().unwrap();
+
+    assert!(third.contains("Item option 1: 3157 Песочные часы Жони"));
+    assert!(third.contains("Item option 2: 3102 Покров банши"));
+}
+
 // The inventory beats the plan: a player who started another item is not told to
 // switch back to the one shown.
 #[tokio::test]
@@ -324,7 +349,7 @@ async fn boots_are_never_an_item_option_once_the_player_owns_a_pair() {
 
 // Without a table for the game, a death still gets Advice, but no item.
 #[tokio::test]
-async fn no_table_gives_no_item_to_build() {
+async fn no_table_gives_no_item_options() {
     let input = input_of_death(&json!({}), |_| {}).await;
 
     assert!(input.contains("Item options: none\n"));

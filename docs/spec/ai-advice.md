@@ -195,9 +195,9 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 
 Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
 
-- **Says:** one of the Item options, picked as on death. One the player can afford now is "buy it now",
-  otherwise "build toward it". `advice` is null when nothing changed since the
-  last Advice.
+- **Says:** one of the Item options, picked as on death. One the player can
+  afford now is "buy it now", otherwise "build toward it". `advice` is null when
+  nothing changed since the last Advice.
 - **Fires:** on the first purchase of a visit: a new item in `items` and
   `currentGold` down by at least 300 in the same poll, dead or alive. The 300 floor
   drops wards, potions and trinket swaps; an undo raises gold and never fires.
@@ -270,7 +270,7 @@ order, best first; the model sees no other.
 
 - **Components first:** the candidate whose `builds_from` the player's items hit
   most. The inventory outranks earlier Advice.
-- **Then in progress:** among equal components, the oldest candidate earlier Advice
+- **Then in progress:** among equal components, the latest candidate earlier Advice
   showed, not bought, and not left: the player has finished no other item of
   `completed` since it showed. A death never breaks it.
 - **Then never shown,** and an item shown and left comes last.
