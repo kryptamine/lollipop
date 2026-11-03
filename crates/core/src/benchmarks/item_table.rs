@@ -1,6 +1,6 @@
 //! The part of the Benchmark table item Advice reads, beside its `cells`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::Deserialize;
 
@@ -23,7 +23,7 @@ pub(crate) struct ItemTable {
     item_names: HashMap<String, ItemName>,
     /// Every boots id past the first tier; empty in a table built before they were listed.
     #[serde(default)]
-    boots: Vec<u32>,
+    boots: HashSet<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,14 +72,13 @@ impl ItemTable {
             ProfileBucket::Mixed => &entry.mixed,
             ProfileBucket::MagicHeavy => &entry.magic_heavy,
         };
-        let shod = owned.iter().any(|item| self.boots.contains(item));
-        let held = |candidate: &&CandidateEntry| {
+        let excluded = |candidate: &&CandidateEntry| {
             owned.contains(&candidate.item)
                 || candidate.owned_as.iter().any(|item| owned.contains(item))
-                || shod && self.boots.contains(&candidate.item)
+                || self.another_pair(candidate.item, owned)
         };
         list.iter()
-            .filter(|candidate| !held(candidate))
+            .filter(|candidate| !excluded(candidate))
             .map(|candidate| ItemCandidate {
                 item: candidate.item,
                 share: candidate.share,
@@ -88,6 +87,13 @@ impl ItemTable {
                 name: self.name_of(candidate.item),
             })
             .collect()
+    }
+
+    /// Whether `item` is boots `owned` cannot take, since it already holds a pair.
+    pub(crate) fn another_pair(&self, item: u32, owned: &[u32]) -> bool {
+        self.boots.contains(&item)
+            && !owned.contains(&item)
+            && owned.iter().any(|own| self.boots.contains(own))
     }
 
     pub(crate) fn name_of(&self, item: u32) -> Option<&ItemName> {

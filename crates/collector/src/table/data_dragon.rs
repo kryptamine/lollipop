@@ -21,7 +21,8 @@ const SUMMONERS_RIFT: &str = "11";
 // Research heuristic: it keeps every completed item on 16.21 but Mejai's.
 const COMPLETED_MIN_GOLD: u32 = 2200;
 const BOOTS_TIER_2_DEPTH: u32 = 2;
-const NOT_COMPLETED_TAGS: [&str; 3] = ["Boots", "Consumable", "Trinket"];
+const BOOTS_TAG: &str = "Boots";
+const NOT_COMPLETED_TAGS: [&str; 3] = [BOOTS_TAG, "Consumable", "Trinket"];
 // The support item takes three steps to reach its upgrades; the bound only stops a cycle.
 const MAX_TRANSFORM_STEPS: usize = 8;
 
@@ -82,6 +83,7 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
         .into_iter()
         .filter_map(|(id, item)| Some((id.parse().ok()?, item)))
         .collect();
+    let builds_from = builds_from(&items);
     let classes = items
         .iter()
         .filter_map(|(&id, item)| Some((id, class_of(item, &items)?)))
@@ -102,8 +104,8 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
         version: version.to_string(),
         classes,
         owned_as: owned_as(&items),
-        builds_from: builds_from(&items),
-        boots: boots(&items),
+        boots: boots(&items, &builds_from),
+        builds_from,
         names,
     })
 }
@@ -141,12 +143,15 @@ fn is_transform(item: &Item) -> bool {
     on_the_rift(item) && !item.gold.purchasable
 }
 
+fn tagged(item: &Item, tag: &str) -> bool {
+    item.tags.iter().any(|own| own == tag)
+}
+
 fn class_of(item: &Item, items: &Items) -> Option<ItemClass> {
     if !on_the_rift(item) || !item.gold.purchasable {
         return None;
     }
-    let tagged = |tag: &str| item.tags.iter().any(|own| own == tag);
-    if tagged("Boots") {
+    if tagged(item, BOOTS_TAG) {
         return (item.depth == Some(BOOTS_TIER_2_DEPTH)).then_some(ItemClass::Boots);
     }
     // Archangel's Staff becomes Seraph's Embrace with no purchase, so it is still final.
@@ -156,17 +161,18 @@ fn class_of(item: &Item, items: &Items) -> Option<ItemClass> {
     });
     let completed = !builds_into_more
         && item.gold.total >= COMPLETED_MIN_GOLD
-        && !NOT_COMPLETED_TAGS.iter().any(|tag| tagged(tag));
+        && !NOT_COMPLETED_TAGS.iter().any(|tag| tagged(item, tag));
     completed.then_some(ItemClass::Completed)
 }
 
-fn boots(items: &Items) -> Vec<u32> {
-    let mut boots: Vec<u32> = items
+/// Every item of the Rift built from boots, down its tree. Gunmetal Greaves has no
+/// `Boots` tag, so the tree, not the tag, finds every pair past the first tier.
+fn boots(items: &Items, builds_from: &HashMap<u32, Vec<u32>>) -> Vec<u32> {
+    let is_boots = |id: &u32| items.get(id).is_some_and(|item| tagged(item, BOOTS_TAG));
+    let mut boots: Vec<u32> = builds_from
         .iter()
-        .filter(|(_, item)| {
-            on_the_rift(item)
-                && item.tags.iter().any(|tag| tag == "Boots")
-                && item.depth.is_some_and(|depth| depth >= BOOTS_TIER_2_DEPTH)
+        .filter(|(id, components)| {
+            items.get(id).is_some_and(on_the_rift) && components.iter().any(is_boots)
         })
         .map(|(&id, _)| id)
         .collect();

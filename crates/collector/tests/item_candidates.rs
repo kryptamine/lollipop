@@ -259,7 +259,7 @@ fn a_candidate_carries_every_component_it_builds_from() {
 // A player holds one pair of boots: without every pair listed, the app would advise
 // other boots to a player who owns a pair no candidate list names.
 #[test]
-fn the_file_lists_every_boots_past_the_first_tier() {
+fn the_file_lists_every_boots_past_the_first_tier_tagged_or_not() {
     let mut bench = TableBench::new();
     bench.add_archived(1, &ahri_match().buys(1, RABADONS, 12));
 

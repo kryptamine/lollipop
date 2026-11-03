@@ -9,7 +9,7 @@ pub const ZHONYAS: u32 = 3157;
 pub const MERCURYS_TREADS: u32 = 3111;
 pub const PLATED_STEELCAPS: u32 = 3047;
 pub const BOOTS: u32 = 1001;
-/// The tier-3 boots Mercury's Treads build into.
+/// The tier-3 boots Mercury's Treads build into, with no `Boots` tag as Gunmetal Greaves.
 pub const TIER_3_BOOTS: u32 = 3172;
 pub const DORANS_BLADE: u32 = 1055;
 pub const ARCHANGELS_STAFF: u32 = 3003;
@@ -172,12 +172,16 @@ fn add_boots(add: &mut impl FnMut(u32, Value)) {
     );
     add(
         TIER_3_BOOTS,
-        built_from(item(1750, &["Boots"], &[], Some(3)), &["3111"]),
+        built_from(item(1750, &["AttackSpeed"], &[], Some(3)), &["3111"]),
     );
-    add(PLATED_STEELCAPS, item(1200, &["Boots"], &["3174"], Some(2)));
+    add(
+        PLATED_STEELCAPS,
+        built_from(item(1200, &["Boots"], &["3174"], Some(2)), &["1001"]),
+    );
     add(BOOTS, item(300, &["Boots"], &["3111", "3047"], None));
     for index in 0..5 {
-        add(MORE_BOOTS + index, item(1100, &["Boots"], &[], Some(2)));
+        let more = item(1100, &["Boots"], &[], Some(2));
+        add(MORE_BOOTS + index, built_from(more, &["1001"]));
     }
 }
 

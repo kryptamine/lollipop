@@ -196,7 +196,7 @@ async fn an_item_shown_and_not_bought_stays_the_item_to_build() {
 }
 
 // A player holds one pair of boots: boots shown and then passed over for another pair
-// would otherwise stay the Item to build for the rest of the game.
+// would otherwise stay the Item to build, and in the prompt, for the rest of the game.
 #[tokio::test]
 async fn boots_are_never_the_item_to_build_once_the_player_owns_a_pair() {
     let openai = FakeOpenAi::advising(&answer(TIP, Some(3047))).await;
@@ -217,6 +217,7 @@ async fn boots_are_never_the_item_to_build_once_the_player_owns_a_pair() {
         .contains("Item to build: 3047 Бронированные сапоги"));
     let input = bodies[1]["input"].as_str().unwrap();
     assert!(input.contains("Item to build: 3157 Песочные часы Жони"));
+    assert!(!input.contains("Бронированные сапоги"));
 }
 
 // Without a table for the game, a death still gets Advice, but no item.

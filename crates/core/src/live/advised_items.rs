@@ -64,11 +64,13 @@ impl AdvisedItems {
             .min_by(|a, b| held(b).cmp(&held(a)).then(a.minute.total_cmp(&b.minute)))
     }
 
-    /// Items earlier Advice in this game showed, and whether `player` bought them.
+    /// Items earlier Advice in this game showed, and whether `player` bought them,
+    /// less boots passed over for another pair.
     pub(super) fn recommended(&self, player: &Player) -> Vec<RecommendedItem<'_>> {
         let owned = player.item_ids();
         self.shown
             .iter()
+            .filter(|&&item| !self.table.another_pair(item, &owned))
             .map(|&item| RecommendedItem {
                 item,
                 name: self.table.name_of(item),
