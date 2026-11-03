@@ -49,6 +49,8 @@ pub(super) struct ItemsEntry {
     pub(super) data_dragon_version: String,
     /// The en and ru name of every candidate id, for the prompt.
     pub(super) item_names: BTreeMap<u32, ItemNameEntry>,
+    /// Every boots id past the first tier, candidate or not: a player holds one pair.
+    pub(super) boots: Vec<u32>,
 }
 
 #[derive(Serialize)]

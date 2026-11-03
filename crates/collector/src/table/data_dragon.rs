@@ -103,6 +103,7 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
         classes,
         owned_as: owned_as(&items),
         builds_from: builds_from(&items),
+        boots: boots(&items),
         names,
     })
 }
@@ -157,6 +158,20 @@ fn class_of(item: &Item, items: &Items) -> Option<ItemClass> {
         && item.gold.total >= COMPLETED_MIN_GOLD
         && !NOT_COMPLETED_TAGS.iter().any(|tag| tagged(tag));
     completed.then_some(ItemClass::Completed)
+}
+
+fn boots(items: &Items) -> Vec<u32> {
+    let mut boots: Vec<u32> = items
+        .iter()
+        .filter(|(_, item)| {
+            on_the_rift(item)
+                && item.tags.iter().any(|tag| tag == "Boots")
+                && item.depth.is_some_and(|depth| depth >= BOOTS_TIER_2_DEPTH)
+        })
+        .map(|(&id, _)| id)
+        .collect();
+    boots.sort_unstable();
+    boots
 }
 
 /// Every transform, under the purchasable item its chain starts from.
