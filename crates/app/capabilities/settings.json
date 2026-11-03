@@ -2,5 +2,13 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "settings",
   "windows": ["settings"],
-  "permissions": ["allow-read-switches", "allow-set-widget", "allow-set-launch-at-login"]
+  "permissions": [
+    "allow-read-switches",
+    "allow-set-widget",
+    "allow-set-launch-at-login",
+    "allow-read-openai-key",
+    "allow-save-openai-key",
+    "allow-remove-openai-key",
+    "allow-open-openai-usage"
+  ]
 }

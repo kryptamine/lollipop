@@ -1,3 +1,5 @@
 cognitive-complexity-threshold = 15
 too-many-arguments-threshold = 5
 too-many-lines-threshold = 60
+# Names a doc comment may write as prose, kept with the defaults.
+doc-valid-idents = ["OpenAI", ".."]

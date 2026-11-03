@@ -62,6 +62,31 @@ export const setWidget = (id: WidgetId, isOn: boolean): Promise<Switches> =>
 export const setLaunchAtLogin = (isOn: boolean): Promise<Switches> =>
   invoke<Switches>('set_launch_at_login', { isOn });
 
+export type KeyFailure = 'rejected' | 'unreachable' | 'notKept';
+
+export type KeySaved = {
+  outcome: 'saved';
+  masked: string;
+};
+
+export type KeyRefused = {
+  outcome: KeyFailure;
+};
+
+export type KeySave = KeySaved | KeyRefused;
+
+// The app answers a saved key masked as `sk-…abcd`, never in full, and no key as null.
+export const readOpenAiKey = async (): Promise<string | undefined> =>
+  (await invoke<string | null>('read_openai_key')) ?? undefined;
+
+export const saveOpenAiKey = (key: string): Promise<KeySave> =>
+  invoke<KeySave>('save_openai_key', { key });
+
+export const removeOpenAiKey = async (): Promise<string | undefined> =>
+  (await invoke<string | null>('remove_openai_key')) ?? undefined;
+
+export const openOpenAiUsage = (): Promise<void> => invoke('open_openai_usage');
+
 const stopWith = (unlisten: Promise<UnlistenFn>): (() => void) => {
   const stopListening = async () => {
     const stop = await unlisten;

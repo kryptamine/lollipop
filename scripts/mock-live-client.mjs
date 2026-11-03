@@ -66,5 +66,11 @@ writeFileSync(benchmarkTable, JSON.stringify(mockTable()));
 
 createServer((req, res) => {
   res.setHeader("content-type", "application/json");
+  // Stands in for OpenAI's key check: a key starting `sk-mock` is good, any other is rejected.
+  if (req.url === "/v1/models/gpt-6-luna") {
+    res.statusCode = req.headers.authorization?.startsWith("Bearer sk-mock") ? 200 : 401;
+    res.end(JSON.stringify({ id: "gpt-6-luna" }));
+    return;
+  }
   res.end(JSON.stringify(leagueClient.get(req.url) ?? liveClientData()));
 }).listen(PORT, "127.0.0.1", () => console.log(`mock live client on http://127.0.0.1:${PORT}/`));
