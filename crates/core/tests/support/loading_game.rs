@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use lollipop_core::advice::{AdviceCall, Advisor, Language};
 use lollipop_core::delivery::TableFile;
-use lollipop_core::live::{poll, League, LiveGame, LiveUpdate};
+use lollipop_core::live::{poll, League, LiveGame, LiveUpdate, ShownAdvice};
 use serde_json::{json, Value};
 use tokio::sync::mpsc;
 
@@ -13,6 +13,8 @@ use super::server::serve;
 pub const KEY: &str = "sk-proj-Fake0123abcd";
 pub const ME: &str = "Me#EUW";
 const NO_TABLE: &str = "/nonexistent/benchmark-table.json";
+
+pub type Updates = mpsc::UnboundedReceiver<Option<LiveGame>>;
 
 #[derive(Clone, Copy)]
 enum Stage {
@@ -83,18 +85,17 @@ impl LoadingGame {
     }
 
     /// Polls with Advice from `openai_url` while `on` says so.
-    pub fn poll(
-        &self,
-        openai_url: &str,
-        lockfile: &Path,
-        on: Arc<Mutex<bool>>,
-    ) -> mpsc::UnboundedReceiver<Option<LiveGame>> {
+    pub fn poll(&self, openai_url: &str, lockfile: &Path, on: Arc<Mutex<bool>>) -> Updates {
         let advisor = Advisor::new(openai_url, move |_| {
             (*on.lock().unwrap()).then(|| AdviceCall {
                 key: KEY.to_string(),
                 language: Language::Russian,
             })
         });
+        self.poll_with(advisor, lockfile)
+    }
+
+    pub fn poll_with(&self, advisor: Advisor, lockfile: &Path) -> Updates {
         let (updates, received) = mpsc::unbounded_channel();
         let (url, lockfile, clock) = (self.url.clone(), lockfile.to_path_buf(), self.clock.clone());
         tokio::spawn(async move {
@@ -201,4 +202,15 @@ pub fn lineup(champion: &str, position: &str) -> Vec<Value> {
         ));
     }
     players
+}
+
+/// The Widget at each of the first `polls` polls of the running game.
+pub async fn shown_over(updates: &mut Updates, polls: usize) -> Vec<Option<ShownAdvice>> {
+    let mut shown = Vec::with_capacity(polls);
+    while shown.len() < polls {
+        if let Some(game) = updates.recv().await.unwrap() {
+            shown.push(game.advice);
+        }
+    }
+    shown
 }

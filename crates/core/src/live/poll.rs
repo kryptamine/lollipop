@@ -64,6 +64,9 @@ pub async fn poll(
             None => None,
         };
         let between_games = data.is_none() && !game.inputs.holds_game();
+        if between_games {
+            advisor.end_game();
+        }
         on_update(LiveUpdate {
             game: update,
             between_games,
@@ -110,6 +113,7 @@ impl CurrentGame<'_> {
         if !data.match_running() {
             if data.game_ended() {
                 self.advice.end_game();
+                self.advisor.end_game();
             }
             self.gold_earned.end_game();
             self.end_held_game();

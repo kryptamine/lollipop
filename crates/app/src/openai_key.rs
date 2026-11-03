@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use lollipop_core::advice::{check_key, masked_key, KeyCheck, OPENAI_URL};
+use lollipop_core::advice::{check_key, masked_key, KeyCheck, KeyFailure, OPENAI_URL};
 
 use crate::key_save::KeySave;
 #[cfg(target_os = "macos")]
@@ -21,6 +21,8 @@ pub(crate) struct OpenAiKey {
     base_url: String,
     keeper: Keeper,
     key: Arc<Mutex<Option<String>>>,
+    /// Why OpenAI refused the key in a game, until another one is saved or it is removed.
+    failure: Arc<Mutex<Option<KeyFailure>>>,
 }
 
 impl OpenAiKey {
@@ -34,6 +36,7 @@ impl OpenAiKey {
             base_url,
             keeper,
             key: Arc::new(Mutex::new(key)),
+            failure: Arc::default(),
         }
     }
 
@@ -67,6 +70,7 @@ impl OpenAiKey {
             Keeper::ThisRun => Some(key.to_string()),
         };
         if kept.as_deref() == Some(key) {
+            *lock(&self.failure) = None;
             KeySave::Saved {
                 masked: masked_key(key),
             }
@@ -77,6 +81,7 @@ impl OpenAiKey {
 
     /// Answers the key still kept, masked: a Keychain that refused the delete keeps it.
     pub(crate) fn remove(&self) -> Option<String> {
+        *lock(&self.failure) = None;
         let mut kept = self.lock();
         *kept = match self.keeper {
             #[cfg(target_os = "macos")]
@@ -89,9 +94,21 @@ impl OpenAiKey {
         kept.as_deref().map(masked_key)
     }
 
-    fn lock(&self) -> MutexGuard<'_, Option<String>> {
-        self.key.lock().unwrap_or_else(PoisonError::into_inner)
+    pub(crate) fn failure(&self) -> Option<KeyFailure> {
+        *lock(&self.failure)
     }
+
+    pub(crate) fn fail(&self, failure: KeyFailure) {
+        *lock(&self.failure) = Some(failure);
+    }
+
+    fn lock(&self) -> MutexGuard<'_, Option<String>> {
+        lock(&self.key)
+    }
+}
+
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 #[cfg(target_os = "macos")]

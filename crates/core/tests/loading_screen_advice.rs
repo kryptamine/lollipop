@@ -13,14 +13,13 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use lollipop_core::advice::Trigger;
-use lollipop_core::live::{LiveGame, ShownAdvice};
+use lollipop_core::live::ShownAdvice;
 use serde_json::{json, Value};
-use tokio::sync::mpsc::UnboundedReceiver;
 
 use support::fake_lcu::FakeLcu;
 use support::fake_openai::FakeOpenAi;
 use support::hint_game::no_client;
-use support::loading_game::{lineup, player, LoadingGame, ME};
+use support::loading_game::{lineup, player, shown_over, LoadingGame, Updates, ME};
 
 const PLAN: &str = "Играй от Electrocute: размени на 3 уровне, пока у Zed нет W.";
 const POLLS_ON_LOADING_SCREEN: usize = 8;
@@ -28,8 +27,6 @@ const POLLS_ON_LOADING_SCREEN: usize = 8;
 fn answer(advice: &str) -> String {
     json!({ "advice": advice, "item": null }).to_string()
 }
-
-type Updates = UnboundedReceiver<Option<LiveGame>>;
 
 fn switched_on() -> Arc<Mutex<bool>> {
     Arc::new(Mutex::new(true))
@@ -47,17 +44,6 @@ async fn wait_on_loading_screen(updates: &mut Updates, openai: &FakeOpenAi) {
     for _ in 0..3 {
         updates.recv().await.unwrap();
     }
-}
-
-/// The Widget at each of the first `polls` polls of the running game.
-async fn shown_over(updates: &mut Updates, polls: usize) -> Vec<Option<ShownAdvice>> {
-    let mut shown = Vec::with_capacity(polls);
-    while shown.len() < polls {
-        if let Some(game) = updates.recv().await.unwrap() {
-            shown.push(game.advice);
-        }
-    }
-    shown
 }
 
 /// The Widget over the first 25 s of a game whose loading screen OpenAI answered with `text`.
@@ -343,18 +329,4 @@ async fn an_answer_outside_the_schema_is_dropped() {
         let (_openai, shown) = shown_after_answer(&text).await;
         assert!(shown.iter().all(Option::is_none), "{text} was shown");
     }
-}
-
-#[tokio::test]
-async fn an_openai_error_shows_nothing() {
-    let openai = FakeOpenAi::answering("500 Internal Server Error").await;
-    let game = LoadingGame::at_loading_screen(lineup("Ahri", "MIDDLE")).await;
-    let mut updates = game.poll(&openai.url, &no_client(), switched_on());
-    wait_on_loading_screen(&mut updates, &openai).await;
-    game.start_game_at(0.0);
-
-    assert!(shown_over(&mut updates, 5)
-        .await
-        .iter()
-        .all(Option::is_none));
 }

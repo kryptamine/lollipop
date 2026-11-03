@@ -89,7 +89,12 @@ export const setAdviceLanguage = (language: AdviceLanguage): Promise<Switches> =
 export const setLaunchAtLogin = (isOn: boolean): Promise<Switches> =>
   invoke<Switches>('set_launch_at_login', { isOn });
 
-export type KeyFailure = 'rejected' | 'unreachable' | 'notKept';
+type SaveFailure = 'rejected' | 'unreachable' | 'notKept';
+
+// Why OpenAI refused the saved key in a game; Advice stays off until a key is saved.
+export type GameKeyFailure = 'rejected' | 'noQuota';
+
+export type KeyFailure = SaveFailure | GameKeyFailure;
 
 export type KeySaved = {
   outcome: 'saved';
@@ -97,7 +102,7 @@ export type KeySaved = {
 };
 
 export type KeyRefused = {
-  outcome: KeyFailure;
+  outcome: SaveFailure;
 };
 
 export type KeySave = KeySaved | KeyRefused;
@@ -105,6 +110,9 @@ export type KeySave = KeySaved | KeyRefused;
 // The app answers a saved key masked as `sk-…abcd`, never in full, and no key as null.
 export const readOpenAiKey = async (): Promise<string | undefined> =>
   (await invoke<string | null>('read_openai_key')) ?? undefined;
+
+export const readOpenAiKeyFailure = async (): Promise<GameKeyFailure | undefined> =>
+  (await invoke<GameKeyFailure | null>('read_openai_key_failure')) ?? undefined;
 
 export const saveOpenAiKey = (key: string): Promise<KeySave> =>
   invoke<KeySave>('save_openai_key', { key });
@@ -166,6 +174,13 @@ export const onAdvice = (handler: (advice: ShownAdvice | undefined) => void): ((
   stopWith(
     listen<ShownAdvice | null>('advice', ({ payload }) => {
       handler(payload ?? undefined);
+    }),
+  );
+
+export const onOpenAiKeyFailure = (handler: (failure: GameKeyFailure) => void): (() => void) =>
+  stopWith(
+    listen<GameKeyFailure>('openai-key-failure', ({ payload }) => {
+      handler(payload);
     }),
   );
 
