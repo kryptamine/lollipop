@@ -5,7 +5,9 @@ mod menu_bar;
 mod overlay;
 #[cfg(target_os = "macos")]
 mod platform;
+mod settings_commands;
 mod settings_store;
+mod settings_window;
 mod table_downloads;
 mod updates;
 
@@ -101,6 +103,11 @@ fn main() {
             None,
         ))
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![
+            settings_commands::read_switches,
+            settings_commands::set_widget,
+            settings_commands::set_launch_at_login,
+        ])
         .setup(|app| {
             let window = overlay_window(app.handle());
             let game_bundle_id = dev_setting("LOLLIPOP_GAME_BUNDLE", GAME_BUNDLE_ID);
@@ -119,7 +126,8 @@ fn main() {
             // A login item removed outside the app comes back: the settings file decides.
             let launch_on_login = store.read(|settings| settings.launch_at_login);
             let _ = launch_at_login::apply(app.handle(), launch_on_login);
-            let status = menu_bar::install(app.handle(), store.clone())?;
+            app.manage(store.clone());
+            let status = menu_bar::install(app.handle())?;
             // A debug build would replace itself with the latest release.
             if !cfg!(debug_assertions) {
                 app.manage(Updates::new(app.handle().clone()));

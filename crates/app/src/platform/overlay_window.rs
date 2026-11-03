@@ -7,6 +7,7 @@ extern "C" {
 
 /// League's Fullscreen windows sit at the shield level, so the overlay goes one above it.
 /// Ordered in once and never made key: from here on only alpha changes, see ADR 0006.
+/// Closing the settings window hides the app, which must leave this window in place.
 pub(crate) fn order_in_hidden(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     let ns_window = window.ns_window()?.cast::<AnyObject>();
     // SAFETY: `ns_window` is the live NSWindow Tauri owns, and setup runs on the main thread.
@@ -14,6 +15,7 @@ pub(crate) fn order_in_hidden(window: &tauri::WebviewWindow) -> tauri::Result<()
         #[allow(clippy::as_conversions, reason = "i32 always fits in isize on macOS")]
         let level = CGShieldingWindowLevel() as isize + 1;
         let _: () = msg_send![ns_window, setLevel: level];
+        let _: () = msg_send![ns_window, setCanHide: false];
         let _: () = msg_send![ns_window, setAlphaValue: 0.0_f64];
         let _: () = msg_send![ns_window, orderFrontRegardless];
     }
