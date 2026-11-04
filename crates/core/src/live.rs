@@ -25,6 +25,7 @@ mod game_markers;
 mod game_notices;
 mod gold_earned;
 mod health_trail;
+mod held_loading_screen;
 mod held_marker;
 mod inputs_of_game;
 mod kill_score;

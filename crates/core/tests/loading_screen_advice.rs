@@ -23,6 +23,9 @@ use support::loading_game::{lineup, player, shown_over, LoadingGame, Updates, ME
 
 const PLAN: &str = "Играй от Electrocute: размени на 3 уровне, пока у Zed нет W.";
 const POLLS_ON_LOADING_SCREEN: usize = 8;
+// The failed polls in a row after which a loading screen is left without a game,
+// as `held_loading_screen.rs` sets it.
+const FAILED_POLLS_TO_LEAVE: usize = 10;
 
 fn answer(advice: &str) -> String {
     json!({ "advice": advice, "next_item": null, "reason": null, "swap": null, "elixir": null })
@@ -228,13 +231,56 @@ async fn a_loading_screen_closed_without_a_game_lets_the_next_one_ask() {
     let mut updates = game.poll(&openai.url, &no_client(), switched_on());
     wait_on_loading_screen(&mut updates, &openai).await;
     game.close();
-    for _ in 0..3 {
-        assert!(updates.recv().await.unwrap().is_none());
-    }
+    silent_for(&mut updates, FAILED_POLLS_TO_LEAVE).await;
     game.back_to_loading_screen();
     wait_on_loading_screen(&mut updates, &openai).await;
 
     assert_eq!(openai.requests().len(), 2);
+}
+
+/// Polls while League answers nothing, as when a poll times out.
+async fn silent_for(updates: &mut Updates, polls: usize) {
+    for _ in 0..polls {
+        assert!(updates.recv().await.unwrap().is_none());
+    }
+}
+
+// The plan still shows when a poll times out as the game takes over from its
+// loading screen.
+#[tokio::test]
+async fn the_plan_outlasts_a_few_failed_polls_before_the_game() {
+    let openai = FakeOpenAi::advising(&answer(PLAN)).await;
+    let game = LoadingGame::at_loading_screen(lineup("Ahri", "MIDDLE")).await;
+    let mut updates = game.poll(&openai.url, &no_client(), switched_on());
+    wait_on_loading_screen(&mut updates, &openai).await;
+    game.close();
+    silent_for(&mut updates, 3).await;
+    game.start_game_at(0.0);
+    let shown = shown_over(&mut updates, 1).await;
+
+    assert_eq!(shown[0].as_ref().unwrap().text, PLAN);
+    assert_eq!(openai.requests().len(), 1);
+}
+
+// A failed poll on the loading screen neither aborts the call in flight nor asks again.
+#[tokio::test]
+async fn a_failed_poll_keeps_the_question_in_flight() {
+    let openai = FakeOpenAi::advising_when_released(&answer(PLAN)).await;
+    let game = LoadingGame::at_loading_screen(lineup("Ahri", "MIDDLE")).await;
+    let mut updates = game.poll(&openai.url, &no_client(), switched_on());
+    while openai.requests().is_empty() {
+        updates.recv().await.unwrap();
+    }
+    game.close();
+    silent_for(&mut updates, FAILED_POLLS_TO_LEAVE - 1).await;
+    game.back_to_loading_screen();
+    openai.release();
+    wait_on_loading_screen(&mut updates, &openai).await;
+    game.start_game_at(0.0);
+    let shown = shown_over(&mut updates, 1).await;
+
+    assert_eq!(shown[0].as_ref().unwrap().text, PLAN);
+    assert_eq!(openai.requests().len(), 1);
 }
 
 // The first answer of a loading screen can come before the player is listed.
