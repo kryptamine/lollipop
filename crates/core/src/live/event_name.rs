@@ -8,6 +8,8 @@ pub(super) enum EventName {
     ChampionKill,
     DragonKill,
     HeraldKill,
+    /// Voidgrubs.
+    HordeKill,
     BaronKill,
     TurretKilled,
     InhibKilled,

@@ -80,6 +80,7 @@ async fn publish_live_client(
             let _ = app.emit("notices", game.shown_notices());
             let _ = app.emit("timing-hints", &game.hints);
             let _ = app.emit("advice", &game.advice);
+            let _ = app.emit("enemy-tracker", &game.tracker);
             let _ = app.emit("snapshot", &game.snapshot);
         }
         let _ = app.emit("build", &build);

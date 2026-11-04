@@ -3,6 +3,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::clock::Clock;
+use super::enemy_tracker::EnemyTracker;
+use super::enemy_watch::EnemyWatch;
 use super::game_advice::GameAdvice;
 use super::game_build::GameBuild;
 use super::game_facts::GameFacts;
@@ -57,6 +59,7 @@ pub async fn poll(
         loading_screen: HeldLoadingScreen::default(),
         markers: GameMarkers::default(),
         hints: GameHints::default(),
+        enemies: EnemyWatch::default(),
         advice: GameAdvice::new(&http, league.lockfile, advisor),
         build: GameBuild::new(&http, league.lockfile, benchmark_table),
         notices: Arc::from([]),
@@ -102,6 +105,7 @@ struct CurrentGame<'a> {
     loading_screen: HeldLoadingScreen,
     markers: GameMarkers,
     hints: GameHints,
+    enemies: EnemyWatch,
     advice: GameAdvice,
     build: GameBuild<'a>,
     notices: Arc<[Notice]>,
@@ -144,6 +148,7 @@ impl CurrentGame<'_> {
         }
         let player = data.active_player()?;
         let inputs = self.inputs_at(data, player).await;
+        self.enemies.observe(data, player);
         let snapshot = Snapshot {
             cs: player.scores.creep_score,
             level: player.level,
@@ -161,6 +166,7 @@ impl CurrentGame<'_> {
             spawns: self.hints.spawns(data),
         };
         self.advice.at(data, &facts, self.build.build_mut()).await;
+        let tracker = EnemyTracker::at(&self.enemies, data, player, &facts.spawns);
         Some(LiveGame {
             snapshot,
             inputs,
@@ -174,6 +180,7 @@ impl CurrentGame<'_> {
                     .as_ref(),
             ),
             advice: self.advice.shown(data.game_time(), data.game_start()),
+            tracker,
             notices: Arc::clone(&self.notices),
             game_time: data.game_time(),
         })
@@ -200,6 +207,7 @@ impl CurrentGame<'_> {
             .at_game_start(table.as_mut(), &inputs, data, player);
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);
+        self.enemies = EnemyWatch::default();
         self.inputs.hold(game_time, inputs)
     }
 }

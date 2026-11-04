@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::enemy_tracker::EnemyTracker;
 use super::markers::Markers;
 use super::notice::Notice;
 use super::shown_advice::ShownAdvice;
@@ -19,6 +20,7 @@ pub struct LiveGame {
     pub benchmarks: ShownBenchmarks,
     pub hints: Vec<TimingHint>,
     pub advice: Option<ShownAdvice>,
+    pub tracker: EnemyTracker,
     pub(super) notices: Arc<[Notice]>,
     pub(super) game_time: f64,
 }
