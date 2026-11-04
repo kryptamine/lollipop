@@ -13,11 +13,6 @@ pub(crate) enum Asked {
 }
 
 impl Asked {
-    /// The text the Widget shows, `None` for a null or blank `advice`.
-    pub(crate) fn into_text(self) -> Option<String> {
-        self.into_parts().text
-    }
-
     /// The text, and the Next item, the Swap and the Elixir the model proposes. A
     /// proposal with no reason to show is dropped.
     pub(crate) fn into_parts(self) -> AnswerParts {

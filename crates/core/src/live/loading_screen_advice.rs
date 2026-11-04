@@ -1,17 +1,16 @@
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
 
+use super::advice_ask::AdviceAsk;
 use super::advice_slot::AdviceSlot;
-use super::arrival::Arrival;
 use super::build::Build;
 use super::lane_opponent::lane_of;
 use super::loading_screen_prompt::{game_lines, input, INSTRUCTIONS};
 use super::payload::AllGameData;
-use super::pending_answer::PendingAnswer;
-use crate::advice::{Advisor, AnswerParts, Question, Trigger};
+use super::until::Until;
+use crate::advice::{Advisor, Trigger};
 use crate::game_inputs::loading_tier;
 
-// `gameTime` after which a late answer is dropped rather than shown.
+// `gameTime` from which a late answer is dropped rather than shown.
 const DROP_AFTER: f64 = 90.0;
 
 /// The lane plan asked for once per game on the loading screen, which may change the
@@ -22,28 +21,27 @@ pub(super) struct LoadingScreenAdvice {
     lockfile: PathBuf,
     /// Since the last poll of a running game, so the next loading screen asks again.
     asked: bool,
-    asking: PendingAnswer<AnswerParts>,
+    ask: AdviceAsk,
 }
 
 impl LoadingScreenAdvice {
-    pub(super) fn new(http: &reqwest::Client, lockfile: &Path) -> Self {
+    pub(super) fn new(http: &reqwest::Client, lockfile: &Path, advisor: &Advisor) -> Self {
         Self {
             http: http.clone(),
             lockfile: lockfile.to_path_buf(),
             asked: false,
-            asking: PendingAnswer::default(),
+            ask: AdviceAsk::new(Trigger::LoadingScreen, INSTRUCTIONS, advisor),
         }
     }
 
     pub(super) async fn at_loading_screen(
         &mut self,
         data: &AllGameData,
-        advisor: &Advisor,
         slot: &mut AdviceSlot,
         build: &mut Build,
     ) {
         if self.asked {
-            self.collect(data, None, slot, build).await;
+            self.ask.collect(data, None, slot, build).await;
             return;
         }
         // The first answer of a loading screen can come before the player is listed.
@@ -53,29 +51,18 @@ impl LoadingScreenAdvice {
         self.end_game();
         slot.clear();
         self.asked = true;
-        let Some(call) = advisor.call_for(Trigger::LoadingScreen) else {
-            return;
-        };
         let Some(lane) = lane_of(data, player) else {
             return;
         };
-        build.track_lead(player);
-        let game = game_lines(data, player, &lane, build, call.language);
-        // `gameTime` starts only after the loading screen, so the deadline is further off.
-        let deadline = Instant::now() + Duration::from_secs_f64(DROP_AFTER);
-        let advisor = advisor.clone();
         let http = self.http.clone();
         let lockfile = self.lockfile.clone();
-        self.asking = PendingAnswer::spawn(async move {
-            let tier = loading_tier(&http, &lockfile).await;
-            let input = input(call.language, tier, &game);
-            let question = Question {
-                trigger: Trigger::LoadingScreen,
-                instructions: INSTRUCTIONS,
-                input: &input,
-                deadline,
-            };
-            advisor.ask(&call, &question).await.into_parts()
+        let until = Until::GameTime(DROP_AFTER);
+        self.ask.ask(data, build, until, |language, build| {
+            let game = game_lines(data, player, &lane, build, language);
+            async move {
+                let tier = loading_tier(&http, &lockfile).await;
+                input(language, tier, &game)
+            }
         });
     }
 
@@ -86,38 +73,12 @@ impl LoadingScreenAdvice {
         build: &mut Build,
     ) {
         self.asked = false;
-        self.collect(data, Some(data.game_time()), slot, build)
+        self.ask
+            .collect(data, Some(data.game_time()), slot, build)
             .await;
     }
 
     pub(super) fn end_game(&mut self) {
-        self.asking = PendingAnswer::default();
-    }
-
-    /// Offers a finished answer. `game_time` is `None` on the loading screen.
-    async fn collect(
-        &mut self,
-        data: &AllGameData,
-        game_time: Option<f64>,
-        slot: &mut AdviceSlot,
-        build: &mut Build,
-    ) {
-        // The inventory is never full on the loading screen, so no Swap is asked.
-        let Some(AnswerParts { text, change, .. }) = self.asking.finished().await else {
-            return;
-        };
-        if game_time.is_some_and(|at| at >= DROP_AFTER) {
-            return;
-        }
-        if let (Some(change), Some(player)) = (change, data.active_player()) {
-            build.change(change, player, game_time);
-        }
-        if let Some(text) = text {
-            let arrival = Arrival {
-                trigger: Trigger::LoadingScreen,
-                text,
-            };
-            slot.offer(arrival, game_time);
-        }
+        self.ask.end();
     }
 }
