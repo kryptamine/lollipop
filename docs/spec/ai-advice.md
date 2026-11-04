@@ -79,18 +79,20 @@ Settled in [#88](https://github.com/kryptamine/lollipop/issues/88), measured in
 
 - **Model:** `gpt-6-luna`, fixed in code. OpenAI only.
 - **Request:** `POST /v1/responses` from `core`, plain `reqwest` with private serde
-  structs, `store: false`, `reasoning.effort: "none"`, `max_output_tokens: 120`,
+  structs, `store: false`, `reasoning.effort: "none"`, `max_output_tokens: 240`,
   and a strict `json_schema` that is the same on every call: a nullable `advice`
-  string. The base URL is configurable for the fake.
+  string, `next_item` integer and `reason` string, all required. Only the Loading
+  screen and Death prompts list Item candidates, so other Triggers answer the last
+  two null. The base URL is configurable for the fake.
 - **Prompt:** never Riot IDs or summoner names, never enemy ranks.
 - **Silence:** every Trigger may answer a null `advice`. The instructions ground an
   idea in the game's input, rule out tips that fit any game, and ask for null when
   no idea would change what the player does next.
 - **Measured:** about 1,950 input tokens, median 1.4 s, worst 3.7 s (first calls).
   Prompt caching applies by itself. About $0.005 per game.
-- **Answer checks:** JSON outside the schema or `advice` over 120 characters drops
-  the **whole** Advice, with no retry and no truncation. A null `advice` shows
-  nothing.
+- **Answer checks:** JSON outside the schema, or `advice` or `reason` over 120
+  characters, drops the **whole** Advice, with no retry and no truncation. A null
+  `advice` shows nothing.
 - **Per game:** at most 100 OpenAI requests, retries included. Past that, Advice is
   dropped silently for the rest of the game, with one log line. Not a setting.
 - **No spend cap or counter:** spend limits live in the player's OpenAI project.
@@ -247,6 +249,31 @@ OpenAI key, and its own switch in the Overlay tab turns it off.
 - **None** with a missing or Stale table, or no list for the champion and role
   ([ADR 0004](../adr/0004-no-marker-beats-a-wrong-marker.md)).
 
+### Build change
+
+Settled in [#170](https://github.com/kryptamine/lollipop/issues/170). Needs an OpenAI
+key: without one the Build stays as code built it.
+
+- **Asked** in the Loading screen and Death calls, no extra request: the answer's
+  `next_item` and `reason` sit beside `advice`, which names no item.
+- **Prompt:** the Build left to buy by name, the Next item and whether it is started,
+  and the Item candidates that may replace it, with id, name, `share` and `minute`.
+  Every enemy carries its `damage_profile.magic_share`; Death adds every death of the
+  player this game, with the killer, assisters and their magic shares. Live Client
+  Data gives no damage numbers.
+- **Open to change:** only the Next item, while it is not started: no item of its
+  `builds_from` bought since it took the lead, the poll that made it lead included.
+  Its replacement is an Item candidate of its kind, boots for boots, neither held nor
+  dropped.
+- **Applied:** the Next item drops for good. A replacement from later in the Build
+  moves up, and the next candidate of the dropped item's kind by `share` fills the
+  tail. Anything else, or a `next_item` with no `reason`, is dropped with its reason
+  (ADR 0004); the Advice still shows.
+- **Shown:** the reason under the Build Widget for 10 s, from `GameStart` when it came
+  on the loading screen, and read by Voiceover after its Advice, in one go, while the
+  Build Widget is on. The player's own purchase changes the Build with no reason
+  shown.
+
 ## Item candidates
 
 Settled in [#126](https://github.com/kryptamine/lollipop/issues/126). Research:
@@ -282,7 +309,7 @@ them; the [Build Widget](#build-widget) reads them.
   optional `owned_as` ids. A completed item whose `into` holds only transforms (items
   of map 11 no shop sells) stays completed.
 - **Components:** a candidate carries optional `builds_from`, every id down its
-  Data Dragon `from` tree. The app reads none of it now.
+  Data Dragon `from` tree. A Build change reads it to tell a started Next item.
 - **Boots:** `boots` lists every Data Dragon item of map 11 whose `from` tree holds
   an item with the `Boots` tag, candidate or not, since a player holds one pair.
   The tree catches Gunmetal Greaves, which has no tag.
@@ -291,7 +318,7 @@ them; the [Build Widget](#build-widget) reads them.
   `completed` gives no Build.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
-  translation repeats the English one. The app reads none of it now.
+  translation repeats the English one. Build change prompts name items by it.
   `data_dragon_version` is that version, which icon URLs take.
 
 ## Voiceover

@@ -113,11 +113,26 @@ body {
   position: fixed;
   right: 24px;
   bottom: 430px;
-  display: flex;
-  gap: 6px;
   padding: 6px;
   border-radius: 10px;
   background: rgba(10, 14, 20, 0.78);
+}
+
+.build-items {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* As wide as six icons, so a reason wraps rather than widening the Widget. */
+.build-change {
+  max-width: 222px;
+  margin: 6px 0 0;
+  color: #e8edf2;
+  font:
+    500 12px/1.35 -apple-system,
+    'Segoe UI',
+    sans-serif;
 }
 
 .build-item {

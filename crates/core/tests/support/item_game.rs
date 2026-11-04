@@ -172,6 +172,21 @@ impl ItemGame {
         received
     }
 
+    /// Polls with every Trigger on and Advice in Russian, and gives every update whole.
+    pub fn poll_updates(&self, openai_url: &str) -> mpsc::UnboundedReceiver<LiveUpdate> {
+        let advisor = Advisor::new(openai_url, |_| {
+            Some(AdviceCall {
+                key: KEY.to_string(),
+                language: Language::Russian,
+            })
+        });
+        let (updates, received) = mpsc::unbounded_channel();
+        self.spawn_poll(advisor, move |update| {
+            let _ = updates.send(update);
+        });
+        received
+    }
+
     /// Polls with no OpenAI key, and gives the Build of every poll.
     pub fn poll_builds(&self) -> mpsc::UnboundedReceiver<Vec<BuildItem>> {
         // Nothing listens there: with no key, no Advice is ever asked.
@@ -238,12 +253,15 @@ fn body(state: &State) -> String {
 
 /// A schema 2 table with no Cells and Ahri's Item candidates for the middle lane, with
 /// `magic_share` per enemy champion. Against a magic-heavy team, Steelcaps, Morello and
-/// the Rod lose on share or as no completed item.
+/// the Rod lose on share or as no completed item. Only Banshee's lists its components.
 pub fn item_table(magic_share: &Value) -> Value {
     let candidate = |item: u32, share: f64, minute: f64| json!({ "item": item, "share": share, "minute": minute });
     let zhonyas = candidate(3157, 0.6, 20.0);
     let mut archangels = candidate(3003, 0.4, 22.0);
     archangels["owned_as"] = json!([3040]);
+    let mut banshees = candidate(3102, 0.45, 14.0);
+    banshees["builds_from"] = json!([3108, 1052, 1026]);
+    let name = |en: &str, ru: &str| json!({ "en": en, "ru": ru });
     json!({
         "schema_version": 2,
         "patch_window": ["16.20", "16.21"],
@@ -263,7 +281,7 @@ pub fn item_table(magic_share: &Value) -> Value {
                 candidate(3047, 0.3, 9.0),
                 candidate(3020, 0.8, 10.0),
                 zhonyas,
-                candidate(3102, 0.45, 14.0),
+                banshees,
                 archangels,
                 candidate(3089, 0.3, 25.0),
                 candidate(3135, 0.25, 28.0),
@@ -271,6 +289,11 @@ pub fn item_table(magic_share: &Value) -> Value {
             ],
         }],
         "data_dragon_version": DATA_DRAGON_VERSION,
+        "item_names": {
+            "3020": name("Sorcerer's Shoes", "Сапоги чародея"),
+            "3047": name("Plated Steelcaps", "Бронированные сапоги"),
+            "3102": name("Banshee's Veil", "Покров банши"),
+        },
         "boots": [3006, 3020, 3047, 3111],
         "completed": [3003, 3089, 3102, 3135, 3157, 3165],
     })

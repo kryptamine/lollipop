@@ -6,6 +6,7 @@ mod cell_benchmarks;
 mod champion_key;
 mod damage_profile;
 mod item_candidate;
+mod item_name;
 mod item_table;
 mod minute_entry;
 mod scores_at;

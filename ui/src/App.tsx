@@ -8,6 +8,7 @@ import {
   onAdvice,
   onBenchmarks,
   onBuild,
+  onBuildChange,
   onMarkers,
   onNotices,
   onSnapshot,
@@ -31,6 +32,7 @@ export const App = () => {
   const [hints, setHints] = useState<TimingHintState[]>([]);
   const [advice, setAdvice] = useState<ShownAdvice>();
   const [build, setBuild] = useState<BuildItem[]>([]);
+  const [buildChange, setBuildChange] = useState<string>();
   const [switches, setSwitches] = useState<WidgetSwitches>();
 
   useEffect(() => onSnapshot(setSnapshot), []);
@@ -40,6 +42,7 @@ export const App = () => {
   useEffect(() => onTimingHints(setHints), []);
   useEffect(() => onAdvice(setAdvice), []);
   useEffect(() => onBuild(setBuild), []);
+  useEffect(() => onBuildChange(setBuildChange), []);
   useEffect(() => onWidgetSwitches(setSwitches), []);
 
   // No Widget draws until its switch is known.
@@ -58,7 +61,7 @@ export const App = () => {
         />
       )}
       {switches.timingHints && <TimingHintBanner hints={hints} />}
-      {switches.buildWidget && <BuildWidget build={build} />}
+      {switches.buildWidget && <BuildWidget build={build} change={buildChange} />}
       {switches.adviceWidget && <AdviceWidget advice={advice} />}
     </>
   );

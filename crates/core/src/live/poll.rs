@@ -79,9 +79,11 @@ pub async fn poll(
             // A loading screen left without a game must not carry its Build into the next.
             game.forget_build();
         }
+        let (build, build_change) = game.build_at(data.as_ref());
         on_update(LiveUpdate {
             game: update,
-            build: game.build_at(data.as_ref()),
+            build,
+            build_change,
             between_games,
         });
         // A failed poll does not end a game, so a game still held rules out a swap too.
@@ -144,19 +146,26 @@ impl CurrentGame<'_> {
         self.build_carried = false;
     }
 
-    fn build_at(&mut self, data: Option<&AllGameData>) -> Vec<BuildItem> {
+    /// The Build, and the reason of a Build change while it shows in a running match.
+    fn build_at(&mut self, data: Option<&AllGameData>) -> (Vec<BuildItem>, Option<String>) {
         let running = data.filter(|data| data.at_loading_screen() || data.match_running());
-        match running.and_then(AllGameData::active_player) {
-            Some(player) => self.build.at(player),
-            None => Vec::new(),
-        }
+        let (Some(data), Some(player)) = (running, running.and_then(AllGameData::active_player))
+        else {
+            return (Vec::new(), None);
+        };
+        let change = if data.match_running() {
+            self.build.change_at(data.game_time(), data.game_start())
+        } else {
+            None
+        };
+        (self.build.at(player), change)
     }
 
     async fn update(&mut self, data: &AllGameData) -> Option<LiveGame> {
         if data.at_loading_screen() {
             self.build_at_loading_screen(data).await;
             self.loading_screen
-                .at_loading_screen(data, self.advisor, &mut self.slot)
+                .at_loading_screen(data, self.advisor, &mut self.slot, &mut self.build)
                 .await;
         }
         if !data.match_running() {
@@ -185,12 +194,14 @@ impl CurrentGame<'_> {
             scores: player.scores.player_scores(),
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
-        self.loading_screen.at(data, &mut self.slot).await;
+        self.loading_screen
+            .at(data, &mut self.slot, &mut self.build)
+            .await;
         self.turning_point
             .at(data, player, self.advisor, &mut self.slot)
             .await;
         self.death
-            .at(data, player, self.advisor, &mut self.slot)
+            .at(data, self.advisor, &mut self.slot, &mut self.build)
             .await;
         Some(LiveGame {
             snapshot,

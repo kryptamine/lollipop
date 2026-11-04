@@ -200,6 +200,14 @@ export const onBuild = (handler: (build: BuildItem[]) => void): (() => void) =>
     }),
   );
 
+// The app sends null while no Build change is showing.
+export const onBuildChange = (handler: (reason: string | undefined) => void): (() => void) =>
+  stopWith(
+    listen<string | null>('build-change', ({ payload }) => {
+      handler(payload ?? undefined);
+    }),
+  );
+
 export const onOpenAiKeyFailure = (handler: (failure: GameKeyFailure) => void): (() => void) =>
   stopWith(
     listen<GameKeyFailure>('openai-key-failure', ({ payload }) => {

@@ -66,6 +66,7 @@ async fn publish_live_client(
         let LiveUpdate {
             game,
             build,
+            build_change,
             between_games,
         } = update;
         let running = game.is_some();
@@ -84,7 +85,11 @@ async fn publish_live_client(
             let _ = app.emit("snapshot", &game.snapshot);
         }
         let _ = app.emit("build", &build);
-        voiceover.show_advice(game.as_ref().and_then(|game| game.advice.clone()));
+        let _ = app.emit("build-change", &build_change);
+        voiceover.show(
+            game.as_ref().and_then(|game| game.advice.clone()),
+            build_change,
+        );
         overlay.set_match_running(running);
         if let Some(updates) = app.try_state::<Updates>() {
             updates.set_between_games(between_games);
