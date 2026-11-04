@@ -1,7 +1,7 @@
-use std::ffi::{c_char, CStr};
-
 use block2::RcBlock;
+use objc2::rc::Retained;
 use objc2::{class, msg_send, runtime::AnyObject};
+use objc2_foundation::NSString;
 
 #[link(name = "AppKit", kind = "framework")]
 extern "C" {
@@ -43,10 +43,6 @@ unsafe fn bundle_id(app: *mut AnyObject) -> Option<String> {
     if app.is_null() {
         return None;
     }
-    let id: *mut AnyObject = msg_send![app, bundleIdentifier];
-    if id.is_null() {
-        return None;
-    }
-    let text: *const c_char = msg_send![id, UTF8String];
-    Some(CStr::from_ptr(text).to_string_lossy().into_owned())
+    let id: Option<Retained<NSString>> = msg_send![app, bundleIdentifier];
+    id.map(|id| id.to_string())
 }

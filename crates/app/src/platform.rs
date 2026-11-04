@@ -1,7 +1,7 @@
 //! OS-specific calls, and the only module allowed `unsafe`.
 #![allow(
     unsafe_code,
-    reason = "window levels, workspace notifications, the system locale and speech are only reachable through raw Apple framework calls"
+    reason = "window levels, workspace notifications and speech are only reachable through raw Apple framework calls"
 )]
 
 mod best_voice;
