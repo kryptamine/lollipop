@@ -1,9 +1,14 @@
 //! The prompt lines the death and Turning point Triggers share. Never a Riot ID or a
 //! summoner name.
 
+use super::game_facts::GameFacts;
 use super::payload::{Item, Player};
 
-/// Champion, position, level, KDA and items.
+// Objectives that stay up until taken. Void Grubs and the Herald leave on their own, at
+// times the schedule does not hold, so only their spawn to come is told.
+const STAY_UP: [&str; 3] = ["Drake", "Elder", "Baron"];
+
+/// Champion, position, level, KDA, CS and items.
 pub(super) fn describe(player: &Player) -> String {
     let mut parts = vec![champion(player).to_string()];
     parts.extend(player.position.clone());
@@ -14,6 +19,7 @@ pub(super) fn describe(player: &Player) -> String {
     {
         parts.push(format!("KDA {kills}/{deaths}/{assists}"));
     }
+    parts.push(format!("CS {}", scores.creep_score));
     let items: Vec<String> = player.items.iter().map(Item::shown_name).collect();
     if items.is_empty() {
         parts.push("no items".to_string());
@@ -21,6 +27,55 @@ pub(super) fn describe(player: &Player) -> String {
         parts.push(format!("items {}", items.join(", ")));
     }
     parts.join(", ")
+}
+
+/// The player against games of their Cell at this minute, `None` with no Benchmark.
+pub(super) fn standing(facts: &GameFacts<'_>) -> Option<String> {
+    let (snapshot, benchmarks) = (facts.snapshot, facts.benchmarks);
+    let mut parts = Vec::new();
+    if let Some(cs) = benchmarks.cs {
+        parts.push(format!("CS {} against {cs:.0}", snapshot.cs));
+    }
+    if let Some((gold, benchmark)) = snapshot.gold_earned.zip(benchmarks.gold) {
+        parts.push(format!("gold earned {gold} against {benchmark:.0}"));
+    }
+    if let Some(level) = benchmarks.level {
+        parts.push(format!("level {} against {level:.1}", snapshot.level));
+    }
+    if let Some((own, usual)) = snapshot.scores.zip(benchmarks.scores) {
+        parts.push(format!(
+            "KDA {}/{}/{} against {:.1}/{:.1}/{:.1}",
+            own.kills, own.deaths, own.assists, usual.kills, usual.deaths, usual.assists
+        ));
+    }
+    (!parts.is_empty()).then(|| {
+        format!(
+            "Player against games of the same champion, role and tier at this minute: {}",
+            parts.join(", ")
+        )
+    })
+}
+
+/// Each objective's next spawn, or that it is up, `None` with no Objective schedule.
+pub(super) fn objectives(facts: &GameFacts<'_>, game_time: f64) -> Option<String> {
+    let parts: Vec<String> = facts
+        .spawns
+        .iter()
+        .filter_map(|spawn| {
+            if spawn.at > game_time {
+                Some(format!(
+                    "{} in {}",
+                    spawn.objective,
+                    clock(spawn.at - game_time)
+                ))
+            } else {
+                STAY_UP
+                    .contains(&spawn.objective)
+                    .then(|| format!("{} up now", spawn.objective))
+            }
+        })
+        .collect();
+    (!parts.is_empty()).then(|| format!("Objectives: {}", parts.join(", ")))
 }
 
 pub(super) fn champion(player: &Player) -> &str {

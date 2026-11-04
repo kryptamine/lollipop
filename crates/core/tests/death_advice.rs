@@ -15,6 +15,7 @@ use lollipop_core::advice::Trigger;
 use lollipop_core::live::ShownAdvice;
 use serde_json::{json, Value};
 
+use support::benchmark_file::{cell, flat_minutes, with_scores, ENOUGH_GAMES};
 use support::fake_openai::{FakeOpenAi, Reply};
 use support::item_game::{item_table, magic_heavy, settle, ItemGame, SETTLING_POLLS};
 use support::loading_game::{Updates, ME};
@@ -128,16 +129,87 @@ async fn the_prompt_describes_the_death_without_names() {
 
     assert!(input.contains("Language: Russian\n"));
     assert!(input.contains("Game time: 5:00\n"));
-    assert!(input
-        .contains("Player: Ahri, MIDDLE, level 1, KDA 1/2/3, items Кольцо Дорана, gold 1250\n"));
-    assert!(input
-        .contains("Killer: Zed, MIDDLE, level 1, KDA 5/1/0, items Затмение, magic damage 10%\n"));
+    assert!(input.contains(
+        "Player: Ahri, MIDDLE, level 1, KDA 1/2/3, CS 0, items Кольцо Дорана, gold 1250\n"
+    ));
+    assert!(input.contains(
+        "Killer: Zed, MIDDLE, level 1, KDA 5/1/0, CS 0, items Затмение, magic damage 10%\n"
+    ));
+    assert!(input.contains("Respawn in: 30 s\n"));
     assert!(input.contains("Assister: LeeSin, JUNGLE"));
     assert!(input.contains("Deaths to this killer this game: 1\n"));
     assert_eq!(input.matches("Enemy: ").count(), 5);
     for name in ["#EUW", "Foe", "Friend", "Me,"] {
         assert!(!input.contains(name), "{name} is in the prompt");
     }
+}
+
+// No death recap exists, so health over the last seconds is what tells a burst from a
+// long fight, and the defences what the player lacked against it.
+#[tokio::test]
+async fn the_prompt_carries_the_health_before_death_and_the_defences() {
+    let openai = FakeOpenAi::advising(&answer(TIP)).await;
+    let (game, mut updates) = game_at_five_minutes(&item_table(&magic_heavy()), &openai).await;
+    game.set_stats(1000.0, 1000.0, 40.0, 32.0);
+    settle(&mut updates, &openai).await;
+    game.set_time(301.0);
+    game.set_stats(300.0, 1000.0, 40.0, 32.0);
+    settle(&mut updates, &openai).await;
+    game.set_stats(0.0, 1000.0, 40.0, 32.0);
+    game.die_to(KILLER, &[], RESPAWN);
+    settle(&mut updates, &openai).await;
+
+    let input = openai.bodies()[0]["input"].as_str().unwrap().to_string();
+    assert!(input.contains("Player defences: max health 1000, armor 40, magic resist 32\n"));
+    assert!(input.contains("Player health before death: 100% at 5:00, 30% at 5:01\n"));
+}
+
+// The health of a life before the last death would read as a slow fight in this one.
+#[tokio::test]
+async fn health_before_an_earlier_death_is_left_out() {
+    let openai = FakeOpenAi::advising(&answer(TIP)).await;
+    let (game, mut updates) = game_at_five_minutes(&item_table(&magic_heavy()), &openai).await;
+    game.set_stats(900.0, 1000.0, 40.0, 32.0);
+    settle(&mut updates, &openai).await;
+    game.die_to(KILLER, &[], 2.0);
+    settle(&mut updates, &openai).await;
+    game.respawn();
+    game.set_time(303.0);
+    game.set_stats(500.0, 1000.0, 40.0, 32.0);
+    settle(&mut updates, &openai).await;
+    game.die_to(KILLER, &[], RESPAWN);
+    settle(&mut updates, &openai).await;
+
+    let bodies = openai.bodies();
+    let input = bodies.last().unwrap()["input"].as_str().unwrap();
+    assert!(input.contains("Player health before death: 50% at 5:03\n"));
+}
+
+// Whether to fight on respawn depends on what spawns while the player is dead.
+#[tokio::test]
+async fn the_prompt_carries_the_objectives_to_come() {
+    let input = input_of_death(&item_table(&magic_heavy()), |_| {}).await;
+
+    assert!(input.contains(
+        "Objectives: Drake up now, Voidgrubs in 3:00, Herald in 10:00, Baron in 15:00\n"
+    ));
+}
+
+// Whether the player is behind or ahead is what the overlay knows and the model does not.
+#[tokio::test]
+async fn the_prompt_carries_the_player_against_their_benchmarks() {
+    let mut table = item_table(&magic_heavy());
+    let minutes: Vec<Value> = flat_minutes(60.0, 2500.0, 6.0)
+        .into_iter()
+        .map(|minute| with_scores(minute, [1.0, 1.0, 2.0], ENOUGH_GAMES))
+        .collect();
+    table["cells"] = json!([cell("Ahri", "MIDDLE", "GOLD", &minutes)]);
+
+    let input = input_of_death(&table, |_| {}).await;
+
+    assert!(input.contains(
+        "Player against games of the same champion, role and tier at this minute: CS 0 against 60, level 1 against 6.0, KDA 1/2/3 against 1.0/1.0/2.0\n"
+    ));
 }
 
 // The model reads who is ahead from the score; an execution would inflate it.

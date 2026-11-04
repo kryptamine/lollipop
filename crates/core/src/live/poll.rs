@@ -5,6 +5,7 @@ use std::time::Duration;
 use super::clock::Clock;
 use super::game_advice::GameAdvice;
 use super::game_build::GameBuild;
+use super::game_facts::GameFacts;
 use super::game_hints::GameHints;
 use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
@@ -144,7 +145,12 @@ impl CurrentGame<'_> {
             scores: player.scores.player_scores(),
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
-        self.advice.at(data, player, self.build.build_mut()).await;
+        let facts = GameFacts {
+            snapshot: &snapshot,
+            benchmarks: &benchmarks,
+            spawns: self.hints.spawns(data),
+        };
+        self.advice.at(data, &facts, self.build.build_mut()).await;
         Some(LiveGame {
             snapshot,
             inputs,

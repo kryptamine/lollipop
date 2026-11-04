@@ -22,6 +22,8 @@ struct State {
     loading: bool,
     game_time: f64,
     gold: f64,
+    /// `activePlayer.championStats`, left out while null.
+    stats: Value,
     players: Vec<Value>,
     events: Vec<Value>,
 }
@@ -65,6 +67,7 @@ impl ItemGame {
             loading,
             game_time,
             gold: 1250.0,
+            stats: Value::Null,
             players,
             events: Vec::new(),
         }));
@@ -151,6 +154,16 @@ impl ItemGame {
 
     pub fn set_level(&self, level: u32) {
         self.set_player(ME, "level", json!(level));
+    }
+
+    /// The active player's health and defences, as `activePlayer.championStats` gives them.
+    pub fn set_stats(&self, health: f64, max_health: f64, armor: f64, magic_resist: f64) {
+        self.state.lock().unwrap().stats = json!({
+            "currentHealth": health,
+            "maxHealth": max_health,
+            "armor": armor,
+            "magicResist": magic_resist,
+        });
     }
 
     pub fn set_gold(&self, gold: f64) {
@@ -267,8 +280,12 @@ fn body(state: &State) -> String {
         events.push(json!({ "EventName": "GameStart", "EventTime": 0.0 }));
     }
     events.extend(state.events.iter().cloned());
+    let mut active = json!({ "riotId": ME, "currentGold": state.gold });
+    if !state.stats.is_null() {
+        active["championStats"] = state.stats.clone();
+    }
     json!({
-        "activePlayer": { "riotId": ME, "currentGold": state.gold },
+        "activePlayer": active,
         "allPlayers": state.players,
         "events": { "Events": events },
         "gameData": { "gameTime": if state.loading { 0.0 } else { state.game_time } },
@@ -278,7 +295,8 @@ fn body(state: &State) -> String {
 
 /// A schema 2 table with no Cells and Ahri's Item candidates for the middle lane, with
 /// `magic_share` per enemy champion. Against a magic-heavy team, Steelcaps, Morello and
-/// the Rod lose on share or as no completed item. Only Banshee's lists its components.
+/// the Rod lose on share or as no completed item. Only Banshee's lists its components,
+/// and only Steelcaps and Zhonya's their tags.
 pub fn item_table(magic_share: &Value) -> Value {
     let candidate = |item: u32, share: f64, minute: f64| json!({ "item": item, "share": share, "minute": minute });
     let zhonyas = candidate(3157, 0.6, 20.0);
@@ -318,6 +336,10 @@ pub fn item_table(magic_share: &Value) -> Value {
             "3020": name("Sorcerer's Shoes", "Сапоги чародея"),
             "3047": name("Plated Steelcaps", "Бронированные сапоги"),
             "3102": name("Banshee's Veil", "Покров банши"),
+        },
+        "item_tags": {
+            "3047": ["Armor", "Boots"],
+            "3157": ["SpellDamage", "Armor", "Active"],
         },
         "boots": [3006, 3020, 3047, 3111],
         "completed": [3003, 3089, 3102, 3135, 3157, 3165],

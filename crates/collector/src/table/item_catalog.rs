@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use super::benchmark_file::ItemNameEntry;
 use super::item_class::ItemClass;
@@ -13,6 +13,8 @@ pub(super) struct ItemCatalog {
     /// Every component down each item's `from` tree, in id order.
     pub(super) builds_from: HashMap<u32, Vec<u32>>,
     pub(super) names: HashMap<u32, ItemNameEntry>,
+    /// Data Dragon's tags of each item, such as `Armor` or `SpellDamage`.
+    pub(super) tags: HashMap<u32, Vec<String>>,
     /// Every boots of the Rift past the first tier, in id order.
     pub(super) boots: Vec<u32>,
 }
@@ -27,5 +29,14 @@ impl ItemCatalog {
             .collect();
         completed.sort_unstable();
         completed
+    }
+
+    /// Only completed items and boots: no other item reaches a prompt.
+    pub(super) fn item_tags(&self) -> BTreeMap<u32, Vec<String>> {
+        self.completed()
+            .into_iter()
+            .chain(self.boots.iter().copied())
+            .filter_map(|id| Some((id, self.tags.get(&id)?.clone())))
+            .collect()
     }
 }

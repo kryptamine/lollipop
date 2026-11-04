@@ -104,11 +104,12 @@ async fn the_prompt_carries_the_moment_the_score_and_both_teams_without_names() 
     assert!(input.contains("Language: Russian\n"));
     assert!(input.contains("Moment: a drake was killed: Earth\nTaken by: the player's team\n"));
     assert!(input.contains("Game time: 20:00\n"));
-    assert!(input.contains("Player: Ahri, MIDDLE, level 1, KDA 1/2/3, no items, gold 1250\n"));
+    assert!(input.contains("Player: Ahri, MIDDLE, level 1, KDA 1/2/3, CS 0, no items, gold 1250\n"));
     assert_eq!(input.matches("Ally: ").count(), 4);
     assert_eq!(input.matches("Enemy: ").count(), 5);
     assert!(input.contains("Ally: Vi, JUNGLE"));
-    assert!(input.contains("Enemy: Zed, MIDDLE, level 1, KDA 5/1/0, no items\n"));
+    assert!(input.contains("Enemy: Zed, MIDDLE, level 1, KDA 5/1/0, CS 0, no items\n"));
+    assert!(input.contains("Objectives: Baron up now, Drake in 5:00\n"));
     assert!(input.contains("Kills: player's team 0, enemy team 0\n"));
     assert!(input.contains(
         "Player's team has taken: dragons Water, Air, Earth; Herald 1; Baron 0; turrets 1; inhibitors 0\n"

@@ -4,8 +4,10 @@ use super::advice_ask::AdviceAsk;
 use super::advice_slot::AdviceSlot;
 use super::build::Build;
 use super::death::Death;
-use super::death_prompt::{input, INSTRUCTIONS};
+use super::death_prompt::{input, Around, INSTRUCTIONS};
 use super::event_name::EventName;
+use super::game_facts::GameFacts;
+use super::health_trail::HealthTrail;
 use super::payload::AllGameData;
 use super::until::Until;
 use crate::advice::{Advisor, Trigger};
@@ -15,6 +17,7 @@ use crate::advice::{Advisor, Trigger};
 pub(super) struct DeathAdvice {
     /// `ChampionKill` events already seen, `None` before the game's first poll.
     seen_kills: Option<usize>,
+    health: HealthTrail,
     ask: AdviceAsk,
 }
 
@@ -22,6 +25,7 @@ impl DeathAdvice {
     pub(super) fn new(advisor: &Advisor) -> Self {
         Self {
             seen_kills: None,
+            health: HealthTrail::default(),
             ask: AdviceAsk::new(Trigger::Death, INSTRUCTIONS, advisor),
         }
     }
@@ -30,6 +34,7 @@ impl DeathAdvice {
     pub(super) async fn at(
         &mut self,
         data: &AllGameData,
+        facts: &GameFacts<'_>,
         slot: &mut AdviceSlot,
         build: &mut Build,
     ) {
@@ -48,12 +53,19 @@ impl DeathAdvice {
             // A new death means the player respawned since the last, whose answer is now late.
             self.end_game();
             if death.teaches() && player.is_dead && player.respawn_timer > 0.0 {
+                let health = &self.health;
                 self.ask
                     .ask(data, build, Until::Respawn, |language, build| {
-                        ready(input(language, &death, build))
+                        let around = Around {
+                            build,
+                            facts,
+                            health,
+                        };
+                        ready(input(language, &death, &around))
                     });
             }
         }
+        self.health.observe(data, player.is_dead);
         self.ask
             .collect(data, Some(data.game_time()), slot, build)
             .await;

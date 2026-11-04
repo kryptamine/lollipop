@@ -23,6 +23,9 @@ pub(crate) struct ItemTable {
     // By the id as a string: a flattened map cannot read its keys as numbers.
     #[serde(default)]
     item_names: HashMap<String, ItemName>,
+    /// Data Dragon's tags by id, such as `Armor`; empty in a table built before them.
+    #[serde(default)]
+    item_tags: HashMap<String, Vec<String>>,
     /// Every boots id past the first tier; empty in a table built before they were listed.
     #[serde(default)]
     boots: HashSet<u32>,
@@ -118,6 +121,13 @@ impl ItemTable {
 
     pub(crate) fn name_of(&self, item: u32) -> Option<&ItemName> {
         self.item_names.get(&item.to_string())
+    }
+
+    /// Empty in a table built without tags.
+    pub(crate) fn tags_of(&self, item: u32) -> &[String] {
+        self.item_tags
+            .get(&item.to_string())
+            .map_or(&[], Vec::as_slice)
     }
 
     /// The item's icon on the Data Dragon CDN, at the version the file was built with.

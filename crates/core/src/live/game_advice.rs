@@ -3,8 +3,9 @@ use std::path::Path;
 use super::advice_slot::AdviceSlot;
 use super::build::Build;
 use super::death_advice::DeathAdvice;
+use super::game_facts::GameFacts;
 use super::loading_screen_advice::LoadingScreenAdvice;
-use super::payload::{AllGameData, Player};
+use super::payload::AllGameData;
 use super::shown_advice::ShownAdvice;
 use super::turning_point_advice::TurningPointAdvice;
 use crate::advice::Advisor;
@@ -35,12 +36,17 @@ impl GameAdvice {
             .await;
     }
 
-    pub(super) async fn at(&mut self, data: &AllGameData, player: &Player, build: &mut Build) {
+    pub(super) async fn at(
+        &mut self,
+        data: &AllGameData,
+        facts: &GameFacts<'_>,
+        build: &mut Build,
+    ) {
         self.loading_screen.at(data, &mut self.slot, build).await;
         self.turning_point
-            .at(data, player, &mut self.slot, build)
+            .at(data, facts, &mut self.slot, build)
             .await;
-        self.death.at(data, &mut self.slot, build).await;
+        self.death.at(data, facts, &mut self.slot, build).await;
     }
 
     /// Keeps the loading screen's answer, which may still be on its way.

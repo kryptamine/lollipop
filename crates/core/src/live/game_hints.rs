@@ -28,6 +28,20 @@ impl GameHints {
 
     /// The soonest spawn first, `elixir` beside Baron and Elder.
     pub(super) fn at(&self, data: &AllGameData, elixir: Option<&BuildItem>) -> Vec<TimingHint> {
+        self.spawns(data)
+            .iter()
+            .filter_map(|spawn| spawn.hint_at(data.game_time()))
+            .map(|mut hint| {
+                if ELIXIR_OBJECTIVES.contains(&hint.objective) {
+                    hint.elixir = elixir.cloned();
+                }
+                hint
+            })
+            .collect()
+    }
+
+    /// The next spawn of each objective, soonest first, those already up included.
+    pub(super) fn spawns(&self, data: &AllGameData) -> Vec<Spawn> {
         let Some(schedule) = self.schedule else {
             return Vec::new();
         };
@@ -48,15 +62,6 @@ impl GameHints {
         .collect();
         spawns.sort_by(|a, b| a.at.total_cmp(&b.at));
         spawns
-            .iter()
-            .filter_map(|spawn| spawn.hint_at(data.game_time()))
-            .map(|mut hint| {
-                if ELIXIR_OBJECTIVES.contains(&hint.objective) {
-                    hint.elixir = elixir.cloned();
-                }
-                hint
-            })
-            .collect()
     }
 }
 

@@ -179,10 +179,12 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 - **Only when it teaches:** the killer has killed the player before this game, or
   is fed, with at least 3 kills more than deaths. A lone death to an even opponent
   asks nothing, and still ends the last death's request.
-- **Prompt:** the player's champion, role, level, items and `currentGold`; the
-  killer and assisters (champion, position, level, items, KDA); the whole enemy
-  team's champions, items and levels; `gameTime`; how many times this killer has
-  killed the player; the [kill score](#kill-score).
+- **Prompt:** the player's champion, role, level, KDA, CS, items and `currentGold`;
+  the killer and assisters (champion, position, level, KDA, CS, items); the whole
+  enemy team's; `gameTime`; how many times this killer has killed the player; the
+  [kill score](#kill-score); and what only the overlay knows, in
+  [Game facts](#game-facts), with the player's health before death, their max
+  health, armor and magic resist, and `respawnTimer`.
 - **Another death:** sends a new request, whose answer replaces the one showing.
 
 ### Turning point
@@ -212,12 +214,27 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
   newer moment replaces the held one. A death does not count: a dead player is out
   of the fight.
 - **While dead:** fires as usual; rank keeps it off a death Advice.
-- **Prompt:** the player's champion, role, level, items, KDA and `currentGold`;
-  both teams' champions, items, levels and KDA; which moment fired and which team
-  took it; the objective score from `eventdata` (dragons by type per team, Herald,
-  Baron, turrets and inhibitors per side); the [kill score](#kill-score);
-  `gameTime`; the texts of earlier Advice in this game.
+- **Prompt:** the player's champion, role, level, KDA, CS, items and `currentGold`;
+  both teams' champions, levels, KDA, CS and items; which moment fired and which
+  team took it; the objective score from `eventdata` (dragons by type per team,
+  Herald, Baron, turrets and inhibitors per side); the [kill score](#kill-score);
+  `gameTime`; [Game facts](#game-facts); the texts of earlier Advice in this game.
 - **Dropped** also after the player dies, when they were alive at the moment.
+
+### Game facts
+
+What the Death and Turning point prompts carry that no model could work out of the
+payload. Each line is left out when the overlay has nothing for it.
+
+- **Against the Benchmarks:** the player's CS, Gold earned, level and KDA beside the
+  Cell's values at this minute, the ones the Marker strip shows.
+- **Objectives:** the next spawn of each objective from the
+  [Objective schedule](../adr/0005-objective-schedule-compiled-into-the-app.md), as
+  time left, or "up now" for a drake, the Elder or Baron spawned and not taken. Void
+  Grubs and the Herald leave on their own, so only their spawn to come is told.
+- **Health before death:** the active player's `championStats` health over max
+  health at each poll of the last 10 s alive, since no API has a death recap. A
+  death clears it, so one life never reads as the next.
 
 ### Kill score
 
@@ -258,7 +275,8 @@ key: without one the Build stays as code built it.
 - **Asked** in the Loading screen and Death calls, no extra request: the answer's
   `next_item` and `reason` sit beside `advice`, which names no item.
 - **Prompt:** the Build left to buy by name, the Next item and whether it is started,
-  and the Item candidates that may replace it, with id, name, `share` and `minute`.
+  and the Item candidates that may replace it, with id, name, tags, `share` and
+  `minute`.
   Every enemy carries its `damage_profile.magic_share`; Death adds every death of the
   player this game, with the killer, assisters and their magic shares. Live Client
   Data gives no damage numbers.
@@ -351,6 +369,10 @@ them; the [Build Widget](#build-widget) reads them.
 - **Completed:** `completed` lists every completed item id, candidate or not, so
   the app sees a player finish an item off the Build. A table without `boots` and
   `completed` gives no Build.
+- **Tags:** `item_tags` maps every completed item and boots id to its Data Dragon
+  `tags`, such as `Armor` or `SpellDamage`. Item candidates, Swap candidates and Swap
+  sell options carry them in the prompt, since a model trained before the patch may
+  not know an item. A table built before them gives none.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
   translation repeats the English one. Build change prompts name items by it, and

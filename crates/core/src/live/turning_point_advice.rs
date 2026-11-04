@@ -4,7 +4,8 @@ use super::advice_ask::AdviceAsk;
 use super::advice_slot::AdviceSlot;
 use super::build::Build;
 use super::fighting::fighting;
-use super::payload::{AllGameData, Player};
+use super::game_facts::GameFacts;
+use super::payload::AllGameData;
 use super::turning_point::{TurningPoint, TurningPointWatch};
 use super::turning_point_prompt::{input, Turn, INSTRUCTIONS};
 use super::until::Until;
@@ -49,10 +50,13 @@ impl TurningPointAdvice {
     pub(super) async fn at(
         &mut self,
         data: &AllGameData,
-        player: &Player,
+        facts: &GameFacts<'_>,
         slot: &mut AdviceSlot,
         build: &mut Build,
     ) {
+        let Some(player) = data.active_player() else {
+            return;
+        };
         // A plan made while the player was alive no longer fits once they die.
         if player.is_dead && self.asked.as_ref().is_some_and(|asked| asked.alive) {
             self.end_game();
@@ -68,6 +72,7 @@ impl TurningPointAdvice {
                     data,
                     player,
                     point: &point,
+                    facts,
                     earlier: slot.shown(),
                 };
                 self.ask(&turn, build);

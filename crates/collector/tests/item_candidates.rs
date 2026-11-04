@@ -330,6 +330,23 @@ fn every_candidate_and_no_other_item_has_its_en_and_ru_name() {
     );
 }
 
+// A model trained before the patch may not know an item, so the prompt says what it gives;
+// a component is never in a Build and needs none.
+#[test]
+fn every_completed_item_and_boots_has_its_data_dragon_tags() {
+    let mut bench = TableBench::new();
+    bench.add_archived(1, &ahri_match().buys(1, RABADONS, 12));
+
+    let build = build(&bench, 1);
+    let tags = &build.table()["item_tags"];
+
+    assert_eq!(tags[ZHONYAS.to_string()], json!(["SpellDamage", "Armor"]));
+    assert_eq!(tags[MERCURYS_TREADS.to_string()], json!(["Boots"]));
+    for item in [LONG_SWORD, COSTLY_COMPONENT, HEALTH_POTION, SERAPHS_EMBRACE] {
+        assert!(tags.get(item.to_string()).is_none(), "{item} is tagged");
+    }
+}
+
 fn team_of(archived: ArchivedMatch, team: u32, magic_seats: u32) -> ArchivedMatch {
     let first = if team == 100 { 1 } else { 6 };
     (0..5).fold(archived, |archived, seat| {
