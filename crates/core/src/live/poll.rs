@@ -74,7 +74,6 @@ pub async fn poll(
         };
         let between_games = data.is_none() && game.failed_poll_ends_game();
         if between_games {
-            log::info!("between games");
             game.end_game();
         }
         let (build, build_change, swap) = game.build.shown(data.as_ref(), language);
