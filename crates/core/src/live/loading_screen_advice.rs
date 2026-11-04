@@ -1,14 +1,13 @@
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
-use tokio::task::JoinHandle;
-
 use super::advice_slot::AdviceSlot;
 use super::arrival::Arrival;
 use super::build::Build;
 use super::lane_opponent::lane_of;
 use super::loading_screen_prompt::{game_lines, input, INSTRUCTIONS};
 use super::payload::AllGameData;
+use super::pending_answer::PendingAnswer;
 use crate::advice::{Advisor, AnswerParts, Question, Trigger};
 use crate::game_inputs::loading_tier;
 
@@ -23,7 +22,7 @@ pub(super) struct LoadingScreenAdvice {
     lockfile: PathBuf,
     /// Since the last poll of a running game, so the next loading screen asks again.
     asked: bool,
-    asking: Option<JoinHandle<AnswerParts>>,
+    asking: PendingAnswer<AnswerParts>,
 }
 
 impl LoadingScreenAdvice {
@@ -32,7 +31,7 @@ impl LoadingScreenAdvice {
             http: http.clone(),
             lockfile: lockfile.to_path_buf(),
             asked: false,
-            asking: None,
+            asking: PendingAnswer::default(),
         }
     }
 
@@ -67,7 +66,7 @@ impl LoadingScreenAdvice {
         let advisor = advisor.clone();
         let http = self.http.clone();
         let lockfile = self.lockfile.clone();
-        self.asking = Some(tokio::spawn(async move {
+        self.asking = PendingAnswer::spawn(async move {
             let tier = loading_tier(&http, &lockfile).await;
             let input = input(call.language, tier, &game);
             let question = Question {
@@ -77,7 +76,7 @@ impl LoadingScreenAdvice {
                 deadline,
             };
             advisor.ask(&call, &question).await.into_parts()
-        }));
+        });
     }
 
     pub(super) async fn at(
@@ -92,9 +91,7 @@ impl LoadingScreenAdvice {
     }
 
     pub(super) fn end_game(&mut self) {
-        if let Some(asking) = self.asking.take() {
-            asking.abort();
-        }
+        self.asking = PendingAnswer::default();
     }
 
     /// Offers a finished answer. `game_time` is `None` on the loading screen.
@@ -105,16 +102,13 @@ impl LoadingScreenAdvice {
         slot: &mut AdviceSlot,
         build: &mut Build,
     ) {
-        let Some(asking) = self.asking.take_if(|asking| asking.is_finished()) else {
+        // The inventory is never full on the loading screen, so no Swap is asked.
+        let Some(AnswerParts { text, change, .. }) = self.asking.finished().await else {
             return;
         };
         if game_time.is_some_and(|at| at >= DROP_AFTER) {
             return;
         }
-        // The inventory is never full on the loading screen, so no Swap is asked.
-        let Ok(AnswerParts { text, change, .. }) = asking.await else {
-            return;
-        };
         if let (Some(change), Some(player)) = (change, data.active_player()) {
             build.change(change, player, game_time);
         }

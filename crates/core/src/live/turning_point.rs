@@ -1,3 +1,4 @@
+use super::event_name::EventName;
 use super::moment::Moment;
 use super::payload::{AllGameData, Event};
 use super::team::Team;
@@ -30,7 +31,9 @@ impl TurningPointWatch {
         let events = data.events();
         // 14:00 fires nothing, but a first turret after it is a later turret.
         let laning_over = data.game_time() >= LANING_ENDS
-            || events.iter().any(|event| event.name() == "TurretKilled");
+            || events
+                .iter()
+                .any(|event| event.name() == EventName::TurretKilled);
         let Some(seen) = self.seen_events.replace(events.len()) else {
             self.laning_over = laning_over;
             return None;
@@ -53,20 +56,20 @@ impl TurningPointWatch {
     ) -> Option<TurningPoint> {
         let taken_by = data.taker_team(event);
         let moment = match event.name() {
-            "TurretKilled" if !self.laning_over => {
+            EventName::TurretKilled if !self.laning_over => {
                 self.laning_over = true;
                 Moment::FirstTurret
             }
-            "DragonKill"
+            EventName::DragonKill
                 if event.is_elder()
                     || taken_by.is_some_and(|team| drakes_of(data, index, team) >= SOUL_POINT) =>
             {
                 Moment::Dragon(event.dragon_type().map(str::to_string))
             }
-            "HeraldKill" => Moment::Herald,
-            "BaronKill" => Moment::Baron,
-            "InhibKilled" => Moment::Inhibitor,
-            "Ace" => Moment::Ace,
+            EventName::HeraldKill => Moment::Herald,
+            EventName::BaronKill => Moment::Baron,
+            EventName::InhibKilled => Moment::Inhibitor,
+            EventName::Ace => Moment::Ace,
             _ => return None,
         };
         Some(TurningPoint {
@@ -82,7 +85,7 @@ fn drakes_of(data: &AllGameData, index: usize, team: Team) -> usize {
     data.events()
         .iter()
         .take(index + 1)
-        .filter(|event| event.name() == "DragonKill" && !event.is_elder())
+        .filter(|event| event.name() == EventName::DragonKill && !event.is_elder())
         .filter(|event| data.taker_team(event) == Some(team))
         .count()
 }

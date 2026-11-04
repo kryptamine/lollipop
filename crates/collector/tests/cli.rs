@@ -100,7 +100,10 @@ async fn a_missing_key_file_fails_with_a_message() {
         .output()
         .unwrap();
     assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stderr).contains("riot-key"));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("riot-key"), "{stderr}");
+    // A message printed as Debug comes quoted, with its newlines escaped.
+    assert!(!stderr.starts_with("Error: \""), "{stderr}");
 }
 
 #[tokio::test]

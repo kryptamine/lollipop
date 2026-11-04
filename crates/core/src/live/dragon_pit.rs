@@ -1,3 +1,4 @@
+use super::event_name::EventName;
 use super::objective_schedule::ObjectiveSchedule;
 use super::payload::AllGameData;
 use super::spawn::Spawn;
@@ -28,7 +29,7 @@ impl DrakeCounts {
 pub(super) fn next_spawn(schedule: &ObjectiveSchedule, data: &AllGameData) -> Option<Spawn> {
     let mut counts = DrakeCounts::default();
     let mut next = drake(schedule.drake_first);
-    for kill in data.events_named("DragonKill") {
+    for kill in data.events_named(EventName::DragonKill) {
         let team = data.killer_team(kill)?;
         let killed_at = kill.time()?;
         next = if kill.is_elder() {

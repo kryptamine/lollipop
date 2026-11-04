@@ -3,12 +3,10 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use lollipop_core::advice::{check_key, masked_key, KeyCheck, KeyFailure, OPENAI_URL};
 
 use crate::key_save::KeySave;
-#[cfg(target_os = "macos")]
-use crate::keychain;
+use crate::platform::keychain;
 
 #[derive(Clone, Copy)]
 enum Keeper {
-    #[cfg(target_os = "macos")]
     Keychain,
     /// A `make dev-mock` key, which must not overwrite the player's real one.
     ThisRun,
@@ -62,7 +60,6 @@ impl OpenAiKey {
         }
         let mut kept = self.lock();
         *kept = match self.keeper {
-            #[cfg(target_os = "macos")]
             Keeper::Keychain => {
                 keychain::write(key);
                 keychain::read()
@@ -84,7 +81,6 @@ impl OpenAiKey {
         *lock(&self.failure) = None;
         let mut kept = self.lock();
         *kept = match self.keeper {
-            #[cfg(target_os = "macos")]
             Keeper::Keychain => {
                 keychain::delete();
                 keychain::read()
@@ -111,12 +107,6 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-#[cfg(target_os = "macos")]
 fn stored() -> (Keeper, Option<String>) {
     (Keeper::Keychain, keychain::read())
-}
-
-#[cfg(not(target_os = "macos"))]
-const fn stored() -> (Keeper, Option<String>) {
-    (Keeper::ThisRun, None)
 }

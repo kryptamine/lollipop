@@ -245,9 +245,7 @@ impl CurrentGame<'_> {
         .await;
         let mut table = BenchmarkTable::read(self.benchmark_table.path());
         self.notices = notices_of(&inputs, table.as_ref()).into();
-        self.death.end_game();
         self.death = DeathAdvice::default();
-        self.turning_point.end_game();
         self.turning_point = TurningPointAdvice::default();
         // A loading screen that gave no Build, say for want of a position, gets another try.
         if !std::mem::take(&mut self.build_carried) || self.build.is_empty() {

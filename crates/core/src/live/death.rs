@@ -1,3 +1,4 @@
+use super::event_name::EventName;
 use super::payload::{AllGameData, Event, Player};
 
 // Kills over deaths from which a killer is fed: a death to them is worth a lesson.
@@ -50,7 +51,7 @@ impl<'a> Death<'a> {
     /// The killer's kills of the player this game, this one included.
     pub(super) fn kills_by_killer(&self) -> usize {
         self.data
-            .events_named("ChampionKill")
+            .events_named(EventName::ChampionKill)
             .filter(|kill| kill.killer_name == self.kill.killer_name)
             .filter(|kill| {
                 kill.victim_name

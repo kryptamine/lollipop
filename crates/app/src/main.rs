@@ -2,14 +2,11 @@
 
 mod advice_source;
 mod key_save;
-#[cfg(target_os = "macos")]
-mod keychain;
 mod launch_at_login;
 mod menu_bar;
 mod openai_key;
 mod openai_key_commands;
 mod overlay;
-#[cfg(target_os = "macos")]
 mod platform;
 mod settings_commands;
 mod settings_store;
@@ -118,9 +115,7 @@ async fn publish_live_client(
 )]
 fn main() {
     let builder = tauri::Builder::default();
-    // Without this, launching takes focus from League: see ADR 0006.
-    #[cfg(target_os = "macos")]
-    let builder = builder.activate_ignoring_other_apps(false);
+    let builder = platform::keep_focus_off(builder);
 
     builder
         // LaunchAgent, as the AppleScript launcher would ask for Automation access.
@@ -182,13 +177,10 @@ fn open_overlay(app: &mut tauri::App, store: &SettingsStore) -> tauri::Result<Ov
     let voiceover = Voiceover::new(window.clone(), store.clone());
     app.manage(voiceover.clone());
     let overlay = Overlay::new(window.clone(), &game_bundle_id, voiceover);
-    #[cfg(target_os = "macos")]
-    {
-        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-        platform::order_in_hidden(&window)?;
-        let frontmost = overlay.clone();
-        platform::watch_frontmost(move |bundle_id| frontmost.set_frontmost(bundle_id));
-    }
+    platform::run_as_accessory(app);
+    platform::order_in_hidden(&window)?;
+    let frontmost = overlay.clone();
+    platform::watch_frontmost(move |bundle_id| frontmost.set_frontmost(bundle_id));
     cover_primary_display(&window)?;
     // Clicks must always reach the game, never the overlay.
     window.set_ignore_cursor_events(true)?;

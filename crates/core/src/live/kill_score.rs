@@ -1,5 +1,6 @@
 use std::fmt;
 
+use super::event_name::EventName;
 use super::payload::{AllGameData, Player};
 use super::team::Team;
 
@@ -13,15 +14,14 @@ pub(super) struct KillScore {
 impl KillScore {
     /// `None` when the player's team is unknown.
     pub(super) fn of(data: &AllGameData, player: &Player) -> Option<Self> {
-        let own = player.team().and_then(Team::of_player)?;
+        let own = player.team()?;
         let by = |team: Team| {
-            data.events_named("ChampionKill")
+            data.events_named(EventName::ChampionKill)
                 .filter(|kill| {
                     kill.killer_name
                         .as_deref()
                         .and_then(|killer| data.player_named(killer))
                         .and_then(Player::team)
-                        .and_then(Team::of_player)
                         == Some(team)
                 })
                 .count()

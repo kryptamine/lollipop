@@ -1,11 +1,10 @@
 use std::time::{Duration, Instant};
 
-use tokio::task::JoinHandle;
-
 use super::advice_slot::AdviceSlot;
 use super::arrival::Arrival;
 use super::fighting::fighting;
 use super::payload::{AllGameData, Player};
+use super::pending_answer::PendingAnswer;
 use super::turning_point::{TurningPoint, TurningPointWatch};
 use super::turning_point_prompt::{input, Turn, INSTRUCTIONS};
 use crate::advice::{Advisor, Question, Trigger};
@@ -33,7 +32,7 @@ struct Asking {
     game_time: f64,
     asked_at: f64,
     alive: bool,
-    answer: JoinHandle<Option<String>>,
+    answer: PendingAnswer<Option<String>>,
 }
 
 impl TurningPointAdvice {
@@ -68,9 +67,7 @@ impl TurningPointAdvice {
     }
 
     pub(super) fn end_game(&mut self) {
-        if let Some(asking) = self.asking.take() {
-            asking.answer.abort();
-        }
+        self.asking = None;
     }
 
     fn spaced(&self, game_time: f64) -> bool {
@@ -93,7 +90,7 @@ impl TurningPointAdvice {
             game_time,
             asked_at: turn.data.game_time(),
             alive: !turn.player.is_dead,
-            answer: tokio::spawn(async move {
+            answer: PendingAnswer::spawn(async move {
                 let question = Question {
                     trigger: Trigger::TurningPoint,
                     instructions: INSTRUCTIONS,
@@ -106,13 +103,14 @@ impl TurningPointAdvice {
     }
 
     async fn collect(&mut self, data: &AllGameData, slot: &mut AdviceSlot) {
-        let Some(asking) = self.asking.take_if(|asking| asking.answer.is_finished()) else {
+        let Some(mut asking) = self.asking.take_if(|asking| asking.answer.is_finished()) else {
             return;
         };
+        let answer = asking.answer.finished().await;
         if data.game_time() - asking.asked_at > DROP_AFTER {
             return;
         }
-        let Some(text) = asking.answer.await.ok().flatten() else {
+        let Some(text) = answer.flatten() else {
             return;
         };
         let arrival = Arrival {
