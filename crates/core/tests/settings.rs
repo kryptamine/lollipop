@@ -10,7 +10,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use lollipop_core::advice::{AdviceCall, Language, Trigger, TRIGGERS};
-use lollipop_core::settings::{AdviceLanguage, Settings, ADVICE_WIDGET, WIDGETS};
+use lollipop_core::settings::{AdviceLanguage, Settings, ADVICE_WIDGET, BUILD_WIDGET, WIDGETS};
 use serde_json::json;
 use tempfile::TempDir;
 
@@ -266,6 +266,17 @@ fn voiceover_is_silent_with_the_advice_widget_off() {
     settings.voiceover = true;
     settings.set_widget(ADVICE_WIDGET, false);
     assert!(!settings.reads_aloud());
+}
+
+// A Build change hidden with the Build Widget must not be heard either.
+#[test]
+fn build_changes_are_read_only_with_the_build_widget_on() {
+    let mut settings = Settings::default();
+    settings.voiceover = true;
+    assert!(settings.reads_build_changes());
+    settings.set_widget(BUILD_WIDGET, false);
+    assert!(!settings.reads_build_changes());
+    assert!(settings.reads_aloud());
 }
 
 // The key reaches OpenAI only, so no log line may print it.

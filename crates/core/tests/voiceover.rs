@@ -21,7 +21,7 @@ const FIRST: &str = "Zed ловит тебя у стены: держи E на е
 const SECOND: &str = "Zed снова в лесу: отходи к башне до его ульты.";
 
 fn answer(text: &str) -> Reply {
-    Reply::advising(&json!({ "advice": text }).to_string())
+    Reply::advising(&json!({ "advice": text, "next_item": null, "reason": null }).to_string())
 }
 
 /// What the voice was told over polls until OpenAI has answered, with the overlay
@@ -35,7 +35,7 @@ async fn heard(
     let mut speech = vec![];
     let mut follow = |game: Option<lollipop_core::live::LiveGame>| {
         let advice = game.and_then(|game| game.advice).filter(|_| shown);
-        speech.extend(reader.follow(advice.as_ref()));
+        speech.extend(reader.follow(advice.as_ref(), None));
     };
     for _ in 0..SETTLING_POLLS {
         follow(updates.recv().await.unwrap());

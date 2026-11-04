@@ -1,19 +1,18 @@
 //! The part of the Benchmark table the Build reads, beside its `cells`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde::Deserialize;
 
 use super::champion_key::champion_key;
 use super::damage_profile::{DamageProfile, ProfileBucket};
 use super::item_candidate::ItemCandidate;
+use super::item_name::ItemName;
 use crate::game_inputs::Role;
 
 const ICON_URL: &str = "https://ddragon.leagueoflegends.com/cdn";
 // Item slots, the trinket aside.
 const SLOTS: usize = 6;
-// Completed items in a Build, beside its boots.
-const BUILD_ITEMS: usize = 5;
 
 #[derive(Debug, Default, Deserialize)]
 pub(crate) struct ItemTable {
@@ -21,6 +20,9 @@ pub(crate) struct ItemTable {
     #[serde(default)]
     item_candidates: Vec<CandidatesEntry>,
     data_dragon_version: Option<String>,
+    // By the id as a string: a flattened map cannot read its keys as numbers.
+    #[serde(default)]
+    item_names: HashMap<String, ItemName>,
     /// Every boots id past the first tier; empty in a table built before they were listed.
     #[serde(default)]
     boots: HashSet<u32>,
@@ -45,13 +47,14 @@ struct CandidateEntry {
     minute: f64,
     #[serde(default)]
     owned_as: Vec<u32>,
+    #[serde(default)]
+    builds_from: Vec<u32>,
 }
 
 impl ItemTable {
-    /// The boots with the largest share and the five completed items with the largest
-    /// shares, from the list for the enemy team's bucket, by median minute. No list for
-    /// the champion and role gives none: see ADR 0004.
-    pub(crate) fn build<'a>(
+    /// The boots and completed items of the list for the enemy team's bucket, largest
+    /// share first. No list for the champion and role gives none: see ADR 0004.
+    pub(crate) fn candidates<'a>(
         &self,
         champion: &str,
         role: Role,
@@ -71,27 +74,22 @@ impl ItemTable {
             ProfileBucket::Mixed => &entry.mixed,
             ProfileBucket::MagicHeavy => &entry.magic_heavy,
         };
-        let mut by_share: Vec<&CandidateEntry> = list.iter().collect();
-        by_share.sort_by(|a, b| b.share.total_cmp(&a.share));
-        let boots = by_share
+        let mut candidates: Vec<ItemCandidate> = list
             .iter()
-            .filter(|candidate| self.boots.contains(&candidate.item))
-            .take(1);
-        let completed = by_share
-            .iter()
-            .filter(|candidate| self.completed.contains(&candidate.item))
-            .take(BUILD_ITEMS);
-        let mut picked: Vec<&CandidateEntry> = boots.chain(completed).copied().collect();
-        // The sort is stable, so a tie in minutes goes to the larger share.
-        picked.sort_by(|a, b| a.minute.total_cmp(&b.minute));
-        picked
-            .into_iter()
+            .filter(|candidate| {
+                self.is_boots(candidate.item) || self.completed.contains(&candidate.item)
+            })
             .map(|candidate| ItemCandidate {
                 item: candidate.item,
-                boots: self.boots.contains(&candidate.item),
+                boots: self.is_boots(candidate.item),
+                share: candidate.share,
+                minute: candidate.minute,
                 owned_as: candidate.owned_as.clone(),
+                builds_from: candidate.builds_from.clone(),
             })
-            .collect()
+            .collect();
+        candidates.sort_by(|a, b| b.share.total_cmp(&a.share));
+        candidates
     }
 
     /// The inventory slots `owned` leaves without a completed item or boots.
@@ -110,6 +108,16 @@ impl ItemTable {
 
     pub(crate) fn is_boots(&self, item: u32) -> bool {
         self.boots.contains(&item)
+    }
+
+    /// The share of the champion's damage to champions that is magic, `None` when the
+    /// file has none for it.
+    pub(crate) fn magic_share(&self, champion: &str) -> Option<f64> {
+        self.damage_profile.as_ref()?.share_of(champion)
+    }
+
+    pub(crate) fn name_of(&self, item: u32) -> Option<&ItemName> {
+        self.item_names.get(&item.to_string())
     }
 
     /// The item's icon on the Data Dragon CDN, at the version the file was built with.

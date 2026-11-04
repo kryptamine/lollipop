@@ -3,16 +3,26 @@
 
 use std::fmt::Write;
 
+use super::build::Build;
+use super::build_prompt::{build_instructions, build_lines, magic_damage};
 use super::lane_opponent::Lane;
 use super::payload::{AllGameData, FullRunes, Named, Player};
 use crate::advice::{instructions, Language};
 use crate::game_inputs::TierReading;
 
-pub(super) const INSTRUCTIONS: &str =
-    instructions!("Here `advice` is a plan for the laning phase against the lane opponent.");
+pub(super) const INSTRUCTIONS: &str = instructions!(
+    "Here `advice` is a plan for the laning phase against the lane opponent. ",
+    build_instructions!()
+);
 
-/// The game's part of the input, read from the loading screen payload.
-pub(super) fn game_lines(data: &AllGameData, player: &Player, lane: &Lane<'_>) -> String {
+/// The game's part of the input, read from the loading screen payload and the Build.
+pub(super) fn game_lines(
+    data: &AllGameData,
+    player: &Player,
+    lane: &Lane<'_>,
+    build: &Build,
+    language: Language,
+) -> String {
     let mut lines = String::new();
     let _ = writeln!(lines, "Player: {}", describe(player));
     if let Some(runes) = data.full_runes() {
@@ -24,9 +34,13 @@ pub(super) fn game_lines(data: &AllGameData, player: &Player, lane: &Lane<'_>) -
     }
     let team = player.team();
     for p in data.players().iter().filter(|p| !std::ptr::eq(*p, player)) {
-        let side = if p.team() == team { "Ally" } else { "Enemy" };
-        let _ = writeln!(lines, "{side}: {}", describe(p));
+        if p.team() == team {
+            let _ = writeln!(lines, "Ally: {}", describe(p));
+        } else {
+            let _ = writeln!(lines, "Enemy: {}{}", describe(p), magic_damage(build, p));
+        }
     }
+    build_lines(&mut lines, build, player, language);
     lines
 }
 

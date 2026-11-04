@@ -12,6 +12,11 @@ pub(crate) struct Answer {
     // `Option::deserialize` makes a missing field an error, where serde would read it as null.
     #[serde(deserialize_with = "Option::deserialize")]
     pub(crate) advice: Option<String>,
+    /// An Item candidate to put in place of the Next item, `reason` saying why.
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub(crate) next_item: Option<u32>,
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub(crate) reason: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -35,7 +40,7 @@ struct Content {
 }
 
 impl Answer {
-    /// Fails for anything outside the schema, a refusal, or advice over the length:
+    /// Fails for anything outside the schema, a refusal, or advice or reason over the length:
     /// the whole Advice is dropped, never cut short.
     pub(super) fn read(body: &str) -> Result<Self, Failure> {
         let response: Response = serde_json::from_str(body).map_err(|_| Failure::Schema)?;
@@ -48,10 +53,10 @@ impl Answer {
             .and_then(|content| content.text.as_deref())
             .ok_or(Failure::Schema)?;
         let answer: Self = serde_json::from_str(text).map_err(|_| Failure::Schema)?;
-        let too_long = answer
-            .advice
-            .as_ref()
-            .is_some_and(|advice| advice.chars().count() > ADVICE_LENGTH);
+        let too_long = [&answer.advice, &answer.reason]
+            .into_iter()
+            .flatten()
+            .any(|text| text.chars().count() > ADVICE_LENGTH);
         if too_long {
             return Err(Failure::Length);
         }

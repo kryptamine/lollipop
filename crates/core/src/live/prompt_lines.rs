@@ -5,12 +5,7 @@ use super::payload::{Item, Player};
 
 /// Champion, position, level, KDA and items.
 pub(super) fn describe(player: &Player) -> String {
-    let mut parts = vec![player
-        .champion_name
-        .as_deref()
-        .or_else(|| player.cell_champion())
-        .unwrap_or("unknown champion")
-        .to_string()];
+    let mut parts = vec![champion(player).to_string()];
     parts.extend(player.position.clone());
     parts.push(format!("level {}", player.level));
     let scores = &player.scores;
@@ -26,6 +21,14 @@ pub(super) fn describe(player: &Player) -> String {
         parts.push(format!("items {}", items.join(", ")));
     }
     parts.join(", ")
+}
+
+pub(super) fn champion(player: &Player) -> &str {
+    player
+        .champion_name
+        .as_deref()
+        .or_else(|| player.cell_champion())
+        .unwrap_or("unknown champion")
 }
 
 #[allow(

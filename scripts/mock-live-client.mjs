@@ -31,6 +31,7 @@ function mockTable() {
   }));
   const candidates = [
     { item: 3020, share: 0.8, minute: 10 },
+    { item: 3047, share: 0.3, minute: 9 },
     { item: 3157, share: 0.6, minute: 18 },
     { item: 3102, share: 0.45, minute: 21 },
     { item: 3089, share: 0.4, minute: 25 },
@@ -67,9 +68,13 @@ function mockAdvice(answer) {
   return { output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(answer) }] }] };
 }
 
-const LANE_PLAN = { advice: "Mock Advice: trade when Zed uses W, then back off." };
-const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, keep E for when he lands." };
-const TURNING_POINT_ADVICE = { advice: "Mock Advice: level 6, look for a roam to the bottom lane." };
+const LANE_PLAN = {
+  advice: "Mock Advice: trade when Zed uses W, then back off.",
+  next_item: 3047,
+  reason: "Mock Build change: Zed and Lee Sin hit physical, so Plated Steelcaps first.",
+};
+const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, keep E for when he lands.", next_item: null, reason: null };
+const TURNING_POINT_ADVICE = { advice: "Mock Advice: level 6, look for a roam to the bottom lane.", next_item: null, reason: null };
 
 function liveClientData() {
   // Starts at 0:00 game time after the loading screen, so the notices of the first 10 s show.

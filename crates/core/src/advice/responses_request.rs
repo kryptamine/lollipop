@@ -5,9 +5,10 @@ use serde_json::{json, Value};
 
 use super::MODEL;
 
-// The Widget's length cap in characters, which the answer is checked against.
+// The Widget's length cap in characters, which `advice` and `reason` are checked against.
 pub(super) const ADVICE_LENGTH: usize = 120;
-const OUTPUT_TOKENS: u32 = 120;
+// Room for both texts at their cap.
+const OUTPUT_TOKENS: u32 = 240;
 
 #[derive(Serialize)]
 pub(super) struct ResponsesRequest<'a> {
@@ -54,8 +55,10 @@ fn format() -> Value {
             "type": "object",
             "properties": {
                 "advice": { "type": ["string", "null"] },
+                "next_item": { "type": ["integer", "null"] },
+                "reason": { "type": ["string", "null"] },
             },
-            "required": ["advice"],
+            "required": ["advice", "next_item", "reason"],
             "additionalProperties": false,
         },
     })

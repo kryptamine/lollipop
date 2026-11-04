@@ -25,7 +25,7 @@ const TIP: &str = "Zed ловит тебя у стены: держи E на ег
 const RESPAWN: f64 = 30.0;
 
 fn answer(text: &str) -> String {
-    json!({ "advice": text }).to_string()
+    json!({ "advice": text, "next_item": null, "reason": null }).to_string()
 }
 
 /// A game at 5:00 on a magic-heavy enemy team, polled until it runs.
@@ -93,7 +93,7 @@ async fn an_answer_with_an_item_shows_nothing() {
 // A death that teaches nothing is answered null, and a weak idea never fills the Widget.
 #[tokio::test]
 async fn null_advice_shows_nothing() {
-    let null = json!({ "advice": null }).to_string();
+    let null = json!({ "advice": null, "next_item": null, "reason": null }).to_string();
 
     assert_eq!(shown_after_death(&null).await, None);
 }
@@ -127,7 +127,8 @@ async fn the_prompt_describes_the_death_without_names() {
     assert!(input.contains("Game time: 5:00\n"));
     assert!(input
         .contains("Player: Ahri, MIDDLE, level 1, KDA 1/2/3, items Кольцо Дорана, gold 1250\n"));
-    assert!(input.contains("Killer: Zed, MIDDLE, level 1, KDA 5/1/0, items Затмение\n"));
+    assert!(input
+        .contains("Killer: Zed, MIDDLE, level 1, KDA 5/1/0, items Затмение, magic damage 10%\n"));
     assert!(input.contains("Assister: LeeSin, JUNGLE"));
     assert!(input.contains("Deaths to this killer this game: 1\n"));
     assert_eq!(input.matches("Enemy: ").count(), 5);

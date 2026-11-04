@@ -32,7 +32,7 @@ impl DamageProfile {
         }
     }
 
-    fn share_of(&self, champion: &str) -> Option<f64> {
+    pub(super) fn share_of(&self, champion: &str) -> Option<f64> {
         let key = champion_key(champion);
         self.magic_share
             .iter()

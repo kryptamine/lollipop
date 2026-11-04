@@ -14,7 +14,7 @@ use crate::advice::{AdviceCall, Trigger, TRIGGERS};
 
 pub use advice_language::AdviceLanguage;
 pub use switches::Switches;
-pub use widget::{Widget, ADVICE_WIDGET, WIDGETS};
+pub use widget::{Widget, ADVICE_WIDGET, BUILD_WIDGET, WIDGETS};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -94,6 +94,12 @@ impl Settings {
     #[must_use]
     pub fn reads_aloud(&self) -> bool {
         self.voiceover && self.widget_on(ADVICE_WIDGET)
+    }
+
+    /// A Build change is read only while the Build Widget shows it.
+    #[must_use]
+    pub fn reads_build_changes(&self) -> bool {
+        self.reads_aloud() && self.widget_on(BUILD_WIDGET)
     }
 
     /// Every Widget by id, the payload the view draws from.

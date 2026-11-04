@@ -5,10 +5,11 @@ pub struct Widget {
 }
 
 pub const ADVICE_WIDGET: &str = "adviceWidget";
+pub const BUILD_WIDGET: &str = "buildWidget";
 
 pub const WIDGETS: [Widget; 4] = [
     Widget { id: "markerStrip" },
     Widget { id: "timingHints" },
-    Widget { id: "buildWidget" },
+    Widget { id: BUILD_WIDGET },
     Widget { id: ADVICE_WIDGET },
 ];

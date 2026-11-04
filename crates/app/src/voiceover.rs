@@ -11,7 +11,7 @@ use crate::settings_store::SettingsStore;
 // first Advice.
 const WARM_UP_LINE: &str = "Lollipop";
 
-/// Reads the Advice the Widget shows, as the settings allow. Its state changes only
+/// Reads the Advice and the Build change the Widgets show, as the settings allow. Its state changes only
 /// on the main thread, where the synthesizer lives, so no tick overtakes a hide.
 #[derive(Clone)]
 pub(crate) struct Voiceover {
@@ -25,6 +25,7 @@ pub(crate) struct Voiceover {
 struct State {
     reader: Reader,
     advice: Option<ShownAdvice>,
+    build_change: Option<String>,
     overlay_shown: bool,
 }
 
@@ -59,8 +60,11 @@ impl Voiceover {
         }
     }
 
-    pub(crate) fn show_advice(&self, advice: Option<ShownAdvice>) {
-        self.update(move |state| state.advice = advice);
+    pub(crate) fn show(&self, advice: Option<ShownAdvice>, build_change: Option<String>) {
+        self.update(move |state| {
+            state.advice = advice;
+            state.build_change = build_change;
+        });
     }
 
     pub(crate) fn set_overlay_shown(&self, shown: bool) {
@@ -71,14 +75,17 @@ impl Voiceover {
         let this = self.clone();
         let _ = self.window.run_on_main_thread(move || {
             let reads_aloud = this.store.read(Settings::reads_aloud);
+            let reads_changes = this.store.read(Settings::reads_build_changes);
             let speech = {
                 let mut state = this.state.lock().unwrap_or_else(PoisonError::into_inner);
                 change(&mut state);
-                let heard = state
-                    .advice
+                let shown = state.overlay_shown;
+                let heard = state.advice.clone().filter(|_| reads_aloud && shown);
+                let heard_change = state
+                    .build_change
                     .clone()
-                    .filter(|_| reads_aloud && state.overlay_shown);
-                state.reader.follow(heard.as_ref())
+                    .filter(|_| reads_changes && shown);
+                state.reader.follow(heard.as_ref(), heard_change.as_deref())
             };
             match speech {
                 Some(Speech::Read(text)) => this.speak(&text, 1.0),
