@@ -198,6 +198,28 @@ async fn a_build_change_shows_for_ten_seconds() {
     assert_eq!(items(&update)[0], STEELCAPS);
 }
 
+// ADR 0018 opens the Next item to the loading screen and a death alone: a Turning
+// point's answer that names one shows its Advice and leaves the Build.
+#[tokio::test]
+async fn a_turning_point_answer_never_changes_the_build() {
+    let openai = FakeOpenAi::advising(&answer(Some(STEELCAPS), Some(REASON))).await;
+    let game = ItemGame::running_at(1200.0, &item_table(&magic_heavy())).await;
+    let mut updates = game.poll_updates(&openai.url);
+    settle(&mut updates, &openai).await;
+
+    game.log_event(json!({ "EventName": "BaronKill", "EventTime": 1200.0, "KillerName": ME }));
+    let update = settle(&mut updates, &openai).await;
+
+    assert!(!input_of(&openai).contains("Item candidate"));
+    assert_eq!(items(&update), FULL_BUILD);
+    assert_eq!(update.build_change, None);
+    let shown = update.game.unwrap().advice.unwrap();
+    assert_eq!(
+        (shown.trigger, shown.text.as_str()),
+        (Trigger::TurningPoint, TIP)
+    );
+}
+
 // The overlay is hidden on the loading screen, so the change is seen once the game starts.
 #[tokio::test]
 async fn a_loading_screen_answer_changes_the_build_before_the_game() {

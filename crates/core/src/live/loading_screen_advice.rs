@@ -1,13 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use super::advice_ask::AdviceAsk;
-use super::advice_slot::AdviceSlot;
 use super::build::Build;
+use super::fired::{AskInput, Fired, InputFuture};
 use super::lane_opponent::lane_of;
-use super::loading_screen_prompt::{game_lines, input, INSTRUCTIONS};
+use super::loading_screen_prompt::{game_lines, input};
 use super::payload::AllGameData;
 use super::until::Until;
-use crate::advice::{Advisor, Trigger};
+use crate::advice::Language;
 use crate::game_inputs::loading_tier;
 
 // `gameTime` from which a late answer is dropped rather than shown.
@@ -21,66 +20,47 @@ pub(super) struct LoadingScreenAdvice {
     lockfile: PathBuf,
     /// Since the last poll of a running game, so the next loading screen asks again.
     asked: bool,
-    ask: AdviceAsk,
 }
 
 impl LoadingScreenAdvice {
-    pub(super) fn new(http: &reqwest::Client, lockfile: &Path, advisor: &Advisor) -> Self {
+    pub(super) fn new(http: &reqwest::Client, lockfile: &Path) -> Self {
         Self {
             http: http.clone(),
             lockfile: lockfile.to_path_buf(),
             asked: false,
-            ask: AdviceAsk::new(Trigger::LoadingScreen, INSTRUCTIONS, advisor),
         }
     }
 
-    pub(super) async fn at_loading_screen(
+    /// Fires once per loading screen, which starts a game's Advice afresh.
+    pub(super) fn at_loading_screen<'a>(
         &mut self,
-        data: &AllGameData,
-        slot: &mut AdviceSlot,
-        build: &mut Build,
-    ) {
+        data: &'a AllGameData,
+    ) -> Option<Fired<impl AskInput + 'a>> {
         if self.asked {
-            self.ask.collect(data, None, slot, build).await;
-            return;
+            return None;
         }
         // The first answer of a loading screen can come before the player is listed.
-        let Some(player) = data.active_player() else {
-            return;
-        };
-        self.end_game();
-        slot.clear();
+        let player = data.active_player()?;
         self.asked = true;
         let Some(lane) = lane_of(data, player) else {
-            self.ask.log("no lane opponent, not asked");
-            return;
+            return Some(Fired::Skip("no lane opponent, not asked"));
         };
         let http = self.http.clone();
         let lockfile = self.lockfile.clone();
-        let until = Until::GameTime(DROP_AFTER);
-        self.ask.ask(data, build, until, |language, build| {
-            let game = game_lines(data, player, &lane, build, language);
-            async move {
-                let tier = loading_tier(&http, &lockfile).await;
-                input(language, tier, &game)
-            }
-        });
+        Some(Fired::Ask {
+            until: Until::GameTime(DROP_AFTER),
+            input: move |language: Language, build: &Build| -> InputFuture {
+                let game = game_lines(data, player, &lane, build);
+                Box::pin(async move {
+                    let tier = loading_tier(&http, &lockfile).await;
+                    input(language, tier, &game)
+                })
+            },
+        })
     }
 
-    pub(super) async fn at(
-        &mut self,
-        data: &AllGameData,
-        slot: &mut AdviceSlot,
-        build: &mut Build,
-    ) {
+    /// For a running game or one ended: the next loading screen asks again.
+    pub(super) const fn rearm(&mut self) {
         self.asked = false;
-        self.ask
-            .collect(data, Some(data.game_time()), slot, build)
-            .await;
-    }
-
-    pub(super) fn end_game(&mut self) {
-        self.asked = false;
-        self.ask.end();
     }
 }
