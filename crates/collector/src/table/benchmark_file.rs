@@ -49,6 +49,9 @@ pub(super) struct ItemsEntry {
     pub(super) data_dragon_version: String,
     /// The en and ru name of every candidate id, for the prompt.
     pub(super) item_names: BTreeMap<u32, ItemNameEntry>,
+    /// Data Dragon's tags of every completed item and boots id, for the prompt: a model
+    /// trained before the patch may not know what an item gives.
+    pub(super) item_tags: BTreeMap<u32, Vec<String>>,
     /// Every boots id past the first tier, candidate or not: a player holds one pair.
     pub(super) boots: Vec<u32>,
     /// Every completed item id, candidate or not, so the app sees a player finish one.

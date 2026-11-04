@@ -9,20 +9,37 @@ use super::build_prompt::{
 };
 use super::death::Death;
 use super::event_name::EventName;
+use super::game_facts::GameFacts;
+use super::health_trail::HealthTrail;
 use super::kill_score::KillScore;
-use super::prompt_lines::{champion, clock, describe};
+use super::payload::ChampionStats;
+use super::prompt_lines::{champion, clock, describe, objectives, standing};
 use crate::advice::{instructions, Language};
 
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player has just died to an enemy champion: `advice` says why and what to \
-change. Never name an item to buy: the overlay shows the build. When the death teaches \
-nothing, as in a fair trade, `advice` is null. ",
+change. Never name an item to buy: the overlay shows the build. The player's health \
+before death tells a burst from a long fight, and their defences against the killer's \
+damage say what they lacked. When the death teaches nothing, as in a fair trade, \
+`advice` is null. ",
     build_instructions!(),
     swap_instructions!(),
     elixir_instructions!()
 );
 
-pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> String {
+/// What death Advice reads beyond the death itself.
+pub(super) struct Around<'a> {
+    pub(super) build: &'a Build,
+    pub(super) facts: &'a GameFacts<'a>,
+    pub(super) health: &'a HealthTrail,
+}
+
+pub(super) fn input(language: Language, death: &Death<'_>, around: &Around<'_>) -> String {
+    let Around {
+        build,
+        facts,
+        health,
+    } = *around;
     let data = death.data;
     let mut lines = String::new();
     let _ = writeln!(lines, "Language: {}", language.name());
@@ -31,12 +48,7 @@ pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> Str
         "Moment: the player was just killed by an enemy champion"
     );
     let _ = writeln!(lines, "Game time: {}", clock(data.game_time()));
-    let _ = writeln!(
-        lines,
-        "Player: {}, gold {:.0}",
-        describe(death.player),
-        data.current_gold()
-    );
+    player_lines(&mut lines, death, facts, health);
     let _ = writeln!(
         lines,
         "Killer: {}{}",
@@ -50,6 +62,9 @@ pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> Str
     );
     if let Some(score) = KillScore::of(data, death.player) {
         let _ = writeln!(lines, "Kills: {score}");
+    }
+    if let Some(line) = objectives(facts, data.game_time()) {
+        let _ = writeln!(lines, "{line}");
     }
     for assister in death.assisters() {
         let _ = writeln!(
@@ -72,6 +87,61 @@ pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> Str
     swap_lines(&mut lines, build, death.player, language);
     elixir_lines(&mut lines, build, death.player);
     lines
+}
+
+/// The player as they died: against their Benchmarks, their defences and last health.
+fn player_lines(
+    lines: &mut String,
+    death: &Death<'_>,
+    facts: &GameFacts<'_>,
+    health: &HealthTrail,
+) {
+    let data = death.data;
+    let _ = writeln!(
+        lines,
+        "Player: {}, gold {:.0}",
+        describe(death.player),
+        data.current_gold()
+    );
+    if let Some(line) = standing(facts) {
+        let _ = writeln!(lines, "{line}");
+    }
+    if let Some(stats) = data.champion_stats() {
+        let _ = writeln!(lines, "Player defences: {}", defences(stats));
+    }
+    health_lines(lines, death, health);
+    let _ = writeln!(
+        lines,
+        "Respawn in: {} s",
+        death.player.respawn_timer.round()
+    );
+}
+
+fn defences(stats: &ChampionStats) -> String {
+    let parts = [
+        ("max health", stats.max_health),
+        ("armor", stats.armor),
+        ("magic resist", stats.magic_resist),
+    ];
+    parts
+        .iter()
+        .filter_map(|(name, value)| value.map(|value| format!("{name} {value:.0}")))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// The player's health over the last seconds before this death, nothing without it.
+fn health_lines(lines: &mut String, death: &Death<'_>, health: &HealthTrail) {
+    let Some(died_at) = death.kill.time() else {
+        return;
+    };
+    let samples: Vec<String> = health
+        .before(died_at)
+        .map(|(at, share)| format!("{:.0}% at {}", share * 100.0, clock(at)))
+        .collect();
+    if !samples.is_empty() {
+        let _ = writeln!(lines, "Player health before death: {}", samples.join(", "));
+    }
 }
 
 /// Every death of the player to an enemy champion this game, this one included.

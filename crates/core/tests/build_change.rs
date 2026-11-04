@@ -146,7 +146,7 @@ async fn the_death_prompt_offers_the_items_that_may_replace_the_next_one() {
     ));
     assert!(input.contains("Next item: Сапоги чародея, not started\n"));
     assert!(input.contains(
-        "Item candidate: 3047 Бронированные сапоги, bought in 30% of games, first at minute 9\n"
+        "Item candidate: 3047 Бронированные сапоги (Armor, Boots), bought in 30% of games, first at minute 9\n"
     ));
     assert_eq!(input.matches("Item candidate: ").count(), 1);
     assert!(input.contains("Death at 5:00: to Zed, magic damage 10%\n"));

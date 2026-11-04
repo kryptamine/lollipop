@@ -289,6 +289,10 @@ impl Build {
         )
     }
 
+    pub(super) fn tags_of(&self, item: u32) -> &[String] {
+        self.table.tags_of(item)
+    }
+
     pub(super) fn magic_share(&self, player: &Player) -> Option<f64> {
         self.table.magic_share(player.cell_champion()?)
     }

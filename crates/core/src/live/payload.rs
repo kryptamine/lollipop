@@ -24,6 +24,16 @@ struct ActivePlayer {
     summoner_name: Option<String>,
     current_gold: f64,
     full_runes: Option<FullRunes>,
+    champion_stats: Option<ChampionStats>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct ChampionStats {
+    current_health: Option<f64>,
+    pub(super) max_health: Option<f64>,
+    pub(super) armor: Option<f64>,
+    pub(super) magic_resist: Option<f64>,
 }
 
 // Riot documents none of these as always there, and a field that fails to read would
@@ -174,6 +184,16 @@ impl AllGameData {
 
     pub(super) const fn full_runes(&self) -> Option<&FullRunes> {
         self.active_player.full_runes.as_ref()
+    }
+
+    pub(super) const fn champion_stats(&self) -> Option<&ChampionStats> {
+        self.active_player.champion_stats.as_ref()
+    }
+
+    pub(super) fn health_share(&self) -> Option<f64> {
+        let stats = self.champion_stats()?;
+        let max = stats.max_health.filter(|max| *max > 0.0)?;
+        Some(stats.current_health? / max)
     }
 
     pub(super) const fn current_gold(&self) -> f64 {

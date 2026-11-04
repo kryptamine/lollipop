@@ -53,13 +53,23 @@ pub(super) fn build_lines(lines: &mut String, build: &Build, player: &Player, la
         };
         let _ = writeln!(
             lines,
-            "Item candidate: {} {}, bought in {:.0}% of games, first at minute {:.0}{later}",
+            "Item candidate: {} {}{}, bought in {:.0}% of games, first at minute {:.0}{later}",
             candidate.item,
             build.name_of(candidate.item, language),
+            gives(build, candidate.item),
             candidate.share * 100.0,
             candidate.minute
         );
     }
+}
+
+/// What the item gives by its Data Dragon tags, empty when the table has none for it.
+fn gives(build: &Build, item: u32) -> String {
+    let tags = build.tags_of(item);
+    if tags.is_empty() {
+        return String::new();
+    }
+    format!(" ({})", tags.join(", "))
 }
 
 /// The champion's share of magic damage, empty when the table has none for it.
@@ -92,14 +102,21 @@ pub(super) fn swap_lines(lines: &mut String, build: &Build, player: &Player, lan
     }
     let _ = writeln!(lines, "Inventory full");
     for item in options.sells {
-        let _ = writeln!(lines, "Swap sell option: {} {}", item.id, item.shown_name());
+        let _ = writeln!(
+            lines,
+            "Swap sell option: {} {}{}",
+            item.id,
+            item.shown_name(),
+            gives(build, item.id)
+        );
     }
     for candidate in options.buys {
         let _ = writeln!(
             lines,
-            "Swap candidate: {} {}, bought in {:.0}% of games, first at minute {:.0}",
+            "Swap candidate: {} {}{}, bought in {:.0}% of games, first at minute {:.0}",
             candidate.item,
             build.name_of(candidate.item, language),
+            gives(build, candidate.item),
             candidate.share * 100.0,
             candidate.minute
         );

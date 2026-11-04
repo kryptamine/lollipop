@@ -100,6 +100,10 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
             (id, ItemNameEntry { en, ru })
         })
         .collect();
+    let tags = items
+        .iter()
+        .map(|(&id, item)| (id, item.tags.clone()))
+        .collect();
     Ok(ItemCatalog {
         version: version.to_string(),
         classes,
@@ -107,6 +111,7 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
         boots: boots(&items, &builds_from),
         builds_from,
         names,
+        tags,
     })
 }
 

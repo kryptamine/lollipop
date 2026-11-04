@@ -244,7 +244,9 @@ async fn the_death_prompt_offers_what_a_swap_may_sell_and_buy() {
     assert!(input.contains("Build: none\n"));
     assert!(input.contains("Inventory full\n"));
     assert!(input.contains("Swap sell option: 3135 Посох пустоты\n"));
-    assert!(input.contains("Swap sell option: 3157 Песочные часы Жони\n"));
+    assert!(
+        input.contains("Swap sell option: 3157 Песочные часы Жони (SpellDamage, Armor, Active)\n")
+    );
     assert_eq!(input.matches("Swap sell option: ").count(), 5);
     assert!(input
         .contains("Swap candidate: 3165 item 3165, bought in 10% of games, first at minute 18\n"));
