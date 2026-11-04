@@ -1,13 +1,12 @@
 use std::time::{Duration, Instant};
 
-use tokio::task::JoinHandle;
-
 use super::advice_slot::AdviceSlot;
 use super::arrival::Arrival;
 use super::build::Build;
 use super::death::Death;
 use super::death_prompt::{input, INSTRUCTIONS};
 use super::payload::{AllGameData, Player};
+use super::pending_answer::PendingAnswer;
 use crate::advice::{Advisor, AnswerParts, Question, Trigger};
 
 /// Advice on a death to an enemy champion that teaches something, which may change the
@@ -16,7 +15,7 @@ use crate::advice::{Advisor, AnswerParts, Question, Trigger};
 pub(super) struct DeathAdvice {
     /// `ChampionKill` events already seen, `None` before the game's first poll.
     seen_kills: Option<usize>,
-    asking: Option<JoinHandle<AnswerParts>>,
+    asking: PendingAnswer<AnswerParts>,
 }
 
 impl DeathAdvice {
@@ -50,9 +49,7 @@ impl DeathAdvice {
     }
 
     pub(super) fn end_game(&mut self) {
-        if let Some(asking) = self.asking.take() {
-            asking.abort();
-        }
+        self.asking = PendingAnswer::default();
     }
 
     fn ask(&mut self, death: &Death<'_>, advisor: &Advisor, build: &mut Build) {
@@ -67,7 +64,7 @@ impl DeathAdvice {
         let input = input(call.language, death, build);
         let deadline = Instant::now() + Duration::from_secs_f64(player.respawn_timer);
         let advisor = advisor.clone();
-        self.asking = Some(tokio::spawn(async move {
+        self.asking = PendingAnswer::spawn(async move {
             let question = Question {
                 trigger: Trigger::Death,
                 instructions: INSTRUCTIONS,
@@ -75,7 +72,7 @@ impl DeathAdvice {
                 deadline,
             };
             advisor.ask(&call, &question).await.into_parts()
-        }));
+        });
     }
 
     /// An answer that arrives once the player has respawned is dropped, Build change too.
@@ -86,21 +83,18 @@ impl DeathAdvice {
         slot: &mut AdviceSlot,
         build: &mut Build,
     ) {
-        let Some(asking) = self.asking.take_if(|asking| asking.is_finished()) else {
+        let Some(AnswerParts {
+            text,
+            change,
+            swap,
+            elixir,
+        }) = self.asking.finished().await
+        else {
             return;
         };
         if !player.is_dead {
             return;
         }
-        let Ok(AnswerParts {
-            text,
-            change,
-            swap,
-            elixir,
-        }) = asking.await
-        else {
-            return;
-        };
         if let Some(change) = change {
             build.change(change, player, Some(data.game_time()));
         }

@@ -37,6 +37,7 @@ mod objective_schedule;
 mod objective_score;
 mod open_next;
 mod payload;
+mod pending_answer;
 mod poll;
 mod prompt_lines;
 mod scores;
