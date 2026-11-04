@@ -114,7 +114,10 @@ Settled in [#123](https://github.com/kryptamine/lollipop/issues/123).
   same status. The key is not deleted.
 - **No circuit breaker:** every Trigger tries on its own after a failure.
 - **Log:** Trigger, failure kind (network, timeout, HTTP status, schema, length),
-  latency, whether retried. Never the key, the prompt or the answer.
+  latency, whether retried. Never the key, the prompt or the answer. Each Trigger
+  also logs what became of it when it fired: not asked (off or no key, no Lane
+  opponent), dropped (before its answer, late, outranked), or shown
+  ([#157](https://github.com/kryptamine/lollipop/issues/157)).
 
 ## Advice Widget
 

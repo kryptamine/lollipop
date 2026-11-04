@@ -52,6 +52,7 @@ impl LoadingScreenAdvice {
         slot.clear();
         self.asked = true;
         let Some(lane) = lane_of(data, player) else {
+            self.ask.log("no lane opponent, not asked");
             return;
         };
         let http = self.http.clone();

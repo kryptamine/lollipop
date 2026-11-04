@@ -43,6 +43,7 @@ impl AdviceAsk {
             return;
         };
         let Some(call) = self.advisor.call_for(self.trigger) else {
+            self.log("off or no key, not asked");
             return;
         };
         if changes_next_item(self.trigger) {
@@ -84,6 +85,7 @@ impl AdviceAsk {
         self.asking = None;
         let player = data.active_player();
         if until.passed(game_time, player) {
+            self.log("dropped, late");
             return false;
         }
         let Some(text) = self.apply(parts, player, game_time, build) else {
@@ -93,11 +95,21 @@ impl AdviceAsk {
             trigger: self.trigger,
             text,
         };
-        slot.offer(arrival, game_time)
+        let shown = slot.offer(arrival, game_time);
+        self.log(if shown { "shown" } else { "dropped, outranked" });
+        shown
     }
 
     pub(super) fn end(&mut self) {
-        self.asking = None;
+        if self.asking.take().is_some() {
+            self.log("dropped before its answer");
+        }
+    }
+
+    /// One line naming this Trigger, as the Advisor logs its own.
+    pub(super) fn log(&self, what: &str) {
+        self.advisor
+            .log(&format!("Advice {}: {what}", self.trigger.id()));
     }
 
     /// Hands the Build what this Trigger may change, and returns the text.
