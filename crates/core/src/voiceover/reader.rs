@@ -2,6 +2,7 @@ use crate::advice::Trigger;
 use crate::live::ShownAdvice;
 
 use super::speech::Speech;
+use super::spoken::spoken;
 
 /// Keeps the voice on the Advice and the Build change the player sees, reading each one
 /// at most once.
@@ -45,6 +46,6 @@ impl Reader {
             return None;
         }
         self.speaking = true;
-        Some(Speech::Read(texts.join(" ")))
+        Some(Speech::Read(spoken(&texts.join(" "))))
     }
 }

@@ -257,7 +257,8 @@ async fn an_off_build_purchase_shows_no_build_change() {
     assert_eq!(update.build_change, None);
 }
 
-// Advice and its Build change come in one answer, and the voice reads both in one go.
+// Advice and its Build change come in one answer, and the voice reads both in one go,
+// a colon spoken as a pause.
 #[tokio::test]
 async fn the_voice_reads_a_build_change_after_its_advice() {
     let (update, _openai) = after_death(&answer(Some(STEELCAPS), Some(REASON)), |_| {}).await;
@@ -265,7 +266,10 @@ async fn the_voice_reads_a_build_change_after_its_advice() {
     let advice = update.game.and_then(|game| game.advice);
 
     let speech = reader.follow(advice.as_ref(), update.build_change.as_deref());
-    assert_eq!(speech, Some(Speech::Read(format!("{TIP} {REASON}"))));
+    assert_eq!(
+        speech,
+        Some(Speech::Read(format!("{TIP} {REASON}").replace(':', ",")))
+    );
     assert_eq!(
         reader.follow(advice.as_ref(), update.build_change.as_deref()),
         None
