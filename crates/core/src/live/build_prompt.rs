@@ -8,15 +8,11 @@ use super::payload::Player;
 use crate::advice::Language;
 
 /// What a Trigger whose input lists Item candidates adds to its instructions.
-macro_rules! build_instructions {
-    () => {
-        "When the input lists Item candidates, `next_item` may put the id of one in place \
+pub(super) const NEXT_ITEM_INSTRUCTIONS: &str =
+    "When the input lists Item candidates, `next_item` may put the id of one in place \
 of the Next item, when the enemies' damage, items and levels, the kill score or the \
 player's deaths call for it, and `reason` says why, at most 120 characters, in the input's \
-language. Otherwise `next_item` and `reason` are null. `advice` never names an item."
-    };
-}
-pub(super) use build_instructions;
+language. Otherwise `next_item` and `reason` are null. `advice` never names an item.";
 
 /// The Build left to buy, the Next item, and the Item candidates that may replace it.
 pub(super) fn build_lines(lines: &mut String, build: &Build, player: &Player, language: Language) {
@@ -80,15 +76,11 @@ pub(super) fn magic_damage(build: &Build, player: &Player) -> String {
 }
 
 /// What a Trigger whose input may list Swap candidates adds to its instructions.
-macro_rules! swap_instructions {
-    () => {
-        " When the input lists Swap candidates, `swap` may sell one Swap sell option for one \
+pub(super) const SWAP_INSTRUCTIONS: &str =
+    " When the input lists Swap candidates, `swap` may sell one Swap sell option for one \
 Swap candidate, `sell` and `buy` by id, when the enemies' damage, items and levels, the kill \
 score or the player's deaths call for it, and its `reason` says why, at most 120 \
-characters, in the input's language. Otherwise `swap` is null."
-    };
-}
-pub(super) use swap_instructions;
+characters, in the input's language. Otherwise `swap` is null.";
 
 /// Once the inventory is full, the items a Swap may sell and the Item candidates it may
 /// buy. Nothing while a slot is free.
@@ -124,14 +116,10 @@ pub(super) fn swap_lines(lines: &mut String, build: &Build, player: &Player, lan
 }
 
 /// What a Trigger whose input may list Elixir options adds to its instructions.
-macro_rules! elixir_instructions {
-    () => {
-        " When the input lists Elixir options, `elixir` is the id of the one the player \
+pub(super) const ELIXIR_INSTRUCTIONS: &str =
+    " When the input lists Elixir options, `elixir` is the id of the one the player \
 should drink before Baron and Elder, for the champion's damage and the enemies' threats. \
-Otherwise `elixir` is null."
-    };
-}
-pub(super) use elixir_instructions;
+Otherwise `elixir` is null.";
 
 /// The Elixirs a model may pick from, once the inventory is full and until it picks one.
 pub(super) fn elixir_lines(lines: &mut String, build: &Build, player: &Player) {

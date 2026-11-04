@@ -68,6 +68,10 @@ _Avoid_: Timers, spawn table
 **Patch window**:
 The patches whose matches a Benchmark table is built from.
 
+**Proposal**:
+What a Trigger's answer may change in the Build: the Next item, a Swap or an Elixir. Which ones it may propose depends on the Trigger.
+_Avoid_: Capability, build proposal
+
 **Stale table**:
 A Benchmark table that cannot serve the patch of the game being played.
 _Avoid_: Outdated, expired

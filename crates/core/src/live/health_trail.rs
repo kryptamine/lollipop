@@ -7,7 +7,7 @@ use super::payload::AllGameData;
 const KEPT_FOR: f64 = 10.0;
 
 /// The active player's health share over their last seconds alive, a poll apart.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(super) struct HealthTrail {
     /// Game time and health over max health, oldest first.
     samples: VecDeque<(f64, f64)>,

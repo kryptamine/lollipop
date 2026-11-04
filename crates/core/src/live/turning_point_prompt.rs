@@ -8,14 +8,13 @@ use super::objective_score::ObjectiveScore;
 use super::payload::{AllGameData, Player};
 use super::prompt_lines::{clock, describe, objectives, standing};
 use super::turning_point::TurningPoint;
-use crate::advice::{instructions, Language};
+use crate::advice::Language;
 
-pub(super) const INSTRUCTIONS: &str = instructions!(
-    "Here a moment has just changed the game plan: `advice` is one macro idea for the next \
+/// This Trigger's part of the instructions; its Proposals add theirs.
+pub(super) const INSTRUCTIONS: &str = "Here a moment has just changed the game plan: `advice` is one macro idea for the next \
 few minutes: which objective to play for and what to prioritise. Where the player is on \
 the map is unknown, so never send them to a lane or to a named ally. Plan around the \
-objectives that are up or spawn soon, by the times the input gives. When nothing is worth saying, or an earlier Advice already says it, `advice` is null."
-);
+objectives that are up or spawn soon, by the times the input gives. When nothing is worth saying, or an earlier Advice already says it, `advice` is null.";
 
 /// The game at a Turning point, with the texts of the Advice this game showed before.
 pub(super) struct Turn<'a> {

@@ -4,16 +4,15 @@
 use std::fmt::Write;
 
 use super::build::Build;
-use super::build_prompt::{build_instructions, build_lines, magic_damage};
+use super::build_prompt::magic_damage;
 use super::lane_opponent::Lane;
 use super::payload::{AllGameData, FullRunes, Named, Player};
-use crate::advice::{instructions, Language};
+use crate::advice::Language;
 use crate::game_inputs::TierReading;
 
-pub(super) const INSTRUCTIONS: &str = instructions!(
-    "Here `advice` is a plan for the laning phase against the lane opponent. ",
-    build_instructions!()
-);
+/// This Trigger's part of the instructions; its Proposals add theirs.
+pub(super) const INSTRUCTIONS: &str =
+    "Here `advice` is a plan for the laning phase against the lane opponent. ";
 
 /// The game's part of the input, read from the loading screen payload and the Build.
 pub(super) fn game_lines(
@@ -21,7 +20,6 @@ pub(super) fn game_lines(
     player: &Player,
     lane: &Lane<'_>,
     build: &Build,
-    language: Language,
 ) -> String {
     let mut lines = String::new();
     let _ = writeln!(lines, "Player: {}", describe(player));
@@ -40,7 +38,6 @@ pub(super) fn game_lines(
             let _ = writeln!(lines, "Enemy: {}{}", describe(p), magic_damage(build, p));
         }
     }
-    build_lines(&mut lines, build, player, language);
     lines
 }
 

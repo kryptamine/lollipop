@@ -3,10 +3,7 @@
 use std::fmt::Write;
 
 use super::build::Build;
-use super::build_prompt::{
-    build_instructions, build_lines, elixir_instructions, elixir_lines, magic_damage,
-    swap_instructions, swap_lines,
-};
+use super::build_prompt::magic_damage;
 use super::death::Death;
 use super::event_name::EventName;
 use super::game_facts::GameFacts;
@@ -14,18 +11,15 @@ use super::health_trail::HealthTrail;
 use super::kill_score::KillScore;
 use super::payload::ChampionStats;
 use super::prompt_lines::{champion, clock, describe, objectives, standing};
-use crate::advice::{instructions, Language};
+use crate::advice::Language;
 
-pub(super) const INSTRUCTIONS: &str = instructions!(
+/// This Trigger's part of the instructions; its Proposals add theirs.
+pub(super) const INSTRUCTIONS: &str =
     "Here the player has just died to an enemy champion: `advice` says why and what to \
 change. Never name an item to buy: the overlay shows the build. The player's health \
 before death tells a burst from a long fight, and their defences against the killer's \
 damage say what they lacked. When the death teaches nothing, as in a fair trade, \
-`advice` is null. ",
-    build_instructions!(),
-    swap_instructions!(),
-    elixir_instructions!()
-);
+`advice` is null. ";
 
 /// What death Advice reads beyond the death itself.
 pub(super) struct Around<'a> {
@@ -83,9 +77,6 @@ pub(super) fn input(language: Language, death: &Death<'_>, around: &Around<'_>) 
         );
     }
     death_lines(&mut lines, death, build);
-    build_lines(&mut lines, build, death.player, language);
-    swap_lines(&mut lines, build, death.player, language);
-    elixir_lines(&mut lines, build, death.player);
     lines
 }
 
