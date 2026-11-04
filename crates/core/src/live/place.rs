@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-/// Where the enemy jungler was last seen.
+/// A spot on the map: where the enemy jungler was last seen, a lane or an objective.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Place {
@@ -11,6 +11,7 @@ pub enum Place {
     Base,
     Drake,
     Elder,
+    Voidgrubs,
     Herald,
     Baron,
 }

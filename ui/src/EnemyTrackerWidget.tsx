@@ -21,10 +21,30 @@ export const EnemyTrackerWidget = ({ tracker }: EnemyTrackerWidgetProps) => {
 
   return (
     <div id="enemy-tracker">
-      {headcount && <HeadcountLine {...headcount} />}
-      {jungler && <JunglerLine champion={jungler.champion} whereabouts={jungler.whereabouts} />}
-      {recalls.map(({ champion, ago, bought }) => (
-        <RecallLine key={champion} champion={champion} ago={ago} bought={bought} />
+      {headcount && (
+        <HeadcountLine
+          allies={headcount.allies}
+          enemies={headcount.enemies}
+          leadEndsIn={headcount.leadEndsIn}
+          objective={headcount.objective}
+        />
+      )}
+      {jungler && (
+        <JunglerLine
+          champion={jungler.champion}
+          whereabouts={jungler.whereabouts}
+          safeLane={jungler.safeLane}
+          noFarmFor={jungler.noFarmFor}
+        />
+      )}
+      {recalls.map(({ champion, backIn, teleport, bought }) => (
+        <RecallLine
+          key={champion}
+          champion={champion}
+          backIn={backIn}
+          teleport={teleport}
+          bought={bought}
+        />
       ))}
     </div>
   );

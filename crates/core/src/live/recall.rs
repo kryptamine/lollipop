@@ -1,8 +1,7 @@
-/// An enemy's trip to base, seen in what they bought while alive.
+/// An enemy in base, seen in what they bought there while alive.
 pub(super) struct Recall {
-    /// The game time of the trip's first purchase.
+    /// The game time of the first purchase.
     pub(super) at: f64,
-    /// By the client's name, in the order bought.
     pub(super) bought: Vec<String>,
 }
 

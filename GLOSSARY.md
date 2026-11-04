@@ -46,7 +46,7 @@ All gold a player has received in a game, starting gold included. Spending never
 _Avoid_: Net worth, total gold
 
 **Headcount**:
-How many champions each team has alive while one has more, and how long the lead lasts at least.
+How many champions each team has alive while one has more, and how long until respawns even the sides if no one else dies.
 _Avoid_: Numbers advantage, man advantage
 
 **Item candidate**:
@@ -54,7 +54,7 @@ A completed item or boots that players of a champion and role commonly buy again
 _Avoid_: Recommended item, suggestion
 
 **Jungler sighting**:
-Where the enemy jungler last showed and how long ago: a kill or objective they took part in, or base after a Recall or a respawn.
+What is known of the enemy jungler: where they last showed and how long ago, from a kill or objective they took part in or base after a Recall or a respawn, the side lane too far for them to reach yet, and how long their CS and level have stood still.
 _Avoid_: Jungle tracking, jungler position
 
 **Lane opponent**:
@@ -85,7 +85,7 @@ What a Trigger's answer may change in the Build: the Next item, a Swap or an Eli
 _Avoid_: Capability, build proposal
 
 **Recall**:
-An enemy buying an item while alive, outside the game's first 90 s and the 30 s after a respawn: they are in base.
+An enemy buying an item while alive, outside the game's first 90 s, the 30 s after a respawn and the 8 s after a kill they took part in: they are in base.
 _Avoid_: Back, base trip
 
 **Stale table**:

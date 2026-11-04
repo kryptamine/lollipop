@@ -36,6 +36,7 @@ pub const SERRATED_DIRK: u32 = 3134;
 pub const HEALTH_POTION: u32 = 2003;
 pub const MANAMUNE: u32 = 3004;
 pub const MURAMANA: u32 = 3042;
+pub const BISCUIT: u32 = 2010;
 
 const fn item_name(id: u32) -> &'static str {
     match id {
@@ -44,17 +45,26 @@ const fn item_name(id: u32) -> &'static str {
         HEALTH_POTION => "Health Potion",
         MANAMUNE => "Manamune",
         MURAMANA => "Muramana",
+        BISCUIT => "Total Biscuit of Everlasting Will",
         _ => "Other",
     }
 }
 
-/// One poll of a running ten-player game. Everyone is alive and holds nothing unless
-/// the poll says otherwise.
+fn spell(raw: &str) -> Value {
+    json!({ "rawDisplayName": format!("GeneratedTip_SummonerSpell_{raw}_DisplayName") })
+}
+
+/// One poll of a running ten-player game. Everyone is alive at 50 CS and level 6, holds
+/// nothing and has Flash with Smite in the jungle or Ignite elsewhere, unless the poll
+/// says otherwise.
 pub struct TrackerPoll {
     game_time: f64,
     events: Vec<Value>,
     dead: Vec<(&'static str, f64)>,
     items: Vec<(&'static str, Vec<u32>)>,
+    farm: Vec<(&'static str, u32, u32)>,
+    teleport: Vec<&'static str>,
+    positions: bool,
 }
 
 impl TrackerPoll {
@@ -64,7 +74,26 @@ impl TrackerPoll {
             events: Vec::new(),
             dead: Vec::new(),
             items: Vec::new(),
+            farm: Vec::new(),
+            teleport: Vec::new(),
+            positions: true,
         }
+    }
+
+    pub fn farm(mut self, riot_id: &'static str, cs: u32, level: u32) -> Self {
+        self.farm.push((riot_id, cs, level));
+        self
+    }
+
+    pub fn teleport(mut self, riot_id: &'static str) -> Self {
+        self.teleport.push(riot_id);
+        self
+    }
+
+    /// As in a queue where the payload gives no positions.
+    pub const fn no_positions(mut self) -> Self {
+        self.positions = false;
+        self
     }
 
     pub fn dead(mut self, riot_id: &'static str, respawn_in: f64) -> Self {
@@ -111,17 +140,36 @@ impl TrackerPoll {
             .iter()
             .map(|id| json!({ "itemID": id, "count": 1, "displayName": item_name(*id) }))
             .collect();
-        json!({
+        let (cs, level) = self
+            .farm
+            .iter()
+            .find(|(farmer, _, _)| *farmer == riot_id)
+            .map_or((50, 6), |(_, cs, level)| (*cs, *level));
+        let second = if position == "JUNGLE" {
+            "SummonerSmite"
+        } else if self.teleport.contains(&riot_id) {
+            "SummonerTeleport"
+        } else {
+            "SummonerDot"
+        };
+        let mut player = json!({
             "riotId": riot_id,
             "championName": champion,
             "team": team,
-            "position": position,
-            "level": 6,
+            "level": level,
             "isDead": respawn.is_some(),
             "respawnTimer": respawn.map_or(0.0, |(_, left)| *left),
             "items": items,
-            "scores": { "creepScore": 50 },
-        })
+            "scores": { "creepScore": cs },
+            "summonerSpells": {
+                "summonerSpellOne": spell("SummonerFlash"),
+                "summonerSpellTwo": spell(second),
+            },
+        });
+        if self.positions {
+            player["position"] = json!(position);
+        }
+        player
     }
 }
 

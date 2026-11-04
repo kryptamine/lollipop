@@ -1,15 +1,10 @@
-use std::cmp::Ordering;
-
 use serde::Serialize;
 
 use super::clock_text::countdown;
 use super::payload::{AllGameData, Player};
+use super::place::Place;
 use super::spawn::Spawn;
 use super::window_objective::WindowObjective;
-
-// Voidgrubs and Herald have no respawn the schedule follows, so whether they are up
-// is not known.
-const CONTESTED: [&str; 3] = ["Drake", "Elder", "Baron"];
 
 /// The champions each side has alive, while one side has more.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -17,10 +12,10 @@ const CONTESTED: [&str; 3] = ["Drake", "Elder", "Baron"];
 pub struct Headcount {
     pub allies: usize,
     pub enemies: usize,
-    /// Until the short side's next respawn, as `m:ss`. The other side can only gain
-    /// meanwhile, so the lead lasts at least this long.
-    pub lasts: String,
-    /// The soonest one up or spawning before the lead may end.
+    /// Until enough of the short side has respawned to even the sides, as `m:ss`, if no
+    /// one else dies meanwhile.
+    pub lead_ends_in: String,
+    /// The soonest one up or spawning before the lead ends.
     pub objective: Option<WindowObjective>,
 }
 
@@ -30,40 +25,54 @@ pub(super) fn headcount_of(
     player: &Player,
     spawns: &[Spawn],
 ) -> Option<Headcount> {
-    let team = player.team()?;
-    let (allies, enemies): (Vec<&Player>, Vec<&Player>) = data
-        .players()
-        .iter()
-        .filter(|p| p.team().is_some())
-        .partition(|p| p.team() == Some(team));
+    let allies: Vec<&Player> = data.allies_of(player).collect();
+    let enemies: Vec<&Player> = data.enemies_of(player).collect();
     if allies.is_empty() || enemies.is_empty() {
         return None;
     }
     let alive = |side: &[&Player]| side.iter().filter(|p| !p.is_dead).count();
     let (ours, theirs) = (alive(&allies), alive(&enemies));
-    let short = match ours.cmp(&theirs) {
-        Ordering::Less => &allies,
-        Ordering::Greater => &enemies,
-        Ordering::Equal => return None,
-    };
-    let lasts = short
+    let short = if ours < theirs { &allies } else { &enemies };
+    let lead = ours.abs_diff(theirs);
+    if lead == 0 {
+        return None;
+    }
+    let mut respawns: Vec<f64> = short
         .iter()
         .filter(|p| p.is_dead)
         .map(|p| p.respawn_timer)
-        .min_by(f64::total_cmp)?;
+        .collect();
+    respawns.sort_by(f64::total_cmp);
+    // A side of fewer than five can be short more champions than it has dead.
+    let ends_in = respawns
+        .get(lead - 1)
+        .or_else(|| respawns.last())
+        .copied()?;
     let now = data.game_time();
     let objective = spawns
         .iter()
-        .filter(|spawn| CONTESTED.contains(&spawn.objective))
-        .find(|spawn| spawn.at <= now + lasts)
-        .map(|spawn| WindowObjective {
-            objective: spawn.objective,
-            spawns_in: (spawn.at > now).then(|| countdown(spawn.at - now)),
+        .filter(|spawn| spawn.at <= now + ends_in)
+        .find_map(|spawn| {
+            Some(WindowObjective {
+                objective: contested(spawn.objective)?,
+                spawns_in: (spawn.at > now).then(|| countdown(spawn.at - now)),
+            })
         });
     Some(Headcount {
         allies: ours,
         enemies: theirs,
-        lasts: countdown(lasts),
+        lead_ends_in: countdown(ends_in),
         objective,
     })
+}
+
+/// Voidgrubs and Herald have no respawn the schedule follows, so whether they are up
+/// is not known.
+fn contested(objective: &str) -> Option<Place> {
+    match objective {
+        "Drake" => Some(Place::Drake),
+        "Elder" => Some(Place::Elder),
+        "Baron" => Some(Place::Baron),
+        _ => None,
+    }
 }

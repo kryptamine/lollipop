@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use super::clock_text::ago;
+use super::clock_text::countdown;
 use super::enemy_watch::EnemyWatch;
 use super::headcount::{headcount_of, Headcount};
 use super::jungler_sighting::{sighting_of, JunglerSighting};
@@ -9,8 +9,8 @@ use super::payload::{AllGameData, Player};
 use super::shown_recall::ShownRecall;
 use super::spawn::Spawn;
 
-// About the walk from base back to lane.
-const RECALL_SHOWN_FOR: f64 = 40.0;
+// About the walk from base back to a lane.
+const WALK_BACK: f64 = 35.0;
 
 /// What the overlay works out of the enemies from what every player can see: the
 /// scoreboard and the kill feed.
@@ -18,7 +18,7 @@ const RECALL_SHOWN_FOR: f64 = 40.0;
 pub struct EnemyTracker {
     pub headcount: Option<Headcount>,
     pub jungler: Option<JunglerSighting>,
-    /// The Lane opponents back in base.
+    /// The Lane opponents in base.
     pub recalls: Vec<ShownRecall>,
 }
 
@@ -47,12 +47,14 @@ fn recalls_of(watch: &EnemyWatch, data: &AllGameData, player: &Player) -> Vec<Sh
         .filter_map(|opponent| {
             let recall = watch.recall_of(opponent)?;
             let passed = now - recall.at;
-            if passed >= RECALL_SHOWN_FOR {
+            if passed >= WALK_BACK {
                 return None;
             }
             Some(ShownRecall {
                 champion: opponent.champion_name.clone()?,
-                ago: ago(passed),
+                back_in: countdown(WALK_BACK - passed),
+                // Unleashed Teleport's raw name is not in any recording.
+                teleport: opponent.has_summoner("SummonerTeleport"),
                 bought: recall.bought.clone(),
             })
         })

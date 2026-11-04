@@ -1,21 +1,23 @@
 // What the app sends the Enemy tracker Widget on each poll of a running game.
 
-// An objective to take while one side has more champions alive; `spawnsIn` is null while it is up.
+export type Place =
+  'top' | 'mid' | 'bot' | 'jungle' | 'base' | 'drake' | 'elder' | 'voidgrubs' | 'herald' | 'baron';
+
+export type ContestedObjective = 'drake' | 'elder' | 'baron';
+
+// `spawnsIn` is null while the objective is up.
 export type WindowObjective = {
-  objective: string;
+  objective: ContestedObjective;
   spawnsIn: string | null;
 };
 
-// Champions alive on each side, only while one has more. The lead holds at least `lasts`.
+// Champions alive on each side, only while one has more.
 export type Headcount = {
   allies: number;
   enemies: number;
-  lasts: string;
+  leadEndsIn: string;
   objective: WindowObjective | null;
 };
-
-export type JunglerPlace =
-  'top' | 'mid' | 'bot' | 'jungle' | 'base' | 'drake' | 'elder' | 'herald' | 'baron';
 
 export type JunglerDead = {
   state: 'dead';
@@ -24,19 +26,29 @@ export type JunglerDead = {
 
 export type JunglerSeen = {
   state: 'seen';
-  place: JunglerPlace;
+  place: Place;
   ago: string;
+};
+
+// The side lane the enemy jungler cannot reach yet.
+export type SafeLane = {
+  lane: 'top' | 'bot';
+  endsIn: string;
 };
 
 export type JunglerSighting = {
   champion: string;
-  whereabouts: JunglerDead | JunglerSeen;
+  whereabouts: JunglerDead | JunglerSeen | null;
+  safeLane: SafeLane | null;
+  // Time since their CS or level last rose: ganking, or in base.
+  noFarmFor: string | null;
 };
 
-// A Lane opponent back in base, and what they bought there.
+// A Lane opponent in base; `backIn` estimates their walk back to lane.
 export type ShownRecall = {
   champion: string;
-  ago: string;
+  backIn: string;
+  teleport: boolean;
   bought: string[];
 };
 

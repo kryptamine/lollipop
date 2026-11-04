@@ -5,45 +5,76 @@ use super::enemy_watch::EnemyWatch;
 use super::event_name::EventName;
 use super::payload::{AllGameData, Event, Player};
 use super::place::Place;
+use super::safe_lane::SafeLane;
 use super::whereabouts::Whereabouts;
 
 // Where a jungler was this long ago says little about where they are now.
 const KEPT_FOR: f64 = 90.0;
+// CS moves in steps of 10, so a jungler farming can go a minute without a step.
+const NO_FARM_FROM: f64 = 90.0;
 
-/// The enemy jungler's last known whereabouts.
+/// What is known of the enemy jungler. Live Client Data has no positions: a kill, an
+/// objective, a Recall, a respawn or their farm is the only sign.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct JunglerSighting {
     pub champion: String,
-    pub whereabouts: Whereabouts,
+    /// `None` before they are first seen, and once the sighting is old.
+    pub whereabouts: Option<Whereabouts>,
+    pub safe_lane: Option<SafeLane>,
+    /// The time since their CS or level last rose, as `m:ss`: ganking, or in base.
+    pub no_farm_for: Option<String>,
 }
 
-/// `None` with no enemy in the jungle, before they are first seen and once the sighting
-/// is old. Live Client Data has no positions: a kill, an objective or a trip to base
-/// they took part in is the only sign.
+/// `None` with no enemy jungler, and while nothing is known of them.
 pub(super) fn sighting_of(
     data: &AllGameData,
     player: &Player,
     watch: &EnemyWatch,
 ) -> Option<JunglerSighting> {
-    let jungler = data
-        .enemies_of(player)
-        .find(|enemy| enemy.position.as_deref() == Some("JUNGLE"))?;
+    let jungler = jungler_of(data, player)?;
     let champion = jungler.champion_name.clone()?;
     if jungler.is_dead {
         let back_in = countdown(jungler.respawn_timer);
         return Some(JunglerSighting {
             champion,
-            whereabouts: Whereabouts::Dead { back_in },
+            whereabouts: Some(Whereabouts::Dead { back_in }),
+            safe_lane: None,
+            no_farm_for: None,
         });
     }
-    let (at, place) = last_seen(data, jungler, watch)?;
-    let passed = data.game_time() - at;
-    (passed <= KEPT_FOR).then(|| JunglerSighting {
+    let now = data.game_time();
+    let seen = last_seen(data, jungler, watch).filter(|(at, _)| now - at <= KEPT_FOR);
+    let no_farm_for = watch
+        .farmed_at(jungler)
+        .map(|at| now - at)
+        .filter(|passed| *passed >= NO_FARM_FROM)
+        .map(ago);
+    if seen.is_none() && no_farm_for.is_none() {
+        return None;
+    }
+    Some(JunglerSighting {
         champion,
-        whereabouts: Whereabouts::Seen {
+        whereabouts: seen.map(|(at, place)| Whereabouts::Seen {
             place,
-            ago: ago(passed),
-        },
+            ago: ago(now - at),
+        }),
+        safe_lane: seen.and_then(|(at, place)| SafeLane::after(place, now - at)),
+        no_farm_for,
+    })
+}
+
+/// By position, or by Smite where the payload gives no position.
+fn jungler_of<'a>(data: &'a AllGameData, player: &'a Player) -> Option<&'a Player> {
+    let by_position = data
+        .enemies_of(player)
+        .find(|enemy| enemy.position.as_deref() == Some("JUNGLE"));
+    by_position.or_else(|| {
+        let mut smiting = data
+            .enemies_of(player)
+            .filter(|enemy| enemy.has_summoner("SummonerSmite"));
+        let jungler = smiting.next()?;
+        smiting.next().is_none().then_some(jungler)
     })
 }
 
@@ -77,6 +108,7 @@ fn place_of(data: &AllGameData, jungler: &Player, event: &Event) -> Option<(f64,
         }
         EventName::DragonKill if event.is_elder() => Place::Elder,
         EventName::DragonKill => Place::Drake,
+        EventName::HordeKill => Place::Voidgrubs,
         EventName::HeraldKill => Place::Herald,
         EventName::BaronKill => Place::Baron,
         _ => return None,
