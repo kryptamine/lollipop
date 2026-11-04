@@ -6,7 +6,7 @@ use objc2_foundation::NSString;
 
 /// The best installed voice for the language of `tag`, such as `ru-RU`: premium over
 /// enhanced over default, then `tag`'s region, then the system's pick for it.
-pub(crate) fn best_voice(tag: &str) -> Option<Retained<AVSpeechSynthesisVoice>> {
+pub(super) fn best_voice(tag: &str) -> Option<Retained<AVSpeechSynthesisVoice>> {
     let primary = primary_subtag(tag);
     // SAFETY: class methods and property getters with no arguments to get wrong.
     unsafe {
@@ -26,6 +26,10 @@ pub(crate) fn best_voice(tag: &str) -> Option<Retained<AVSpeechSynthesisVoice>> 
                 )
             })
     }
+}
+
+pub(crate) fn voice_installed(tag: &str) -> bool {
+    best_voice(tag).is_some()
 }
 
 fn primary_subtag(tag: &str) -> &str {

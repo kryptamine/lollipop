@@ -21,17 +21,8 @@ pub(crate) fn open(app: &AppHandle) -> tauri::Result<()> {
     let handle = app.clone();
     window.on_window_event(move |event| {
         if matches!(event, WindowEvent::Destroyed) {
-            hand_focus_back(&handle);
+            crate::platform::hide_app(&handle);
         }
     });
     window.set_focus()
-}
-
-// Hiding the app is what gives focus back to the app the window was opened over.
-// The overlay window opts out of hiding, so it stays.
-fn hand_focus_back(app: &AppHandle) {
-    #[cfg(target_os = "macos")]
-    let _ = app.hide();
-    #[cfg(not(target_os = "macos"))]
-    let _ = app;
 }

@@ -6,10 +6,7 @@ use crate::settings_store::SettingsStore;
 
 /// Advice as the settings and the saved key allow it at the moment each Trigger fires.
 pub(crate) fn advisor(app: AppHandle, store: SettingsStore, key: OpenAiKey) -> Advisor {
-    #[cfg(target_os = "macos")]
     let locale = crate::platform::system_locale();
-    #[cfg(not(target_os = "macos"))]
-    let locale: Option<String> = None;
     let base_url = key.base_url().to_string();
     let refused = key.clone();
     let (language_store, language_locale) = (store.clone(), locale.clone());

@@ -1,17 +1,16 @@
-//! OS-specific calls, and the only module allowed `unsafe`.
-#![allow(
-    unsafe_code,
-    reason = "window levels, workspace notifications and speech are only reachable through raw Apple framework calls"
-)]
+//! OS-specific calls. macOS gets the real ones, and any other OS the fallback.
 
-mod best_voice;
-mod frontmost_app;
-mod overlay_window;
-mod speech;
-mod system_locale;
+#[cfg(not(target_os = "macos"))]
+mod fallback;
+#[cfg(target_os = "macos")]
+mod macos;
 
-pub(crate) use best_voice::best_voice;
-pub(crate) use frontmost_app::watch_frontmost;
-pub(crate) use overlay_window::{order_in_hidden, set_shown};
-pub(crate) use speech::{speak, stop_speaking};
-pub(crate) use system_locale::system_locale;
+#[cfg(not(target_os = "macos"))]
+use fallback as os;
+#[cfg(target_os = "macos")]
+use macos as os;
+
+pub(crate) use os::{
+    hide_app, keep_focus_off, keychain, order_in_hidden, run_as_accessory, set_shown, speak,
+    stop_speaking, system_locale, voice_installed, watch_frontmost,
+};

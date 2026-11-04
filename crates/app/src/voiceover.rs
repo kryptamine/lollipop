@@ -31,10 +31,7 @@ struct State {
 
 impl Voiceover {
     pub(crate) fn new(window: WebviewWindow, store: SettingsStore) -> Self {
-        #[cfg(target_os = "macos")]
         let locale = crate::platform::system_locale();
-        #[cfg(not(target_os = "macos"))]
-        let locale: Option<String> = None;
         Self {
             window,
             store,
@@ -45,10 +42,7 @@ impl Voiceover {
 
     /// Whether a voice for the Advice language is installed; without one Voiceover is silent.
     pub(crate) fn voice_installed(&self) -> bool {
-        #[cfg(target_os = "macos")]
-        return crate::platform::best_voice(self.voice_tag()).is_some();
-        #[cfg(not(target_os = "macos"))]
-        false
+        crate::platform::voice_installed(self.voice_tag())
     }
 
     pub(crate) fn warm_up(&self) {
@@ -89,7 +83,7 @@ impl Voiceover {
             };
             match speech {
                 Some(Speech::Read(text)) => this.speak(&text, 1.0),
-                Some(Speech::Stop) => this.stop(),
+                Some(Speech::Stop) => crate::platform::stop_speaking(),
                 None => {}
             }
         });
@@ -104,32 +98,7 @@ impl Voiceover {
         })
     }
 
-    // Must run on the main thread.
-    #[allow(
-        clippy::unused_self,
-        reason = "the speaking half of the struct exists on macOS only"
-    )]
     fn speak(&self, text: &str, volume: f32) {
-        #[cfg(target_os = "macos")]
-        if let (Some(main), Some(voice)) = (
-            objc2::MainThreadMarker::new(),
-            crate::platform::best_voice(self.voice_tag()),
-        ) {
-            crate::platform::speak(main, text, &voice, volume);
-        }
-        #[cfg(not(target_os = "macos"))]
-        let _ = (text, volume);
-    }
-
-    // Must run on the main thread.
-    #[allow(
-        clippy::unused_self,
-        reason = "the speaking half of the struct exists on macOS only"
-    )]
-    fn stop(&self) {
-        #[cfg(target_os = "macos")]
-        if let Some(main) = objc2::MainThreadMarker::new() {
-            crate::platform::stop_speaking(main);
-        }
+        crate::platform::speak(text, self.voice_tag(), volume);
     }
 }

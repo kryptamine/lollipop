@@ -24,7 +24,6 @@ impl Overlay {
         }
     }
 
-    #[cfg(target_os = "macos")]
     pub(crate) fn set_frontmost(&self, bundle_id: Option<String>) {
         self.update(move |visibility| visibility.set_frontmost(bundle_id.as_deref()));
     }
@@ -44,7 +43,6 @@ impl Overlay {
             change(&mut visibility);
             if visibility.shown() != was_shown {
                 this.voiceover.set_overlay_shown(visibility.shown());
-                #[cfg(target_os = "macos")]
                 let _ = crate::platform::set_shown(&this.window, visibility.shown());
             }
         });
