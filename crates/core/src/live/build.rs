@@ -71,7 +71,7 @@ impl Build {
 
     /// The items left to buy in build order, the Next item first, no more than the free
     /// slots. Items held at the first poll, as when the app starts mid-game, drop nothing.
-    pub(super) fn at(&mut self, player: &Player) -> Vec<BuildItem> {
+    pub(super) fn at(&mut self, player: &Player, language: Language) -> Vec<BuildItem> {
         let owned = player.item_ids();
         let finished = self.table.finished(&owned);
         let before = self.finished.replace(finished.clone());
@@ -84,7 +84,7 @@ impl Build {
         self.track_lead(player);
         self.left(&owned)
             .into_iter()
-            .map(|candidate| self.shown(candidate.item))
+            .map(|candidate| self.shown(candidate.item, language))
             .collect()
     }
 
@@ -235,7 +235,7 @@ impl Build {
 
     /// The Swap while the inventory is full. It ends once its item to buy is held, or
     /// the inventory is full again without its item to sell.
-    pub(super) fn swap_at(&mut self, player: &Player) -> Option<ShownSwap> {
+    pub(super) fn swap_at(&mut self, player: &Player, language: Language) -> Option<ShownSwap> {
         let owned = player.item_ids();
         let swap = self.swap.as_ref()?;
         let full = self.table.free_slots(&owned) == 0;
@@ -245,8 +245,8 @@ impl Build {
         }
         let swap = self.swap.as_ref().filter(|_| full)?;
         Some(ShownSwap {
-            sell: self.shown(swap.sell),
-            buy: self.shown(swap.buy.item),
+            sell: self.shown(swap.sell, language),
+            buy: self.shown(swap.buy.item, language),
             reason: swap.reason.clone(),
         })
     }
@@ -266,14 +266,19 @@ impl Build {
 
     /// The Elixir to buy with a full inventory and the gold for it: the model's pick,
     /// else Sorcery or Wrath by the champion's magic share, and none without one.
-    pub(super) fn elixir_at(&self, player: &Player, gold: f64) -> Option<BuildItem> {
+    pub(super) fn elixir_at(
+        &self,
+        player: &Player,
+        gold: f64,
+        language: Language,
+    ) -> Option<BuildItem> {
         if gold < ELIXIR_COST || self.table.free_slots(&player.item_ids()) > 0 {
             return None;
         }
         let elixir = self
             .elixir
             .or_else(|| self.magic_share(player).map(Elixir::by_magic_share))?;
-        Some(self.shown(elixir.item()))
+        Some(self.shown(elixir.item(), language))
     }
 
     /// The name in `language`, or the id in a table built without names.
@@ -322,10 +327,14 @@ impl Build {
         self.items.extend(next);
     }
 
-    fn shown(&self, item: u32) -> BuildItem {
+    fn shown(&self, item: u32, language: Language) -> BuildItem {
         BuildItem {
             item,
             icon: self.table.icon_url(item),
+            name: self
+                .table
+                .name_of(item)
+                .map(|name| name.of(language).to_string()),
         }
     }
 

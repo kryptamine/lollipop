@@ -62,6 +62,7 @@ fn shown(item: u32) -> BuildItem {
         icon: Some(format!(
             "https://ddragon.leagueoflegends.com/cdn/{DATA_DRAGON_VERSION}/img/item/{item}.png"
         )),
+        name: None,
     }
 }
 

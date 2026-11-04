@@ -61,6 +61,7 @@ async fn the_build_shows_from_the_loading_screen() {
         BuildItem {
             item: 3020,
             icon: Some("https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3020.png".into()),
+            name: Some("Сапоги чародея".into()),
         }
     );
     assert_eq!(build_now(&mut builds).await, FULL_BUILD);

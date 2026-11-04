@@ -7,6 +7,7 @@ type SwapRowProps = {
 
 export const SwapRow = ({ swap: { sell, buy, reason } }: SwapRowProps) => (
   <>
+    {buy.name !== null && <p class="build-name">{buy.name}</p>}
     <div class="build-items">
       <BuildIcon src={sell.icon} isNext={false} />
       <span class="swap-arrow">→</span>
