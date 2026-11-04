@@ -1,3 +1,4 @@
+use super::build_item::BuildItem;
 use super::dragon_pit;
 use super::objective_schedule::ObjectiveSchedule;
 use super::payload::AllGameData;
@@ -8,6 +9,8 @@ use crate::game_inputs::{ClientInputs, GameInputs};
 // Draft, ranked solo, blind, ranked flex and Practice Tool. Swiftplay and anything
 // unknown fall outside.
 pub(super) const HINT_QUEUES: [u32; 5] = [400, 420, 430, 440, 3140];
+
+const ELIXIR_OBJECTIVES: [&str; 2] = ["Baron", "Elder"];
 
 /// One game's Timing hints. The schedule is picked once, as the game starts.
 #[derive(Default)]
@@ -22,8 +25,8 @@ impl GameHints {
         }
     }
 
-    /// The soonest spawn first.
-    pub(super) fn at(&self, data: &AllGameData) -> Vec<TimingHint> {
+    /// The soonest spawn first, `elixir` beside Baron and Elder.
+    pub(super) fn at(&self, data: &AllGameData, elixir: Option<&BuildItem>) -> Vec<TimingHint> {
         let Some(schedule) = self.schedule else {
             return Vec::new();
         };
@@ -46,6 +49,12 @@ impl GameHints {
         spawns
             .iter()
             .filter_map(|spawn| spawn.hint_at(data.game_time()))
+            .map(|mut hint| {
+                if ELIXIR_OBJECTIVES.contains(&hint.objective) {
+                    hint.elixir = elixir.cloned();
+                }
+                hint
+            })
             .collect()
     }
 }

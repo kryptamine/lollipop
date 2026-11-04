@@ -7,4 +7,6 @@ pub(crate) struct AnswerParts {
     pub(crate) text: Option<String>,
     pub(crate) change: Option<ProposedChange>,
     pub(crate) swap: Option<ProposedSwap>,
+    /// An Elixir id as the model wrote it, checked against the Elixirs where it is used.
+    pub(crate) elixir: Option<u32>,
 }

@@ -25,7 +25,8 @@ const TIP: &str = "Zed ловит тебя у стены: держи E на ег
 const RESPAWN: f64 = 30.0;
 
 fn answer(text: &str) -> String {
-    json!({ "advice": text, "next_item": null, "reason": null, "swap": null }).to_string()
+    json!({ "advice": text, "next_item": null, "reason": null, "swap": null, "elixir": null })
+        .to_string()
 }
 
 /// A game at 5:00 on a magic-heavy enemy team, polled until it runs.
@@ -94,7 +95,8 @@ async fn an_answer_with_an_item_shows_nothing() {
 #[tokio::test]
 async fn null_advice_shows_nothing() {
     let null =
-        json!({ "advice": null, "next_item": null, "reason": null, "swap": null }).to_string();
+        json!({ "advice": null, "next_item": null, "reason": null, "swap": null, "elixir": null })
+            .to_string();
 
     assert_eq!(shown_after_death(&null).await, None);
 }

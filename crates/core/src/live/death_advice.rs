@@ -92,7 +92,13 @@ impl DeathAdvice {
         if !player.is_dead {
             return;
         }
-        let Ok(AnswerParts { text, change, swap }) = asking.await else {
+        let Ok(AnswerParts {
+            text,
+            change,
+            swap,
+            elixir,
+        }) = asking.await
+        else {
             return;
         };
         if let Some(change) = change {
@@ -100,6 +106,9 @@ impl DeathAdvice {
         }
         if let Some(swap) = swap {
             build.swap(swap, player);
+        }
+        if let Some(elixir) = elixir {
+            build.pick_elixir(elixir, player);
         }
         if let Some(text) = text {
             let arrival = Arrival {

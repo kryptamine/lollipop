@@ -3,6 +3,7 @@
 use std::fmt::Write;
 
 use super::build::Build;
+use super::elixir::Elixir;
 use super::payload::Player;
 use crate::advice::Language;
 
@@ -103,4 +104,26 @@ pub(super) fn swap_lines(lines: &mut String, build: &Build, player: &Player, lan
             candidate.minute
         );
     }
+}
+
+/// What a Trigger whose input may list Elixir options adds to its instructions.
+macro_rules! elixir_instructions {
+    () => {
+        " When the input lists Elixir options, `elixir` is the id of the one the player \
+should drink before Baron and Elder, for the champion's damage and the enemies' threats. \
+Otherwise `elixir` is null."
+    };
+}
+pub(super) use elixir_instructions;
+
+/// The Elixirs a model may pick from, once the inventory is full and until it picks one.
+pub(super) fn elixir_lines(lines: &mut String, build: &Build, player: &Player) {
+    if !build.elixir_open(player) {
+        return;
+    }
+    let options: Vec<String> = Elixir::ALL
+        .iter()
+        .map(|elixir| format!("{} {}", elixir.item(), elixir.name()))
+        .collect();
+    let _ = writeln!(lines, "Elixir options: {}", options.join(", "));
 }

@@ -19,6 +19,9 @@ pub(crate) struct Answer {
     pub(crate) reason: Option<String>,
     #[serde(deserialize_with = "Option::deserialize")]
     pub(crate) swap: Option<SwapAnswer>,
+    /// The id of the Elixir to drink before Baron and Elder.
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub(crate) elixir: Option<u32>,
 }
 
 /// An item to sell for an Item candidate once the inventory is full, and why.

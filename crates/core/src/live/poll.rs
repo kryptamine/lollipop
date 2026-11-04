@@ -215,7 +215,10 @@ impl CurrentGame<'_> {
             inputs,
             markers,
             benchmarks,
-            hints: self.hints.at(data),
+            hints: self.hints.at(
+                data,
+                self.build.elixir_at(player, data.current_gold()).as_ref(),
+            ),
             advice: self.slot.at(data.game_time(), data.game_start()),
             notices: Arc::clone(&self.notices),
             game_time: data.game_time(),

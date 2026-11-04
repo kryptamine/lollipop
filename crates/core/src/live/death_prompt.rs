@@ -4,7 +4,8 @@ use std::fmt::Write;
 
 use super::build::Build;
 use super::build_prompt::{
-    build_instructions, build_lines, magic_damage, swap_instructions, swap_lines,
+    build_instructions, build_lines, elixir_instructions, elixir_lines, magic_damage,
+    swap_instructions, swap_lines,
 };
 use super::death::Death;
 use super::kill_score::KillScore;
@@ -16,7 +17,8 @@ pub(super) const INSTRUCTIONS: &str = instructions!(
 change. Never name an item to buy: the overlay shows the build. When the death teaches \
 nothing, as in a fair trade, `advice` is null. ",
     build_instructions!(),
-    swap_instructions!()
+    swap_instructions!(),
+    elixir_instructions!()
 );
 
 pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> String {
@@ -67,6 +69,7 @@ pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> Str
     death_lines(&mut lines, death, build);
     build_lines(&mut lines, build, death.player, language);
     swap_lines(&mut lines, build, death.player, language);
+    elixir_lines(&mut lines, build, death.player);
     lines
 }
 

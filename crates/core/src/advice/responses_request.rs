@@ -72,8 +72,9 @@ fn format() -> Value {
                         { "type": "null" },
                     ],
                 },
+                "elixir": { "type": ["integer", "null"] },
             },
-            "required": ["advice", "next_item", "reason", "swap"],
+            "required": ["advice", "next_item", "reason", "swap", "elixir"],
             "additionalProperties": false,
         },
     })

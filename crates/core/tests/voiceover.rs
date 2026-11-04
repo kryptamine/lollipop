@@ -22,7 +22,8 @@ const SECOND: &str = "Zed снова в лесу: отходи к башне д�
 
 fn answer(text: &str) -> Reply {
     Reply::advising(
-        &json!({ "advice": text, "next_item": null, "reason": null, "swap": null }).to_string(),
+        &json!({ "advice": text, "next_item": null, "reason": null, "swap": null, "elixir": null })
+            .to_string(),
     )
 }
 
