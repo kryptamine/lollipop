@@ -8,6 +8,7 @@ use serde_json::{json, Value};
 use tokio::sync::mpsc;
 
 use super::game_clock::GameClock;
+use super::hint_game::no_client;
 use super::server::serve;
 
 pub const KEY: &str = "sk-proj-Fake0123abcd";
@@ -15,6 +16,7 @@ pub const ME: &str = "Me#EUW";
 const NO_TABLE: &str = "/nonexistent/benchmark-table.json";
 
 pub type Updates = mpsc::UnboundedReceiver<Option<LiveGame>>;
+pub type Log = Arc<Mutex<Vec<String>>>;
 
 #[derive(Clone, Copy)]
 enum Stage {
@@ -99,6 +101,20 @@ impl LoadingGame {
             })
         });
         self.poll_with(advisor, lockfile)
+    }
+
+    /// Polls with Advice on or off, and the lines the Advisor logs.
+    pub fn poll_logging(&self, openai_url: &str, on: bool) -> (Updates, Log) {
+        let log = Log::default();
+        let lines = Arc::clone(&log);
+        let advisor = Advisor::new(openai_url, move |_| {
+            on.then(|| AdviceCall {
+                key: KEY.to_string(),
+                language: Language::Russian,
+            })
+        })
+        .logging_to(move |line| lines.lock().unwrap().push(line.to_string()));
+        (self.poll_with(advisor, &no_client()), log)
     }
 
     pub fn poll_with(&self, advisor: Advisor, lockfile: &Path) -> Updates {

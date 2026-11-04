@@ -112,8 +112,13 @@ impl Advised {
         self.game.back_to_loading_screen();
     }
 
+    /// The failures logged, without the line of each Advice the Widget took.
     fn log(&self) -> Vec<String> {
-        self.log.lock().unwrap().clone()
+        let log = self.log.lock().unwrap();
+        log.iter()
+            .filter(|line| !line.ends_with(": shown"))
+            .cloned()
+            .collect()
     }
 }
 

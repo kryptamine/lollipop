@@ -10,6 +10,7 @@ use super::game_hints::GameHints;
 use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
 use super::gold_earned::GoldEarned;
+use super::held_loading_screen::HeldLoadingScreen;
 use super::inputs_of_game::InputsOfGame;
 use super::league::League;
 use super::live_game::LiveGame;
@@ -53,6 +54,7 @@ pub async fn poll(
         benchmark_table,
         gold_earned: GoldEarned::default(),
         inputs: InputsOfGame::default(),
+        loading_screen: HeldLoadingScreen::default(),
         markers: GameMarkers::default(),
         hints: GameHints::default(),
         advice: GameAdvice::new(&http, league.lockfile, advisor),
@@ -66,7 +68,7 @@ pub async fn poll(
             Some(data) => game.update(data, language).await,
             None => None,
         };
-        let between_games = data.is_none() && !game.inputs.holds_game();
+        let between_games = data.is_none() && game.failed_poll_ends_game();
         if between_games {
             game.end_game();
         }
@@ -97,6 +99,7 @@ struct CurrentGame<'a> {
     benchmark_table: &'a TableFile,
     gold_earned: GoldEarned,
     inputs: InputsOfGame,
+    loading_screen: HeldLoadingScreen,
     markers: GameMarkers,
     hints: GameHints,
     advice: GameAdvice,
@@ -111,6 +114,10 @@ impl CurrentGame<'_> {
         }
     }
 
+    const fn failed_poll_ends_game(&mut self) -> bool {
+        !self.inputs.holds_game() && !self.loading_screen.failed_poll()
+    }
+
     /// Also a loading screen left without a game, whose Build and answer go with it.
     fn end_game(&mut self) {
         self.advice.end_game();
@@ -119,10 +126,13 @@ impl CurrentGame<'_> {
 
     async fn update(&mut self, data: &AllGameData, language: Language) -> Option<LiveGame> {
         if data.at_loading_screen() {
+            self.loading_screen.seen();
             self.build.at_loading_screen(data).await;
             self.advice
                 .at_loading_screen(data, self.build.build_mut())
                 .await;
+        } else {
+            self.loading_screen.end();
         }
         if !data.match_running() {
             if data.game_ended() {

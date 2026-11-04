@@ -94,6 +94,10 @@ impl Advisor {
         self.guard().end_game();
     }
 
+    pub(crate) fn log(&self, line: &str) {
+        (self.log)(line);
+    }
+
     /// One retry for a failure it may mend, if the deadline leaves time for it.
     pub(crate) async fn ask(&self, call: &AdviceCall, question: &Question<'_>) -> Asked {
         let request = ResponsesRequest::new(question.instructions, question.input);
