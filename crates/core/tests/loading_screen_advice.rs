@@ -220,6 +220,23 @@ async fn the_next_game_asks_again() {
     assert_eq!(openai.requests().len(), 2);
 }
 
+// A loading screen that closes without a game must not keep the next one from asking.
+#[tokio::test]
+async fn a_loading_screen_closed_without_a_game_lets_the_next_one_ask() {
+    let openai = FakeOpenAi::advising(&answer(PLAN)).await;
+    let game = LoadingGame::at_loading_screen(lineup("Ahri", "MIDDLE")).await;
+    let mut updates = game.poll(&openai.url, &no_client(), switched_on());
+    wait_on_loading_screen(&mut updates, &openai).await;
+    game.close();
+    for _ in 0..3 {
+        assert!(updates.recv().await.unwrap().is_none());
+    }
+    game.back_to_loading_screen();
+    wait_on_loading_screen(&mut updates, &openai).await;
+
+    assert_eq!(openai.requests().len(), 2);
+}
+
 // The first answer of a loading screen can come before the player is listed.
 #[tokio::test]
 async fn the_loading_screen_waits_for_the_active_player() {

@@ -2,11 +2,9 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::advice_slot::AdviceSlot;
-use super::build::Build;
-use super::build_item::BuildItem;
 use super::clock::Clock;
-use super::death_advice::DeathAdvice;
+use super::game_advice::GameAdvice;
+use super::game_build::GameBuild;
 use super::game_hints::GameHints;
 use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
@@ -15,16 +13,13 @@ use super::inputs_of_game::InputsOfGame;
 use super::league::League;
 use super::live_game::LiveGame;
 use super::live_update::LiveUpdate;
-use super::loading_screen_advice::LoadingScreenAdvice;
 use super::notice::Notice;
 use super::payload::{AllGameData, Player};
-use super::shown_swap::ShownSwap;
 use super::snapshot::Snapshot;
-use super::turning_point_advice::TurningPointAdvice;
 use crate::advice::{Advisor, Language};
 use crate::benchmarks::BenchmarkTable;
 use crate::delivery::TableFile;
-use crate::game_inputs::{loading_patch, ClientInputs, GameInputs, Role};
+use crate::game_inputs::GameInputs;
 
 pub const LIVE_CLIENT_URL: &str = "https://127.0.0.1:2999/liveclientdata/allgamedata";
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
@@ -55,17 +50,12 @@ pub async fn poll(
         http: &http,
         lockfile: league.lockfile,
         benchmark_table,
-        advisor,
         gold_earned: GoldEarned::default(),
         inputs: InputsOfGame::default(),
         markers: GameMarkers::default(),
         hints: GameHints::default(),
-        loading_screen: LoadingScreenAdvice::new(&http, league.lockfile, advisor),
-        death: DeathAdvice::new(advisor),
-        turning_point: TurningPointAdvice::new(advisor),
-        build: Build::default(),
-        build_carried: false,
-        slot: AdviceSlot::default(),
+        advice: GameAdvice::new(&http, league.lockfile, advisor),
+        build: GameBuild::new(&http, league.lockfile, benchmark_table),
         notices: Arc::from([]),
     };
     loop {
@@ -77,11 +67,9 @@ pub async fn poll(
         };
         let between_games = data.is_none() && !game.inputs.holds_game();
         if between_games {
-            advisor.end_game();
-            // A loading screen left without a game must not carry its Build into the next.
-            game.forget_build();
+            game.end_game();
         }
-        let (build, build_change, swap) = game.build_at(data.as_ref(), language);
+        let (build, build_change, swap) = game.build.shown(data.as_ref(), language);
         on_update(LiveUpdate {
             game: update,
             build,
@@ -106,18 +94,12 @@ struct CurrentGame<'a> {
     http: &'a reqwest::Client,
     lockfile: &'a Path,
     benchmark_table: &'a TableFile,
-    advisor: &'a Advisor,
     gold_earned: GoldEarned,
     inputs: InputsOfGame,
     markers: GameMarkers,
     hints: GameHints,
-    loading_screen: LoadingScreenAdvice,
-    death: DeathAdvice,
-    turning_point: TurningPointAdvice,
-    build: Build,
-    /// The Build was read on this game's loading screen, so its start keeps it.
-    build_carried: bool,
-    slot: AdviceSlot,
+    advice: GameAdvice,
+    build: GameBuild<'a>,
     notices: Arc<[Notice]>,
 }
 
@@ -128,63 +110,22 @@ impl CurrentGame<'_> {
         }
     }
 
-    /// Once per loading screen. Only the patch is read from the client, which may be
-    /// mid-load, and the role only from the payload.
-    async fn build_at_loading_screen(&mut self, data: &AllGameData) {
-        if self.build_carried {
-            return;
-        }
-        let Some(player) = data.active_player() else {
-            return;
-        };
-        let patch = loading_patch(self.http, self.lockfile).await;
-        let role = player.position.as_deref().and_then(Role::parse);
-        let mut table = BenchmarkTable::read(self.benchmark_table.path());
-        self.build = Build::start(table.as_mut(), patch, role, data, player);
-        self.build_carried = true;
-    }
-
-    fn forget_build(&mut self) {
-        self.build = Build::default();
-        self.build_carried = false;
-    }
-
-    /// The Build, the reason of a Build change while it shows in a running match, and
-    /// the Swap.
-    fn build_at(
-        &mut self,
-        data: Option<&AllGameData>,
-        language: Language,
-    ) -> (Vec<BuildItem>, Option<String>, Option<ShownSwap>) {
-        let running = data.filter(|data| data.at_loading_screen() || data.match_running());
-        let (Some(data), Some(player)) = (running, running.and_then(AllGameData::active_player))
-        else {
-            return (Vec::new(), None, None);
-        };
-        let change = if data.match_running() {
-            self.build.change_at(data.game_time(), data.game_start())
-        } else {
-            None
-        };
-        let swap = self.build.swap_at(player, language);
-        (self.build.at(player, language), change, swap)
+    /// Also a loading screen left without a game, whose Build and answer go with it.
+    fn end_game(&mut self) {
+        self.advice.end_game();
+        self.build.forget();
     }
 
     async fn update(&mut self, data: &AllGameData, language: Language) -> Option<LiveGame> {
         if data.at_loading_screen() {
-            self.build_at_loading_screen(data).await;
-            self.loading_screen
-                .at_loading_screen(data, &mut self.slot, &mut self.build)
+            self.build.at_loading_screen(data).await;
+            self.advice
+                .at_loading_screen(data, self.build.build_mut())
                 .await;
         }
         if !data.match_running() {
             if data.game_ended() {
-                self.loading_screen.end_game();
-                self.death.end_game();
-                self.turning_point.end_game();
-                self.slot.clear();
-                self.advisor.end_game();
-                self.forget_build();
+                self.end_game();
             }
             self.gold_earned.end_game();
             self.end_held_game();
@@ -203,13 +144,7 @@ impl CurrentGame<'_> {
             scores: player.scores.player_scores(),
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
-        self.loading_screen
-            .at(data, &mut self.slot, &mut self.build)
-            .await;
-        self.turning_point
-            .at(data, player, &mut self.slot, &mut self.build)
-            .await;
-        self.death.at(data, &mut self.slot, &mut self.build).await;
+        self.advice.at(data, player, self.build.build_mut()).await;
         Some(LiveGame {
             snapshot,
             inputs,
@@ -218,10 +153,11 @@ impl CurrentGame<'_> {
             hints: self.hints.at(
                 data,
                 self.build
+                    .build()
                     .elixir_at(player, data.current_gold(), language)
                     .as_ref(),
             ),
-            advice: self.slot.at(data.game_time(), data.game_start()),
+            advice: self.advice.shown(data.game_time(), data.game_start()),
             notices: Arc::clone(&self.notices),
             game_time: data.game_time(),
         })
@@ -243,16 +179,9 @@ impl CurrentGame<'_> {
         .await;
         let mut table = BenchmarkTable::read(self.benchmark_table.path());
         self.notices = notices_of(&inputs, table.as_ref()).into();
-        self.death = DeathAdvice::new(self.advisor);
-        self.turning_point = TurningPointAdvice::new(self.advisor);
-        // A loading screen that gave no Build, say for want of a position, gets another try.
-        if !std::mem::take(&mut self.build_carried) || self.build.is_empty() {
-            let patch = match &inputs.client {
-                ClientInputs::Read(client) => client.patch,
-                ClientInputs::Unavailable => None,
-            };
-            self.build = Build::start(table.as_mut(), patch, inputs.role, data, player);
-        }
+        self.advice.start_game();
+        self.build
+            .at_game_start(table.as_mut(), &inputs, data, player);
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)
