@@ -31,6 +31,10 @@ impl AdviceSlot {
         if outranked {
             return false;
         }
+        log::info!(
+            "Advice Widget takes {} at gameTime {game_time:?}",
+            arrival.trigger.id()
+        );
         self.shown.push(arrival.text.clone());
         self.showing = Some(Showing {
             arrival,
@@ -43,9 +47,11 @@ impl AdviceSlot {
     pub(super) fn at(&mut self, game_time: f64, game_start: Option<f64>) -> Option<ShownAdvice> {
         self.expire(game_time);
         let showing = self.showing.as_mut()?;
-        let from = *showing
-            .from
-            .get_or_insert_with(|| game_start.unwrap_or(game_time));
+        let from = *showing.from.get_or_insert_with(|| {
+            let from = game_start.unwrap_or(game_time);
+            log::info!("Advice Widget counts its time from gameTime {from:.1}, now {game_time:.1}");
+            from
+        });
         let left = from + SHOWN_FOR - game_time;
         Some(ShownAdvice {
             trigger: showing.arrival.trigger,
@@ -59,7 +65,9 @@ impl AdviceSlot {
     }
 
     pub(super) fn clear(&mut self) {
-        self.showing = None;
+        if self.showing.take().is_some() {
+            log::info!("Advice Widget cleared for a new game");
+        }
         self.shown.clear();
     }
 
@@ -70,6 +78,7 @@ impl AdviceSlot {
             .and_then(|showing| showing.from)
             .is_some_and(|from| from + SHOWN_FOR - game_time <= 0.0);
         if over {
+            log::info!("Advice Widget empty at gameTime {game_time:.1}, its time up");
             self.showing = None;
         }
     }

@@ -28,10 +28,6 @@ pub(crate) fn advisor(app: AppHandle, store: SettingsStore, key: OpenAiKey) -> A
     })
 }
 
-#[allow(
-    clippy::print_stderr,
-    reason = "the app has no log but its standard error"
-)]
 fn log(line: &str) {
-    eprintln!("{line}");
+    log::info!("{line}");
 }

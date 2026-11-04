@@ -10,12 +10,14 @@ workspace = true
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+log = "0.4"
 lollipop-core = { path = "../core" }
 serde = { version = "1", features = ["derive"] }
 # generate_context! expands tauri.conf.json's plugin config into serde_json values.
 serde_json = "1"
 tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
 tauri-plugin-autostart = "2"
+tauri-plugin-log = "2"
 tauri-plugin-updater = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]

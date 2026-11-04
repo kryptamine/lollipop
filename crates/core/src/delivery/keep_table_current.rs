@@ -8,7 +8,9 @@ use crate::benchmarks::BenchmarkTable;
 /// swaps it in, as only it knows no game is running. A failed check waits for the next.
 pub async fn keep_table_current(table: &TableFile, channel: &TableChannel, key: &ManifestKey) {
     loop {
-        let _ = check(table, channel, key).await;
+        if check(table, channel, key).await.is_none() {
+            log::warn!("Benchmark table check failed");
+        }
         table.check_requested().await;
     }
 }

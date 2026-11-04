@@ -53,6 +53,7 @@ impl LoadingScreenAdvice {
                 let game = game_lines(data, player, &lane, build);
                 Box::pin(async move {
                     let tier = loading_tier(&http, &lockfile).await;
+                    log::info!("loading screen tier: {tier:?}");
                     input(language, tier, &game)
                 })
             },

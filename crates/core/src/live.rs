@@ -47,6 +47,7 @@ mod open_next;
 mod payload;
 mod pending_answer;
 mod poll;
+mod poll_log;
 mod prompt_lines;
 mod proposals;
 mod scores;

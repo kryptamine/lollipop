@@ -17,6 +17,7 @@ use super::live_game::LiveGame;
 use super::live_update::LiveUpdate;
 use super::notice::Notice;
 use super::payload::{AllGameData, Player};
+use super::poll_log::PollLog;
 use super::snapshot::Snapshot;
 use crate::advice::{Advisor, Language};
 use crate::benchmarks::BenchmarkTable;
@@ -61,8 +62,11 @@ pub async fn poll(
         build: GameBuild::new(&http, league.lockfile, benchmark_table),
         notices: Arc::from([]),
     };
+    let mut poll_log = PollLog::default();
     loop {
-        let data = fetch(&http, league.live_client_url).await;
+        let answer = fetch(&http, league.live_client_url).await;
+        poll_log.answer(&answer);
+        let data = answer.ok();
         let language = advisor.language();
         let update = match &data {
             Some(data) => game.update(data, language).await,
@@ -70,6 +74,7 @@ pub async fn poll(
         };
         let between_games = data.is_none() && game.failed_poll_ends_game();
         if between_games {
+            log::info!("between games");
             game.end_game();
         }
         let (build, build_change, swap) = game.build.shown(data.as_ref(), language);
@@ -88,9 +93,23 @@ pub async fn poll(
     }
 }
 
-async fn fetch(client: &reqwest::Client, url: &str) -> Option<AllGameData> {
-    let body = client.get(url).send().await.ok()?.text().await.ok()?;
-    serde_json::from_str(&body).ok()
+/// The error says why, for the log.
+async fn fetch(client: &reqwest::Client, url: &str) -> Result<AllGameData, String> {
+    let response = client.get(url).send().await.map_err(|e| failure(&e))?;
+    let status = response.status();
+    let body = response.text().await.map_err(|e| failure(&e))?;
+    serde_json::from_str(&body)
+        .map_err(|e| format!("HTTP {status}, {} bytes unread: {e}", body.len()))
+}
+
+fn failure(error: &reqwest::Error) -> String {
+    if error.is_timeout() {
+        "timed out".to_string()
+    } else if error.is_connect() {
+        "connection refused".to_string()
+    } else {
+        error.to_string()
+    }
 }
 
 struct CurrentGame<'a> {
@@ -114,7 +133,7 @@ impl CurrentGame<'_> {
         }
     }
 
-    const fn failed_poll_ends_game(&mut self) -> bool {
+    fn failed_poll_ends_game(&mut self) -> bool {
         !self.inputs.holds_game() && !self.loading_screen.failed_poll()
     }
 
@@ -136,6 +155,7 @@ impl CurrentGame<'_> {
         }
         if !data.match_running() {
             if data.game_ended() {
+                log::info!("game ended at gameTime {:.1}", data.game_time());
                 self.end_game();
             }
             self.gold_earned.end_game();
@@ -194,6 +214,13 @@ impl CurrentGame<'_> {
         )
         .await;
         let mut table = BenchmarkTable::read(self.benchmark_table.path());
+        log::info!(
+            "game start at gameTime {game_time:.1}: {:?} {:?}, GameStart at {:?}, Benchmark table read: {}",
+            player.champion_name,
+            player.position,
+            data.game_start(),
+            table.is_some()
+        );
         self.notices = notices_of(&inputs, table.as_ref()).into();
         self.advice.start_game();
         self.build

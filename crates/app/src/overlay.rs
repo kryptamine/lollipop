@@ -25,6 +25,7 @@ impl Overlay {
     }
 
     pub(crate) fn set_frontmost(&self, bundle_id: Option<String>) {
+        log::debug!("frontmost app: {bundle_id:?}");
         self.update(move |visibility| visibility.set_frontmost(bundle_id.as_deref()));
     }
 
@@ -39,11 +40,16 @@ impl Overlay {
                 .visibility
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner);
-            let was_shown = visibility.shown();
+            let (was, was_shown) = (format!("{visibility:?}"), visibility.shown());
             change(&mut visibility);
+            if format!("{visibility:?}") != was {
+                log::debug!("overlay {visibility:?}, shown: {}", visibility.shown());
+            }
             if visibility.shown() != was_shown {
                 this.voiceover.set_overlay_shown(visibility.shown());
-                let _ = crate::platform::set_shown(&this.window, visibility.shown());
+                if let Err(error) = crate::platform::set_shown(&this.window, visibility.shown()) {
+                    log::warn!("overlay not shown or hidden: {error}");
+                }
             }
         });
     }

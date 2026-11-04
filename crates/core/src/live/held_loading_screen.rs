@@ -20,15 +20,17 @@ impl HeldLoadingScreen {
     }
 
     /// Whether the loading screen still holds after one more failed poll.
-    pub(super) const fn failed_poll(&mut self) -> bool {
+    pub(super) fn failed_poll(&mut self) -> bool {
         let Some(failed) = self.failed_polls.as_mut() else {
             return false;
         };
         *failed += 1;
         if *failed >= FAILED_POLLS_TO_LEAVE {
+            log::info!("loading screen left after {failed} failed polls");
             self.end();
             return false;
         }
+        log::debug!("loading screen held through failed poll {failed}");
         true
     }
 }

@@ -18,7 +18,8 @@ pub(super) struct AdviceAsk {
     proposals: Proposals,
     instructions: Arc<str>,
     advisor: Advisor,
-    asking: Option<(Until, PendingAnswer<AnswerParts>)>,
+    /// With when it was asked, for the log.
+    asking: Option<(Until, Instant, PendingAnswer<AnswerParts>)>,
 }
 
 impl AdviceAsk {
@@ -59,20 +60,29 @@ impl AdviceAsk {
         slot: &mut AdviceSlot,
         build: &mut Build,
     ) -> bool {
-        let Some((until, answer)) = &mut self.asking else {
+        let Some((until, asked_at, answer)) = &mut self.asking else {
             return false;
         };
-        let until = *until;
+        let (until, asked_at) = (*until, *asked_at);
         let Some(parts) = answer.finished().await else {
             return false;
         };
         self.asking = None;
+        self.debug(&format!(
+            "answer after {} ms at gameTime {game_time:?}: text {}, Next item {}, Swap {}, Elixir {}",
+            asked_at.elapsed().as_millis(),
+            parts.text.is_some(),
+            parts.change.is_some(),
+            parts.swap.is_some(),
+            parts.elixir.is_some()
+        ));
         let player = data.active_player();
         if until.passed(game_time, player) {
             self.log("dropped, late");
             return false;
         }
         let Some(text) = self.proposals.apply(parts, player, game_time, build) else {
+            self.debug("dropped, no text");
             return false;
         };
         let arrival = Arrival {
@@ -98,6 +108,7 @@ impl AdviceAsk {
     fn ask(&mut self, data: &AllGameData, build: &mut Build, until: Until, input: impl AskInput) {
         self.end();
         let Some(player) = data.active_player() else {
+            self.debug("active player not listed, not asked");
             return;
         };
         let Some(call) = self.advisor.call_for(self.trigger) else {
@@ -109,7 +120,13 @@ impl AdviceAsk {
         }
         let input = input(call.language, build);
         let options = self.proposals.lines(build, player, call.language);
-        let deadline = Instant::now() + until.left(data, player);
+        let left = until.left(data, player);
+        let deadline = Instant::now() + left;
+        self.debug(&format!(
+            "asked at gameTime {:.1}, deadline in {} s",
+            data.game_time(),
+            left.as_secs()
+        ));
         let (trigger, instructions) = (self.trigger, Arc::clone(&self.instructions));
         let advisor = self.advisor.clone();
         let answer = PendingAnswer::spawn(async move {
@@ -122,7 +139,12 @@ impl AdviceAsk {
             };
             advisor.ask(&call, &question).await.into_parts()
         });
-        self.asking = Some((until, answer));
+        self.asking = Some((until, Instant::now(), answer));
+    }
+
+    /// A diagnostic line, kept out of the Advisor's log.
+    fn debug(&self, what: &str) {
+        log::debug!("Advice {}: {what}", self.trigger.id());
     }
 
     /// One line naming this Trigger, as the Advisor logs its own.

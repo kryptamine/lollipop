@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod advice_source;
+mod app_log;
 mod key_save;
 mod launch_at_login;
 mod menu_bar;
@@ -118,6 +119,7 @@ fn main() {
     let builder = platform::keep_focus_off(builder);
 
     builder
+        .plugin(app_log::plugin())
         // LaunchAgent, as the AppleScript launcher would ask for Automation access.
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
