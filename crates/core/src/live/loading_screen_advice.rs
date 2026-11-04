@@ -8,7 +8,7 @@ use super::arrival::Arrival;
 use super::lane_opponent::lane_of;
 use super::loading_screen_prompt::{game_lines, input, INSTRUCTIONS};
 use super::payload::AllGameData;
-use crate::advice::{Advisor, Asked, Question, Trigger};
+use crate::advice::{Advisor, Question, Trigger};
 use crate::game_inputs::loading_tier;
 
 // `gameTime` after which a late answer is dropped rather than shown.
@@ -70,15 +70,9 @@ impl LoadingScreenAdvice {
                 trigger: Trigger::LoadingScreen,
                 instructions: INSTRUCTIONS,
                 input: &input,
-                // No item is a candidate here, so naming one drops the whole Advice.
-                candidates: &[],
                 deadline,
             };
-            match advisor.ask(&call, &question).await {
-                Asked::Answered(answer) => answer.advice.filter(|advice| !advice.trim().is_empty()),
-                Asked::Unavailable(text) => Some(text.to_string()),
-                Asked::Nothing => None,
-            }
+            advisor.ask(&call, &question).await.into_text()
         }));
     }
 
@@ -105,7 +99,6 @@ impl LoadingScreenAdvice {
             let arrival = Arrival {
                 trigger: Trigger::LoadingScreen,
                 text,
-                icon: None,
             };
             slot.offer(arrival, game_time);
         }

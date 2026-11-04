@@ -25,7 +25,7 @@ const NEXT_PLAN: &str = "Толкай нижнюю линию, пока баро
 const LATE: f64 = 1200.0;
 
 fn answer(text: Option<&str>) -> String {
-    json!({ "advice": text, "item": null }).to_string()
+    json!({ "advice": text }).to_string()
 }
 
 fn baron(at: f64, killer: &str) -> Value {
@@ -68,7 +68,7 @@ fn inputs(openai: &FakeOpenAi) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn a_baron_shows_turning_point_advice_without_an_icon() {
+async fn a_baron_shows_turning_point_advice() {
     let openai = FakeOpenAi::advising(&answer(Some(PLAN))).await;
     let (game, mut updates) = game_at(LATE, &openai).await;
 
@@ -77,7 +77,6 @@ async fn a_baron_shows_turning_point_advice_without_an_icon() {
     let shown = shown.unwrap();
     assert_eq!(shown.trigger, Trigger::TurningPoint);
     assert_eq!(shown.text, PLAN);
-    assert_eq!(shown.icon, None);
 }
 
 #[tokio::test]

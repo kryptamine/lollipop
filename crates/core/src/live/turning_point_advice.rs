@@ -3,7 +3,6 @@ use std::time::{Duration, Instant};
 use tokio::task::JoinHandle;
 
 use super::advice_slot::AdviceSlot;
-use super::answered::Answered;
 use super::arrival::Arrival;
 use super::fighting::fighting;
 use super::payload::{AllGameData, Player};
@@ -34,7 +33,7 @@ struct Asking {
     game_time: f64,
     asked_at: f64,
     alive: bool,
-    answer: JoinHandle<Option<Answered>>,
+    answer: JoinHandle<Option<String>>,
 }
 
 impl TurningPointAdvice {
@@ -99,11 +98,9 @@ impl TurningPointAdvice {
                     trigger: Trigger::TurningPoint,
                     instructions: INSTRUCTIONS,
                     input: &input,
-                    // No item is a candidate here, so naming one drops the whole Advice.
-                    candidates: &[],
                     deadline,
                 };
-                Answered::of(advisor.ask(&call, &question).await)
+                advisor.ask(&call, &question).await.into_text()
             }),
         });
     }
@@ -115,13 +112,12 @@ impl TurningPointAdvice {
         if data.game_time() - asking.asked_at > DROP_AFTER {
             return;
         }
-        let Some(answered) = asking.answer.await.ok().flatten() else {
+        let Some(text) = asking.answer.await.ok().flatten() else {
             return;
         };
         let arrival = Arrival {
             trigger: Trigger::TurningPoint,
-            text: answered.text,
-            icon: None,
+            text,
         };
         if slot.offer(arrival, Some(data.game_time())) {
             self.shown_at = Some(asking.game_time);

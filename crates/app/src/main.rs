@@ -65,6 +65,7 @@ async fn publish_live_client(
     let on_update = move |update: LiveUpdate| {
         let LiveUpdate {
             game,
+            build,
             between_games,
         } = update;
         let running = game.is_some();
@@ -82,6 +83,7 @@ async fn publish_live_client(
             let _ = app.emit("advice", &game.advice);
             let _ = app.emit("snapshot", &game.snapshot);
         }
+        let _ = app.emit("build", &build);
         voiceover.show_advice(game.as_ref().and_then(|game| game.advice.clone()));
         overlay.set_match_running(running);
         if let Some(updates) = app.try_state::<Updates>() {

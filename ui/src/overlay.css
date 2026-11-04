@@ -108,6 +108,32 @@ body {
   content: '▼';
 }
 
+/* Right edge, above the Advice Widget's three lines at most. */
+#build-widget {
+  position: fixed;
+  right: 24px;
+  bottom: 430px;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  background: rgba(10, 14, 20, 0.78);
+}
+
+.build-item {
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid rgba(232, 237, 242, 0.12);
+  border-radius: 4px;
+  opacity: 0.6;
+}
+
+.build-item.next {
+  border: 2px solid #f0c060;
+  opacity: 1;
+}
+
 /* Right edge, just above League's minimap. */
 #advice-widget {
   position: fixed;
@@ -130,19 +156,6 @@ body {
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.advice-body {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.advice-icon {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
 }
 
 .advice-time {

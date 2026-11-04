@@ -41,6 +41,7 @@ export type Notices = string[];
 export type WidgetSwitches = {
   markerStrip: boolean;
   timingHints: boolean;
+  buildWidget: boolean;
   adviceWidget: boolean;
 };
 
@@ -48,7 +49,6 @@ export type WidgetId = keyof WidgetSwitches;
 
 export type TriggerSwitches = {
   loadingScreen: boolean;
-  backToBase: boolean;
   turningPoint: boolean;
   death: boolean;
 };
@@ -69,9 +69,13 @@ export type Switches = {
 export type ShownAdvice = {
   trigger: TriggerId;
   text: string;
-  // The advised item's icon on the Data Dragon CDN.
-  icon: string | null;
   timeLeft: number;
+};
+
+export type BuildItem = {
+  item: number;
+  // The item's icon on the Data Dragon CDN.
+  icon: string | null;
 };
 
 // Each answers with the switches as kept, which may differ from what was asked.
@@ -186,6 +190,13 @@ export const onAdvice = (handler: (advice: ShownAdvice | undefined) => void): ((
   stopWith(
     listen<ShownAdvice | null>('advice', ({ payload }) => {
       handler(payload ?? undefined);
+    }),
+  );
+
+export const onBuild = (handler: (build: BuildItem[]) => void): (() => void) =>
+  stopWith(
+    listen<BuildItem[]>('build', ({ payload }) => {
+      handler(payload);
     }),
   );
 

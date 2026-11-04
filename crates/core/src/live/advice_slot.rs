@@ -50,7 +50,6 @@ impl AdviceSlot {
         Some(ShownAdvice {
             trigger: showing.arrival.trigger,
             text: showing.arrival.text.clone(),
-            icon: showing.arrival.icon.clone(),
             time_left: (left / SHOWN_FOR).min(1.0),
         })
     }

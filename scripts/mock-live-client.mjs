@@ -30,8 +30,11 @@ function mockTable() {
     scores_n: 300,
   }));
   const candidates = [
+    { item: 3020, share: 0.8, minute: 10 },
     { item: 3157, share: 0.6, minute: 18 },
     { item: 3102, share: 0.45, minute: 21 },
+    { item: 3089, share: 0.4, minute: 25 },
+    { item: 3135, share: 0.3, minute: 28 },
   ];
   return {
     schema_version: 2,
@@ -42,10 +45,8 @@ function mockTable() {
       { champion: "Ahri", role: "MIDDLE", physical_heavy: candidates, mixed: candidates, magic_heavy: candidates },
     ],
     data_dragon_version: "16.21.1",
-    item_names: {
-      3157: { en: "Zhonya's Hourglass", ru: "Песочные часы Жони" },
-      3102: { en: "Banshee's Veil", ru: "Покров банши" },
-    },
+    boots: [3006, 3020, 3047],
+    completed: [3089, 3102, 3135, 3157],
   };
 }
 
@@ -53,10 +54,10 @@ function mockTable() {
 const DEATH_AT_S = 40;
 const RESPAWN_S = 15;
 
-// At this game time the mock player buys a Blasting Wand, a Back to base.
+// At this game time the mock player buys Sorcerer's Shoes, which leave the Build.
 const BUY_AT_S = 120;
-const WAND = { itemID: 1026, count: 1, displayName: "Blasting Wand" };
-const WAND_COST = 850;
+const SHOES = { itemID: 3020, count: 1, displayName: "Sorcerer's Shoes" };
+const SHOES_COST = 1100;
 
 // The first seconds are the loading screen, which asks for loading screen Advice.
 const LOADING_SCREEN_S = 5;
@@ -66,10 +67,9 @@ function mockAdvice(answer) {
   return { output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(answer) }] }] };
 }
 
-const LANE_PLAN = { advice: "Mock Advice: trade when Zed uses W, then back off.", item: null };
-const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, Zhonya's Hourglass answers it.", item: 3157 };
-const BACK_TO_BASE_ADVICE = { advice: "Mock Advice: build toward Banshee's Veil, Zed's ult is your threat.", item: 3102 };
-const TURNING_POINT_ADVICE = { advice: "Mock Advice: level 6, look for a roam to the bottom lane.", item: null };
+const LANE_PLAN = { advice: "Mock Advice: trade when Zed uses W, then back off." };
+const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, keep E for when he lands." };
+const TURNING_POINT_ADVICE = { advice: "Mock Advice: level 6, look for a roam to the bottom lane." };
 
 function liveClientData() {
   // Starts at 0:00 game time after the loading screen, so the notices of the first 10 s show.
@@ -85,7 +85,7 @@ function liveClientData() {
     events.push(death);
   }
   return {
-    activePlayer: { riotId: "Me#DEV", currentGold: 500 + gameTime * 3 - (hasBought ? WAND_COST : 0) },
+    activePlayer: { riotId: "Me#DEV", currentGold: 500 + gameTime * 3 - (hasBought ? SHOES_COST : 0) },
     allPlayers: [
       {
         riotId: "Rival#DEV",
@@ -104,7 +104,7 @@ function liveClientData() {
         level: Math.min(18, 1 + Math.floor(minutes)),
         isDead,
         respawnTimer: isDead ? DEATH_AT_S + RESPAWN_S - gameTime : 0,
-        items: hasBought ? [WAND] : [],
+        items: hasBought ? [SHOES] : [],
         // The API floors CS to 10.
         scores: {
           creepScore: Math.floor(minutes * 0.6) * 10,
@@ -136,7 +136,7 @@ function adviceFor(prompt) {
   if (prompt.includes("changed the game plan")) {
     return TURNING_POINT_ADVICE;
   }
-  return prompt.includes("back to base") ? BACK_TO_BASE_ADVICE : LANE_PLAN;
+  return LANE_PLAN;
 }
 
 writeFileSync(lockfile, `LeagueClient:0:${PORT}:mock:http`);

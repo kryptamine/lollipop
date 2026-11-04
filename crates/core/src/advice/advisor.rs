@@ -99,7 +99,7 @@ impl Advisor {
             }
             let timeout =
                 CALL_TIMEOUT.min(question.deadline.saturating_duration_since(Instant::now()));
-            let failure = match self.attempt(call, &request, timeout, question).await {
+            let failure = match self.attempt(call, &request, timeout).await {
                 Ok(answer) => return Asked::Answered(answer),
                 Err(failure) => failure,
             };
@@ -122,15 +122,11 @@ impl Advisor {
         call: &AdviceCall,
         request: &ResponsesRequest<'_>,
         timeout: Duration,
-        question: &Question<'_>,
     ) -> Result<Answer, Failure> {
         if timeout.is_zero() {
             return Err(Failure::Timeout);
         }
-        self.openai
-            .attempt(&call.key, request, timeout)
-            .await?
-            .within(question.candidates)
+        self.openai.attempt(&call.key, request, timeout).await
     }
 
     fn after(&self, failure: Failure) -> Asked {

@@ -54,9 +54,8 @@ fn format() -> Value {
             "type": "object",
             "properties": {
                 "advice": { "type": ["string", "null"] },
-                "item": { "type": ["integer", "null"] },
             },
-            "required": ["advice", "item"],
+            "required": ["advice"],
             "additionalProperties": false,
         },
     })

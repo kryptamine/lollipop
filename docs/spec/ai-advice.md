@@ -33,8 +33,8 @@ in part. This replaces the switches in the MVP's menu bar.
 | Tab | Rows |
 | --- | --- |
 | General | Launch at login |
-| Overlay | Marker strip, Timing hints, Advice Widget |
-| Advice | OpenAI: API key · Advice: Language, Loading screen, Death, Back to base, Turning points · Voiceover: Read Advice aloud |
+| Overlay | Marker strip, Timing hints, Build, Advice Widget |
+| Advice | OpenAI: API key · Advice: Language, Loading screen, Death, Turning points · Voiceover: Read Advice aloud |
 
 - **Advice Widget switch** is the only Advice on/off. Off: no OpenAI calls. It
   defaults on like every Widget, but is disabled with no key, subtitled "Add an
@@ -43,7 +43,7 @@ in part. This replaces the switches in the MVP's menu bar.
   "The Advice Widget is off. Turn it on in Overlay", the link switching tabs. The
   Advice and Voiceover groups grey out and stay visible; the key stays editable.
 - **Language:** system default, ru or en. Every Trigger uses it.
-- **Trigger switches:** four, all on by default.
+- **Trigger switches:** three, all on by default.
 - **Disabled reasons** show as the row's subtitle.
 
 ## OpenAI key
@@ -81,16 +81,16 @@ Settled in [#88](https://github.com/kryptamine/lollipop/issues/88), measured in
 - **Request:** `POST /v1/responses` from `core`, plain `reqwest` with private serde
   structs, `store: false`, `reasoning.effort: "none"`, `max_output_tokens: 120`,
   and a strict `json_schema` that is the same on every call: a nullable `advice`
-  string and a nullable `item` id. The base URL is configurable for the fake.
+  string. The base URL is configurable for the fake.
 - **Prompt:** never Riot IDs or summoner names, never enemy ranks.
 - **Silence:** every Trigger may answer a null `advice`. The instructions ground an
   idea in the game's input, rule out tips that fit any game, and ask for null when
   no idea would change what the player does next.
 - **Measured:** about 1,950 input tokens, median 1.4 s, worst 3.7 s (first calls).
   Prompt caching applies by itself. About $0.005 per game.
-- **Answer checks:** JSON outside the schema, `advice` over 120 characters, or an
-  `item` outside the Trigger's candidates drops the **whole** Advice, with no retry
-  and no truncation. A null `advice` shows nothing.
+- **Answer checks:** JSON outside the schema or `advice` over 120 characters drops
+  the **whole** Advice, with no retry and no truncation. A null `advice` shows
+  nothing.
 - **Per game:** at most 100 OpenAI requests, retries included. Past that, Advice is
   dropped silently for the rest of the game, with one log line. Not a setting.
 - **No spend cap or counter:** spend limits live in the player's OpenAI project.
@@ -110,8 +110,8 @@ Settled in [#123](https://github.com/kryptamine/lollipop/issues/123).
   new key is saved. The Widget says why once; the Advice tab marks the key with the
   same status. The key is not deleted.
 - **No circuit breaker:** every Trigger tries on its own after a failure.
-- **Log:** Trigger, failure kind (network, timeout, HTTP status, schema, length,
-  candidate), latency, whether retried. Never the key, the prompt or the answer.
+- **Log:** Trigger, failure kind (network, timeout, HTTP status, schema, length),
+  latency, whether retried. Never the key, the prompt or the answer.
 
 ## Advice Widget
 
@@ -119,11 +119,9 @@ Settled in [#93](https://github.com/kryptamine/lollipop/issues/93), amended by
 [#126](https://github.com/kryptamine/lollipop/issues/126).
 
 - At the right edge above the minimap, a card about 300 px wide.
-- One Advice at a time, at most 120 characters, shown for 20 s.
-- With an item, a ~32 px icon left of the text, from
-  `ddragon.leagueoflegends.com/cdn/{ver}/img/item/{id}.png`, the version taken from
-  the Benchmark table. The CSP gains that `img-src`. A failed load shows the Advice
-  without an icon. The item's name is in the text.
+- One Advice at a time, at most 120 characters, shown for 20 s. It names no item:
+  the [Build Widget](#build-widget) does
+  ([ADR 0018](../adr/0018-build-replaces-item-advice.md)).
 - Shown beside the Timing hint banner; both stay visible.
 - Like every Widget, it shows only while the overlay does.
 
@@ -131,7 +129,7 @@ Settled in [#93](https://github.com/kryptamine/lollipop/issues/93), amended by
 
 Settled in [#121](https://github.com/kryptamine/lollipop/issues/121).
 
-- **Rank:** Death > Back to base > Turning point > Loading screen. An answer of the
+- **Rank:** Death > Turning point > Loading screen. An answer of the
   same or higher rank replaces the Advice showing; a lower one is dropped.
 - Rank is checked when the answer arrives. A lower request in flight is not
   cancelled.
@@ -145,12 +143,11 @@ and [`trigger-game-data.md`](../research/trigger-game-data.md). Every prompt als
 carries the Advice language. "Dropped" means the answer is not shown; once shown,
 Advice stays the Widget's 20 s.
 
-| Trigger | Item | Drop deadline |
-| --- | --- | --- |
-| Loading screen | Never | 1:30 `gameTime` |
-| Death | Optional | Respawn |
-| Back to base | Optional | 10 s after the purchase, or a death |
-| Turning point | Never | 15 s after the request, or a death |
+| Trigger | Drop deadline |
+| --- | --- |
+| Loading screen | 1:30 `gameTime` |
+| Death | Respawn |
+| Turning point | 15 s after the request, or a death |
 
 ### Loading screen
 
@@ -172,8 +169,7 @@ Settled in [#94](https://github.com/kryptamine/lollipop/issues/94).
 
 Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 
-- **Says:** why the player died and what to change, naming one of the
-  [Item options](#item-options). The model never picks another item.
+- **Says:** why the player died and what to change, never an item to buy.
   `advice` is null when the death teaches nothing, as in a fair trade.
 - **Fires:** on a `ChampionKill` whose `VictimName` is the active player and whose
   killer is an enemy champion. A death to a turret, minion or monster gets none.
@@ -183,31 +179,8 @@ Settled in [#95](https://github.com/kryptamine/lollipop/issues/95).
 - **Prompt:** the player's champion, role, level, items and `currentGold`; the
   killer and assisters (champion, position, level, items, KDA); the whole enemy
   team's champions, items and levels; `gameTime`; how many times this killer has
-  killed the player; the [kill score](#kill-score); the Item options; items
-  earlier Advice in this game recommended, and whether the player bought them,
-  less boots passed over for another pair.
-- **Item:** one of the [Item options](#item-options): the first unless the enemy
-  team's items, levels or the kill score call for another. Not filtered by gold:
-  the model sees `currentGold` and may say to build toward it.
+  killed the player; the [kill score](#kill-score).
 - **Another death:** sends a new request, whose answer replaces the one showing.
-
-### Back to base
-
-Settled in [#96](https://github.com/kryptamine/lollipop/issues/96).
-
-- **Says:** one of the Item options, picked as on death. One the player can
-  afford now is "buy it now", otherwise "build toward it". `advice` is null when
-  nothing changed since the last Advice.
-- **Fires:** on the first purchase of a visit: a new item in `items` and
-  `currentGold` down by at least 300 in the same poll, dead or alive. The 300 floor
-  drops wards, potions and trinket swaps; an undo raises gold and never fires.
-- **Does not fire:** before 1:30 `gameTime`; within 30 s after the last Back to
-  base; once the inventory is full. A recall that buys nothing is not visible.
-- **Prompt:** the player's champion, role, level, items, KDA and `currentGold`; the
-  items bought in this visit; the whole enemy team's champions, items, levels and
-  KDA; `gameTime`; the [kill score](#kill-score); the Item options; earlier
-  recommended items and whether bought, as on death.
-- **Item:** as for death. The first one comes on the first Back to base.
 
 ### Turning point
 
@@ -240,7 +213,7 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
   both teams' champions, items, levels and KDA; which moment fired and which team
   took it; the objective score from `eventdata` (dragons by type per team, Herald,
   Baron, turrets and inhibitors per side); the [kill score](#kill-score);
-  `gameTime`; the texts of earlier Advice in this game. No candidates.
+  `gameTime`; the texts of earlier Advice in this game.
 - **Dropped** also after the player dies, when they were alive at the moment.
 
 ### Kill score
@@ -248,37 +221,37 @@ Settled in [#97](https://github.com/kryptamine/lollipop/issues/97), amended by
 - **Counts** each team's `ChampionKill` events whose killer is a champion of that
   team, as the scoreboard does: an execution by a turret or minion counts for none.
 
+## Build Widget
+
+Settled in [#169](https://github.com/kryptamine/lollipop/issues/169);
+[ADR 0018](../adr/0018-build-replaces-item-advice.md). Code only: it shows with no
+OpenAI key, and its own switch in the Overlay tab turns it off.
+
+- **Build:** sum the five enemies' magic share from `allPlayers` and read the Damage
+  profile bucket. From the list for the player's champion, role and bucket, the
+  boots with the largest `share` and the five items of `completed` with the largest
+  shares, ordered by `minute`, ties to the larger `share`.
+- **When:** read on the loading screen, from the payload's position and the
+  client's patch alone, so it is ready at `GameStart`; a loading screen that gave
+  none is read again then. It ends with the game.
+- **Shown:** icons in build order, from
+  `ddragon.leagueoflegends.com/cdn/{ver}/img/item/{id}.png`, the Next item
+  highlighted. Held items are left out, `owned_as` included, and the boots once the
+  player holds any pair. Never more icons than slots without an item of `completed`
+  or `boots`, so none once all six are full.
+- **Off-build item:** an item of `completed` the Build does not hold, finished in a
+  poll, drops the first completed item left, which it took the place of; boots off
+  the Build drop its boots. A dropped item never returns, and finished later takes no
+  other one's place. Items held at the first poll, as when the app starts mid-game,
+  drop nothing.
+- **None** with a missing or Stale table, or no list for the champion and role
+  ([ADR 0004](../adr/0004-no-marker-beats-a-wrong-marker.md)).
+
 ## Item candidates
 
 Settled in [#126](https://github.com/kryptamine/lollipop/issues/126). Research:
-[`item-statistics.md`](../research/item-statistics.md).
-
-Item Advice is hybrid: the Benchmark table supplies the candidates, code ranks them
-and gives the first three as Item options, the model picks one and explains it, and
-code rejects anything else ([ADR 0017](../adr/0017-model-picks-among-item-options.md)).
-
-- **In the app:** sum the five enemies' magic share from `allPlayers` and read the
-  Damage profile bucket. The candidates are the list for the player's champion,
-  role and bucket, minus items the player owns, `owned_as` included, and minus
-  every boots once the player owns any id of `boots`.
-
-### Item options
-
-Settled in [#152](https://github.com/kryptamine/lollipop/issues/152), amended by
-[#167](https://github.com/kryptamine/lollipop/issues/167). The first three of this
-order, best first; the model sees no other.
-
-- **Components first:** the candidate whose `builds_from` the player's items hit
-  most. The inventory outranks earlier Advice.
-- **Then in progress:** among equal components, the latest candidate earlier Advice
-  showed, not bought, and not left: the player has finished no other item of
-  `completed` since it showed. A death never breaks it.
-- **Then never shown,** and an item shown and left comes last.
-- **Then not skipped:** a candidate is skipped when its `minute` comes before that
-  of a candidate the player holds. The rest go by the earliest `minute`, skipped
-  ones by the latest, ties to the larger `share`.
-- **None** when no candidate is left, or when six held items are of `completed`
-  or `boots`, and `item` stays null.
+[`item-statistics.md`](../research/item-statistics.md). The Benchmark table supplies
+them; the [Build Widget](#build-widget) reads them.
 
 ### In the Benchmark table
 
@@ -302,24 +275,24 @@ order, best first; the model sees no other.
   least 2200 gold, and not boots, a consumable or a trinket; tier-2 boots have the
   `Boots` tag and `depth` 2. A build that cannot reach Data Dragon writes no table.
 - **Thin groups:** a bucket under 50 games uses the champion+role list pooled over
-  buckets; under 50 pooled, no entry and `item` stays null. Threshold in
+  buckets; under 50 pooled, no entry and no Build. Threshold in
   `table_config`, and `--min-candidate-games` on `build-table` and `publish`.
 - **Transforms:** Seraph's, Muramana and support upgrades map to their purchasable
   source through Data Dragon `specialRecipe`, else a lone `from`; a candidate carries
   optional `owned_as` ids. A completed item whose `into` holds only transforms (items
   of map 11 no shop sells) stays completed.
 - **Components:** a candidate carries optional `builds_from`, every id down its
-  Data Dragon `from` tree. A table without it ties no component to a candidate.
+  Data Dragon `from` tree. The app reads none of it now.
 - **Boots:** `boots` lists every Data Dragon item of map 11 whose `from` tree holds
   an item with the `Boots` tag, candidate or not, since a player holds one pair.
-  The tree catches Gunmetal Greaves, which has no tag. A table without it leaves
-  boots among the candidates.
+  The tree catches Gunmetal Greaves, which has no tag.
 - **Completed:** `completed` lists every completed item id, candidate or not, so
-  the app sees a player finish an item off the plan. A table without it never
-  counts a shown item left.
+  the app sees a player finish an item off the Build. A table without `boots` and
+  `completed` gives no Build.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
-  translation repeats the English one. `data_dragon_version` is that version.
+  translation repeats the English one. The app reads none of it now.
+  `data_dragon_version` is that version, which icon URLs take.
 
 ## Voiceover
 
@@ -345,8 +318,8 @@ Settled in [#98](https://github.com/kryptamine/lollipop/issues/98). Research:
 Settled in [#125](https://github.com/kryptamine/lollipop/issues/125).
 
 - OpenAI is an external process, faked in `core` tests through the configurable
-  base URL, with a fake key. Each rule above that code decides (non-candidate,
-  over-length or malformed answer, retry, timeout, 100-request cap, Trigger rank and
+  base URL, with a fake key. Each rule above that code decides (over-length or
+  malformed answer, retry, timeout, 100-request cap, Trigger rank and
   deadlines) gets a synthetic scenario.
 - Advice wording is checked by the owner in real games. No prompt snapshots, eval
   script or release-checklist entry.

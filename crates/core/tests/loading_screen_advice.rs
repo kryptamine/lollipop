@@ -25,7 +25,7 @@ const PLAN: &str = "Играй от Electrocute: размени на 3 уров�
 const POLLS_ON_LOADING_SCREEN: usize = 8;
 
 fn answer(advice: &str) -> String {
-    json!({ "advice": advice, "item": null }).to_string()
+    json!({ "advice": advice }).to_string()
 }
 
 fn switched_on() -> Arc<Mutex<bool>> {
@@ -113,7 +113,7 @@ async fn the_request_has_the_fixed_shape() {
     let format = &body["text"]["format"];
     assert_eq!(format["type"], "json_schema");
     assert_eq!(format["strict"], true);
-    assert_eq!(format["schema"]["required"], json!(["advice", "item"]));
+    assert_eq!(format["schema"]["required"], json!(["advice"]));
     assert_eq!(format["schema"]["additionalProperties"], false);
 }
 
@@ -300,18 +300,9 @@ async fn advice_of_exactly_120_characters_is_shown() {
     assert!(shown[0].is_some());
 }
 
-// The loading screen has no Item candidates, so any item is outside them.
-#[tokio::test]
-async fn advice_naming_an_item_is_dropped_whole() {
-    let text = json!({ "advice": PLAN, "item": 3089 }).to_string();
-    let (_openai, shown) = shown_after_answer(&text).await;
-
-    assert!(shown.iter().all(Option::is_none));
-}
-
 #[tokio::test]
 async fn null_advice_shows_nothing() {
-    let text = json!({ "advice": null, "item": null }).to_string();
+    let text = json!({ "advice": null }).to_string();
     let (_openai, shown) = shown_after_answer(&text).await;
 
     assert!(shown.iter().all(Option::is_none));
@@ -320,9 +311,10 @@ async fn null_advice_shows_nothing() {
 #[tokio::test]
 async fn an_answer_outside_the_schema_is_dropped() {
     let outside = [
-        json!({ "advice": PLAN }).to_string(),
-        json!({ "advice": PLAN, "item": null, "why": "spikes" }).to_string(),
-        json!({ "advice": 42, "item": null }).to_string(),
+        json!({}).to_string(),
+        json!({ "advice": PLAN, "item": 3089 }).to_string(),
+        json!({ "advice": PLAN, "why": "spikes" }).to_string(),
+        json!({ "advice": 42 }).to_string(),
         format!("Sure! {}", answer(PLAN)),
     ];
     for text in outside {

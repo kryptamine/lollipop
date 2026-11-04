@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'preact/hooks';
 
+import { BuildWidget } from './BuildWidget';
 import { MarkerStrip } from './MarkerStrip';
 import { AdviceWidget } from './AdviceWidget';
 import { TimingHintBanner } from './TimingHintBanner';
 import {
   onAdvice,
   onBenchmarks,
+  onBuild,
   onMarkers,
   onNotices,
   onSnapshot,
   onTimingHints,
   onWidgetSwitches,
   type Benchmarks,
+  type BuildItem,
   type Markers,
   type Notices,
   type ShownAdvice,
@@ -27,6 +30,7 @@ export const App = () => {
   const [notices, setNotices] = useState<Notices>([]);
   const [hints, setHints] = useState<TimingHintState[]>([]);
   const [advice, setAdvice] = useState<ShownAdvice>();
+  const [build, setBuild] = useState<BuildItem[]>([]);
   const [switches, setSwitches] = useState<WidgetSwitches>();
 
   useEffect(() => onSnapshot(setSnapshot), []);
@@ -35,11 +39,17 @@ export const App = () => {
   useEffect(() => onNotices(setNotices), []);
   useEffect(() => onTimingHints(setHints), []);
   useEffect(() => onAdvice(setAdvice), []);
+  useEffect(() => onBuild(setBuild), []);
   useEffect(() => onWidgetSwitches(setSwitches), []);
+
+  // No Widget draws until its switch is known.
+  if (!switches) {
+    return;
+  }
 
   return (
     <>
-      {snapshot && markers && benchmarks && switches?.markerStrip && (
+      {snapshot && markers && benchmarks && switches.markerStrip && (
         <MarkerStrip
           snapshot={snapshot}
           markers={markers}
@@ -47,8 +57,9 @@ export const App = () => {
           notices={notices}
         />
       )}
-      {switches?.timingHints && <TimingHintBanner hints={hints} />}
-      {switches?.adviceWidget && <AdviceWidget advice={advice} />}
+      {switches.timingHints && <TimingHintBanner hints={hints} />}
+      {switches.buildWidget && <BuildWidget build={build} />}
+      {switches.adviceWidget && <AdviceWidget advice={advice} />}
     </>
   );
 };
