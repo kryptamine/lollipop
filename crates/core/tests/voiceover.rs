@@ -19,6 +19,9 @@ use support::loading_game::Updates;
 const KILLER: &str = "Foe2#EUW";
 const FIRST: &str = "Zed ловит тебя у стены: держи E на его прыжок.";
 const SECOND: &str = "Zed снова в лесу: отходи к башне до его ульты.";
+// What the voice hears of each: a colon would be named aloud, a comma is a pause.
+const FIRST_HEARD: &str = "Zed ловит тебя у стены, держи E на его прыжок.";
+const SECOND_HEARD: &str = "Zed снова в лесу, отходи к башне до его ульты.";
 
 fn answer(text: &str) -> Reply {
     Reply::advising(
@@ -68,7 +71,7 @@ async fn an_advice_is_read_once_while_it_shows() {
     game.die_to(KILLER, &[], 30.0);
 
     let speech = heard(&mut reader, &mut updates, &openai, true).await;
-    assert_eq!(speech, vec![Speech::Read(FIRST.to_string())]);
+    assert_eq!(speech, vec![Speech::Read(FIRST_HEARD.to_string())]);
 }
 
 #[tokio::test]
@@ -83,7 +86,7 @@ async fn an_advice_replacing_another_is_read_in_its_place() {
     game.die_to(KILLER, &[], 30.0);
 
     let speech = heard(&mut reader, &mut updates, &openai, true).await;
-    assert_eq!(speech, vec![Speech::Read(SECOND.to_string())]);
+    assert_eq!(speech, vec![Speech::Read(SECOND_HEARD.to_string())]);
 }
 
 // The Advice leaving the Widget ends its reading, with nothing queued behind it.
@@ -123,5 +126,19 @@ async fn an_advice_that_came_while_hidden_is_read_once_shown() {
     let hidden = heard(&mut reader, &mut updates, &openai, false).await;
     assert_eq!(hidden, vec![]);
     let shown = heard(&mut reader, &mut updates, &openai, true).await;
-    assert_eq!(shown, vec![Speech::Read(FIRST.to_string())]);
+    assert_eq!(shown, vec![Speech::Read(FIRST_HEARD.to_string())]);
+}
+
+// Apple's voices name a symbol aloud, so markup and arrows must not reach them, while a
+// hyphenated word, a clock time and a negative number still read as written.
+#[tokio::test]
+async fn symbols_are_not_read_aloud() {
+    let marked = "Дракон в 12:30 — **собери** Zhonya's (Хрусталь) -> кто-то/ты: \"ульта\" -20%.";
+    let (game, mut updates, openai) = game_with(vec![answer(marked)]).await;
+    let mut reader = Reader::default();
+    game.die_to(KILLER, &[], 30.0);
+
+    let speech = heard(&mut reader, &mut updates, &openai, true).await;
+    let heard = "Дракон в 12:30, собери Zhonya's Хрусталь, кто-то ты, ульта -20%.";
+    assert_eq!(speech, vec![Speech::Read(heard.to_string())]);
 }
