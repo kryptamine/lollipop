@@ -7,8 +7,8 @@ type TimingHintBannerProps = {
 
 export const TimingHintBanner = ({ hints }: TimingHintBannerProps) => (
   <div id="timing-hint-banner">
-    {hints.map(({ objective, countdown }) => (
-      <TimingHint key={objective} objective={objective} countdown={countdown} />
+    {hints.map(({ objective, countdown, elixir }) => (
+      <TimingHint key={objective} objective={objective} countdown={countdown} elixir={elixir} />
     ))}
   </div>
 );

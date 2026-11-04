@@ -1,5 +1,6 @@
 use super::build_change::BuildChange;
 use super::build_item::BuildItem;
+use super::elixir::{Elixir, ELIXIR_COST};
 use super::gold_earned::ItemCounts;
 use super::lead::Lead;
 use super::open_next::OpenNext;
@@ -31,6 +32,8 @@ pub(super) struct Build {
     held: Option<ItemCounts>,
     change: Option<BuildChange>,
     swap: Option<Swap>,
+    /// The model's Elixir pick, which holds for the rest of the game.
+    elixir: Option<Elixir>,
 }
 
 impl Build {
@@ -246,6 +249,31 @@ impl Build {
             buy: self.shown(swap.buy.item),
             reason: swap.reason.clone(),
         })
+    }
+
+    /// With the inventory full and no Elixir picked yet, a model may pick one.
+    pub(super) fn elixir_open(&self, player: &Player) -> bool {
+        self.elixir.is_none() && self.table.free_slots(&player.item_ids()) == 0
+    }
+
+    /// Holds the model's pick when it is open and names an Elixir; anything else is
+    /// ignored, and code picks instead.
+    pub(super) fn pick_elixir(&mut self, item: u32, player: &Player) {
+        if self.elixir_open(player) {
+            self.elixir = Elixir::of_item(item);
+        }
+    }
+
+    /// The Elixir to buy with a full inventory and the gold for it: the model's pick,
+    /// else Sorcery or Wrath by the champion's magic share, and none without one.
+    pub(super) fn elixir_at(&self, player: &Player, gold: f64) -> Option<BuildItem> {
+        if gold < ELIXIR_COST || self.table.free_slots(&player.item_ids()) > 0 {
+            return None;
+        }
+        let elixir = self
+            .elixir
+            .or_else(|| self.magic_share(player).map(Elixir::by_magic_share))?;
+        Some(self.shown(elixir.item()))
     }
 
     /// The name in `language`, or the id in a table built without names.

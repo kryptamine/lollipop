@@ -116,6 +116,8 @@ A centre banner near the top of the screen shows the event name and a countdown,
 such as `Baron 0:15`. A hint appears 45 s before a spawn and disappears at the
 spawn. Hints are silent, stack with the soonest on top and grow downward. The
 lead is the same for every objective and role.
+Baron and Elder may carry an Elixir icon: see
+[AI Advice](ai-advice.md#elixir).
 
 Hints apply in ranked solo, ranked flex, draft, blind and Practice Tool. An
 unknown queue or an unknown patch means no hints.

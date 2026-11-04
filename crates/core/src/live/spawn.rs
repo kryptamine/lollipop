@@ -15,6 +15,7 @@ impl Spawn {
         (left > 0.0 && left <= LEAD_SECONDS).then(|| TimingHint {
             objective: self.objective,
             countdown: countdown(left),
+            elixir: None,
         })
     }
 }

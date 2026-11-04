@@ -73,9 +73,10 @@ const LANE_PLAN = {
   next_item: 3047,
   reason: "Mock Build change: Zed and Lee Sin hit physical, so Plated Steelcaps first.",
   swap: null,
+  elixir: null,
 };
-const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, keep E for when he lands.", next_item: null, reason: null, swap: null };
-const TURNING_POINT_ADVICE = { advice: "Mock Advice: level 6, look for a roam to the bottom lane.", next_item: null, reason: null, swap: null };
+const DEATH_ADVICE = { advice: "Mock Advice: Zed's ult kills you, keep E for when he lands.", next_item: null, reason: null, swap: null, elixir: null };
+const TURNING_POINT_ADVICE = { advice: "Mock Advice: level 6, look for a roam to the bottom lane.", next_item: null, reason: null, swap: null, elixir: null };
 
 function liveClientData() {
   // Starts at 0:00 game time after the loading screen, so the notices of the first 10 s show.

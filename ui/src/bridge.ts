@@ -34,6 +34,8 @@ export type Benchmarks = {
 export type TimingHintState = {
   objective: string;
   countdown: string;
+  // Only beside Baron and Elder, with a full inventory and the gold for it.
+  elixir: BuildItem | null;
 };
 
 export type Notices = string[];

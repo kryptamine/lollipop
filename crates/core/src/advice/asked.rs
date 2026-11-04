@@ -18,8 +18,8 @@ impl Asked {
         self.into_parts().text
     }
 
-    /// The text, and the Next item and the Swap the model proposes. A proposal with no
-    /// reason to show is dropped.
+    /// The text, and the Next item, the Swap and the Elixir the model proposes. A
+    /// proposal with no reason to show is dropped.
     pub(crate) fn into_parts(self) -> AnswerParts {
         match self {
             Self::Answered(answer) => {
@@ -40,6 +40,7 @@ impl Asked {
                     text: answer.advice.filter(|advice| !is_blank(advice)),
                     change,
                     swap,
+                    elixir: answer.elixir,
                 }
             }
             Self::Unavailable(text) => AnswerParts {

@@ -81,10 +81,10 @@ Settled in [#88](https://github.com/kryptamine/lollipop/issues/88), measured in
 - **Request:** `POST /v1/responses` from `core`, plain `reqwest` with private serde
   structs, `store: false`, `reasoning.effort: "none"`, `max_output_tokens: 360`,
   and a strict `json_schema` that is the same on every call: a nullable `advice`
-  string, `next_item` integer, `reason` string and `swap` object of `sell`, `buy`
-  and `reason`, all required. Only the Loading screen and Death prompts list Item
-  candidates, and only Death lists Swap candidates, so other Triggers answer the
-  rest null. The base URL is configurable for the fake.
+  string, `next_item` integer, `reason` string, `swap` object of `sell`, `buy`
+  and `reason`, and `elixir` integer, all required. Only the Loading screen and
+  Death prompts list Item candidates, and only Death lists Swap candidates and
+  Elixir options, so other Triggers answer the rest null. The base URL is configurable for the fake.
 - **Prompt:** never Riot IDs or summoner names, never enemy ranks.
 - **Silence:** every Trigger may answer a null `advice`. The instructions ground an
   idea in the game's input, rule out tips that fit any game, and ask for null when
@@ -293,6 +293,21 @@ key: without one no Swap is asked.
   inventory is full. One Swap at a time: a newer one replaces it. It ends once its
   item to buy is held, or the inventory is full again without its item to sell.
   Voiceover does not read it.
+
+### Elixir
+
+Settled in [#172](https://github.com/kryptamine/lollipop/issues/172).
+
+- **Shown:** the Elixir's icon beside the Baron and Elder Timing hints, never another
+  objective's, while the inventory is full and `currentGold` is at least 500.
+- **Asked** in the Death call only, no extra request: the answer's `elixir` is the id
+  of Iron (2138), Sorcery (2139) or Wrath (2140), or null. The prompt lists the three
+  as Elixir options at each death while the inventory is full and no pick holds; a
+  pick then holds for the rest of the game.
+- **Dropped** when it names anything else, or comes while a slot is free (ADR 0004).
+- **Code's pick** without one, as with no OpenAI key: Sorcery when the champion's
+  `magic_share` is at least 0.5, Wrath otherwise. Iron comes only from the model. A
+  champion with no `magic_share` gets no Elixir: a wrong one is worse than none.
 
 ## Item candidates
 

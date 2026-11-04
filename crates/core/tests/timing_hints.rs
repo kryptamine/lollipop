@@ -493,6 +493,6 @@ async fn the_view_is_told_the_objective_and_its_countdown() {
 
     assert_eq!(
         serde_json::to_value(&hints[0]).unwrap(),
-        json!([{ "objective": "Baron", "countdown": "0:15" }])
+        json!([{ "objective": "Baron", "countdown": "0:15", "elixir": null }])
     );
 }

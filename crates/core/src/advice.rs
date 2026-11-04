@@ -40,7 +40,8 @@ names, as `advice`. Ground it in what the input says of this game, such as the e
 items and the score. Never a tip that fits any game, such as to play safe, ward more or \
 watch the map. When no idea would change what the player does next, `advice` is null: \
 silence beats a weak idea. `next_item` and `reason` are null unless the input lists Item \
-candidates, and `swap` is null unless it lists Swap candidates. ",
+candidates, `swap` is null unless it lists Swap candidates, and `elixir` is null unless \
+it lists Elixir options. ",
             $($own),+
         )
     };

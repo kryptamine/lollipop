@@ -46,7 +46,8 @@ const FULL_INVENTORY: [(u32, &str); 6] = [
 type Updates = UnboundedReceiver<LiveUpdate>;
 
 fn answer(swap: &Value) -> String {
-    json!({ "advice": TIP, "next_item": null, "reason": null, "swap": swap }).to_string()
+    json!({ "advice": TIP, "next_item": null, "reason": null, "swap": swap, "elixir": null })
+        .to_string()
 }
 
 fn swap(sell: u32, buy: u32, reason: &str) -> Value {

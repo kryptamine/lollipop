@@ -200,6 +200,17 @@ impl ItemGame {
         received
     }
 
+    /// Polls with no OpenAI key, and gives every update whole.
+    pub fn poll_updates_without_key(&self) -> mpsc::UnboundedReceiver<LiveUpdate> {
+        // Nothing listens there: with no key, no Advice is ever asked.
+        let advisor = Advisor::new("http://127.0.0.1:9", |_| None);
+        let (updates, received) = mpsc::unbounded_channel();
+        self.spawn_poll(advisor, move |update| {
+            let _ = updates.send(update);
+        });
+        received
+    }
+
     /// Polls with no OpenAI key, and gives the Build of every poll.
     pub fn poll_builds(&self) -> mpsc::UnboundedReceiver<Vec<BuildItem>> {
         // Nothing listens there: with no key, no Advice is ever asked.
