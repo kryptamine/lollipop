@@ -24,6 +24,8 @@ enum Stage {
         next: f64,
     },
     Ended,
+    /// League answers nothing, as once a loading screen closes without a game.
+    Gone,
 }
 
 /// Live Client Data from the loading screen on, moved between stages by the test.
@@ -57,7 +59,7 @@ impl LoadingGame {
                 *next += 1.0;
             }
             drop(stage);
-            Some(body(served, &players))
+            (!matches!(served, Stage::Gone)).then(|| body(served, &players))
         }))
         .await;
         Self {
@@ -74,6 +76,10 @@ impl LoadingGame {
 
     pub fn end_game(&self) {
         *self.stage.lock().unwrap() = Stage::Ended;
+    }
+
+    pub fn close(&self) {
+        *self.stage.lock().unwrap() = Stage::Gone;
     }
 
     pub fn back_to_loading_screen(&self) {
@@ -119,7 +125,7 @@ impl LoadingGame {
 
 fn body(stage: Stage, players: &[Value]) -> String {
     let (events, game_time) = match stage {
-        Stage::Loading => (json!([]), 0.0),
+        Stage::Loading | Stage::Gone => (json!([]), 0.0),
         Stage::Running { next } => (
             json!([{ "EventName": "GameStart", "EventTime": 0.0 }]),
             next,

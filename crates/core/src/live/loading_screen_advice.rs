@@ -79,6 +79,7 @@ impl LoadingScreenAdvice {
     }
 
     pub(super) fn end_game(&mut self) {
+        self.asked = false;
         self.ask.end();
     }
 }

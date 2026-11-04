@@ -17,6 +17,8 @@ mod dragon_pit;
 mod elixir;
 mod event_name;
 mod fighting;
+mod game_advice;
+mod game_build;
 mod game_hints;
 mod game_markers;
 mod game_notices;
