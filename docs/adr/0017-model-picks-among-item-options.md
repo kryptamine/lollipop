@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR 0018
 ---
 
 # The model picks the item among code's Item options
