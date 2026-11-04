@@ -60,9 +60,9 @@ pub async fn poll(
         inputs: InputsOfGame::default(),
         markers: GameMarkers::default(),
         hints: GameHints::default(),
-        loading_screen: LoadingScreenAdvice::new(&http, league.lockfile),
-        death: DeathAdvice::default(),
-        turning_point: TurningPointAdvice::default(),
+        loading_screen: LoadingScreenAdvice::new(&http, league.lockfile, advisor),
+        death: DeathAdvice::new(advisor),
+        turning_point: TurningPointAdvice::new(advisor),
         build: Build::default(),
         build_carried: false,
         slot: AdviceSlot::default(),
@@ -174,7 +174,7 @@ impl CurrentGame<'_> {
         if data.at_loading_screen() {
             self.build_at_loading_screen(data).await;
             self.loading_screen
-                .at_loading_screen(data, self.advisor, &mut self.slot, &mut self.build)
+                .at_loading_screen(data, &mut self.slot, &mut self.build)
                 .await;
         }
         if !data.match_running() {
@@ -207,11 +207,9 @@ impl CurrentGame<'_> {
             .at(data, &mut self.slot, &mut self.build)
             .await;
         self.turning_point
-            .at(data, player, self.advisor, &mut self.slot)
+            .at(data, player, &mut self.slot, &mut self.build)
             .await;
-        self.death
-            .at(data, self.advisor, &mut self.slot, &mut self.build)
-            .await;
+        self.death.at(data, &mut self.slot, &mut self.build).await;
         Some(LiveGame {
             snapshot,
             inputs,
@@ -245,8 +243,8 @@ impl CurrentGame<'_> {
         .await;
         let mut table = BenchmarkTable::read(self.benchmark_table.path());
         self.notices = notices_of(&inputs, table.as_ref()).into();
-        self.death = DeathAdvice::default();
-        self.turning_point = TurningPointAdvice::default();
+        self.death = DeathAdvice::new(self.advisor);
+        self.turning_point = TurningPointAdvice::new(self.advisor);
         // A loading screen that gave no Build, say for want of a position, gets another try.
         if !std::mem::take(&mut self.build_carried) || self.build.is_empty() {
             let patch = match &inputs.client {

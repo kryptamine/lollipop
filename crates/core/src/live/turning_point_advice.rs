@@ -1,13 +1,14 @@
-use std::time::{Duration, Instant};
+use std::future::ready;
 
+use super::advice_ask::AdviceAsk;
 use super::advice_slot::AdviceSlot;
-use super::arrival::Arrival;
+use super::build::Build;
 use super::fighting::fighting;
 use super::payload::{AllGameData, Player};
-use super::pending_answer::PendingAnswer;
 use super::turning_point::{TurningPoint, TurningPointWatch};
 use super::turning_point_prompt::{input, Turn, INSTRUCTIONS};
-use crate::advice::{Advisor, Question, Trigger};
+use super::until::Until;
+use crate::advice::{Advisor, Trigger};
 
 // Seconds after the request from which a late answer is dropped.
 const DROP_AFTER: f64 = 15.0;
@@ -17,7 +18,6 @@ const SPACING: f64 = 180.0;
 const REPLACES_WITHIN: f64 = 30.0;
 
 /// A macro plan, asked when a moment changes the game plan.
-#[derive(Default)]
 pub(super) struct TurningPointAdvice {
     watch: TurningPointWatch,
     /// The `gameTime` of the last Turning point whose Advice showed. One dropped or
@@ -25,26 +25,36 @@ pub(super) struct TurningPointAdvice {
     shown_at: Option<f64>,
     /// A Turning point seen while the player fights, asked once the fight has passed.
     held: Option<TurningPoint>,
-    asking: Option<Asking>,
+    /// The last Turning point asked about, kept once its answer is in.
+    asked: Option<Asked>,
+    ask: AdviceAsk,
 }
 
-struct Asking {
+struct Asked {
     game_time: f64,
-    asked_at: f64,
     alive: bool,
-    answer: PendingAnswer<Option<String>>,
 }
 
 impl TurningPointAdvice {
+    pub(super) fn new(advisor: &Advisor) -> Self {
+        Self {
+            watch: TurningPointWatch::default(),
+            shown_at: None,
+            held: None,
+            asked: None,
+            ask: AdviceAsk::new(Trigger::TurningPoint, INSTRUCTIONS, advisor),
+        }
+    }
+
     pub(super) async fn at(
         &mut self,
         data: &AllGameData,
         player: &Player,
-        advisor: &Advisor,
         slot: &mut AdviceSlot,
+        build: &mut Build,
     ) {
         // A plan made while the player was alive no longer fits once they die.
-        if player.is_dead && self.asking.as_ref().is_some_and(|asking| asking.alive) {
+        if player.is_dead && self.asked.as_ref().is_some_and(|asked| asked.alive) {
             self.end_game();
         }
         if let Some(point) = self.watch.seen(data) {
@@ -60,14 +70,21 @@ impl TurningPointAdvice {
                     point: &point,
                     earlier: slot.shown(),
                 };
-                self.ask(&turn, advisor);
+                self.ask(&turn, build);
             }
         }
-        self.collect(data, slot).await;
+        let shown = self
+            .ask
+            .collect(data, Some(data.game_time()), slot, build)
+            .await;
+        if shown {
+            self.shown_at = self.asked.as_ref().map(|asked| asked.game_time);
+        }
     }
 
     pub(super) fn end_game(&mut self) {
-        self.asking = None;
+        self.asked = None;
+        self.ask.end();
     }
 
     fn spaced(&self, game_time: f64) -> bool {
@@ -77,48 +94,16 @@ impl TurningPointAdvice {
         })
     }
 
-    fn ask(&mut self, turn: &Turn<'_>, advisor: &Advisor) {
+    fn ask(&mut self, turn: &Turn<'_>, build: &mut Build) {
         self.end_game();
-        let Some(call) = advisor.call_for(Trigger::TurningPoint) else {
-            return;
-        };
-        let input = input(call.language, turn);
-        let TurningPoint { game_time, .. } = *turn.point;
-        let deadline = Instant::now() + Duration::from_secs_f64(DROP_AFTER);
-        let advisor = advisor.clone();
-        self.asking = Some(Asking {
-            game_time,
-            asked_at: turn.data.game_time(),
-            alive: !turn.player.is_dead,
-            answer: PendingAnswer::spawn(async move {
-                let question = Question {
-                    trigger: Trigger::TurningPoint,
-                    instructions: INSTRUCTIONS,
-                    input: &input,
-                    deadline,
-                };
-                advisor.ask(&call, &question).await.into_text()
-            }),
+        let Turn { data, player, .. } = *turn;
+        let until = Until::GameTime(data.game_time() + DROP_AFTER);
+        self.ask.ask(data, build, until, |language, _| {
+            ready(input(language, turn))
         });
-    }
-
-    async fn collect(&mut self, data: &AllGameData, slot: &mut AdviceSlot) {
-        let Some(mut asking) = self.asking.take_if(|asking| asking.answer.is_finished()) else {
-            return;
-        };
-        let answer = asking.answer.finished().await;
-        if data.game_time() - asking.asked_at > DROP_AFTER {
-            return;
-        }
-        let Some(text) = answer.flatten() else {
-            return;
-        };
-        let arrival = Arrival {
-            trigger: Trigger::TurningPoint,
-            text,
-        };
-        if slot.offer(arrival, Some(data.game_time())) {
-            self.shown_at = Some(asking.game_time);
-        }
+        self.asked = Some(Asked {
+            game_time: turn.point.game_time,
+            alive: !player.is_dead,
+        });
     }
 }

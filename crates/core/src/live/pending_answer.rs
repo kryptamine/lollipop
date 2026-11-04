@@ -19,10 +19,6 @@ impl<T: Send + 'static> PendingAnswer<T> {
 }
 
 impl<T> PendingAnswer<T> {
-    pub(super) fn is_finished(&self) -> bool {
-        self.0.as_ref().is_some_and(JoinHandle::is_finished)
-    }
-
     /// Takes the answer once the call has finished, without waiting for it.
     pub(super) async fn finished(&mut self) -> Option<T> {
         self.0.take_if(|call| call.is_finished())?.await.ok()
