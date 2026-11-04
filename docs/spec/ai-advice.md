@@ -79,18 +79,19 @@ Settled in [#88](https://github.com/kryptamine/lollipop/issues/88), measured in
 
 - **Model:** `gpt-6-luna`, fixed in code. OpenAI only.
 - **Request:** `POST /v1/responses` from `core`, plain `reqwest` with private serde
-  structs, `store: false`, `reasoning.effort: "none"`, `max_output_tokens: 240`,
+  structs, `store: false`, `reasoning.effort: "none"`, `max_output_tokens: 360`,
   and a strict `json_schema` that is the same on every call: a nullable `advice`
-  string, `next_item` integer and `reason` string, all required. Only the Loading
-  screen and Death prompts list Item candidates, so other Triggers answer the last
-  two null. The base URL is configurable for the fake.
+  string, `next_item` integer, `reason` string and `swap` object of `sell`, `buy`
+  and `reason`, all required. Only the Loading screen and Death prompts list Item
+  candidates, and only Death lists Swap candidates, so other Triggers answer the
+  rest null. The base URL is configurable for the fake.
 - **Prompt:** never Riot IDs or summoner names, never enemy ranks.
 - **Silence:** every Trigger may answer a null `advice`. The instructions ground an
   idea in the game's input, rule out tips that fit any game, and ask for null when
   no idea would change what the player does next.
 - **Measured:** about 1,950 input tokens, median 1.4 s, worst 3.7 s (first calls).
   Prompt caching applies by itself. About $0.005 per game.
-- **Answer checks:** JSON outside the schema, or `advice` or `reason` over 120
+- **Answer checks:** JSON outside the schema, or `advice` or either `reason` over 120
   characters, drops the **whole** Advice, with no retry and no truncation. A null
   `advice` shows nothing.
 - **Per game:** at most 100 OpenAI requests, retries included. Past that, Advice is
@@ -240,7 +241,7 @@ OpenAI key, and its own switch in the Overlay tab turns it off.
   `ddragon.leagueoflegends.com/cdn/{ver}/img/item/{id}.png`, the Next item
   highlighted. Held items are left out, `owned_as` included, and the boots once the
   player holds any pair. Never more icons than slots without an item of `completed`
-  or `boots`, so none once all six are full.
+  or `boots`, so none once all six are full, where a [Swap](#swap) may show.
 - **Off-build item:** an item of `completed` the Build does not hold, finished in a
   poll, drops the first completed item left, which it took the place of; boots off
   the Build drop its boots. A dropped item never returns, and finished later takes no
@@ -273,6 +274,25 @@ key: without one the Build stays as code built it.
   on the loading screen, and read by Voiceover after its Advice, in one go, while the
   Build Widget is on. The player's own purchase changes the Build with no reason
   shown.
+
+### Swap
+
+Settled in [#171](https://github.com/kryptamine/lollipop/issues/171). Needs an OpenAI
+key: without one no Swap is asked.
+
+- **Asked** in the Death call only, no extra request: the answer's `swap` sits beside
+  `advice`, `sell` and `buy` by id with its own `reason`, or null.
+- **Open:** only once the inventory is full, no slot without an item of `completed`
+  or `boots`. The prompt then lists each held item of `completed` it may sell, by id
+  and client name, never boots, and each Item candidate it may buy, with id, name,
+  `share` and `minute`: none held, and boots only while the player holds none. While a
+  slot is free the prompt says nothing of Swaps.
+- **Dropped** with its reason (ADR 0004) when it sells boots or an item not held, buys
+  outside those candidates, or has a blank reason; the Advice still shows.
+- **Shown:** `sell → buy` icons and the reason in the Build Widget while the
+  inventory is full. One Swap at a time: a newer one replaces it. It ends once its
+  item to buy is held, or the inventory is full again without its item to sell.
+  Voiceover does not read it.
 
 ## Item candidates
 

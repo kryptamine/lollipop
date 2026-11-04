@@ -135,6 +135,15 @@ body {
     sans-serif;
 }
 
+.swap-arrow {
+  align-self: center;
+  color: #e8edf2;
+  font:
+    600 14px/1 -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
 .build-item {
   width: 32px;
   height: 32px;

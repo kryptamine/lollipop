@@ -17,6 +17,17 @@ pub(crate) struct Answer {
     pub(crate) next_item: Option<u32>,
     #[serde(deserialize_with = "Option::deserialize")]
     pub(crate) reason: Option<String>,
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub(crate) swap: Option<SwapAnswer>,
+}
+
+/// An item to sell for an Item candidate once the inventory is full, and why.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SwapAnswer {
+    pub(crate) sell: u32,
+    pub(crate) buy: u32,
+    pub(crate) reason: String,
 }
 
 #[derive(Deserialize)]
@@ -40,7 +51,7 @@ struct Content {
 }
 
 impl Answer {
-    /// Fails for anything outside the schema, a refusal, or advice or reason over the length:
+    /// Fails for anything outside the schema, a refusal, or any text over the length:
     /// the whole Advice is dropped, never cut short.
     pub(super) fn read(body: &str) -> Result<Self, Failure> {
         let response: Response = serde_json::from_str(body).map_err(|_| Failure::Schema)?;
@@ -53,7 +64,8 @@ impl Answer {
             .and_then(|content| content.text.as_deref())
             .ok_or(Failure::Schema)?;
         let answer: Self = serde_json::from_str(text).map_err(|_| Failure::Schema)?;
-        let too_long = [&answer.advice, &answer.reason]
+        let swap_reason = answer.swap.as_ref().map(|swap| &swap.reason);
+        let too_long = [answer.advice.as_ref(), answer.reason.as_ref(), swap_reason]
             .into_iter()
             .flatten()
             .any(|text| text.chars().count() > ADVICE_LENGTH);

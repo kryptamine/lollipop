@@ -78,6 +78,13 @@ export type BuildItem = {
   icon: string | null;
 };
 
+// A held item to sell for an Item candidate, and why.
+export type ShownSwap = {
+  sell: BuildItem;
+  buy: BuildItem;
+  reason: string;
+};
+
 // Each answers with the switches as kept, which may differ from what was asked.
 export const readSwitches = (): Promise<Switches> => invoke<Switches>('read_switches');
 
@@ -204,6 +211,14 @@ export const onBuild = (handler: (build: BuildItem[]) => void): (() => void) =>
 export const onBuildChange = (handler: (reason: string | undefined) => void): (() => void) =>
   stopWith(
     listen<string | null>('build-change', ({ payload }) => {
+      handler(payload ?? undefined);
+    }),
+  );
+
+// The app sends null while no Swap is showing.
+export const onSwap = (handler: (swap: ShownSwap | undefined) => void): (() => void) =>
+  stopWith(
+    listen<ShownSwap | null>('swap', ({ payload }) => {
       handler(payload ?? undefined);
     }),
   );

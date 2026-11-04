@@ -3,7 +3,9 @@
 use std::fmt::Write;
 
 use super::build::Build;
-use super::build_prompt::{build_instructions, build_lines, magic_damage};
+use super::build_prompt::{
+    build_instructions, build_lines, magic_damage, swap_instructions, swap_lines,
+};
 use super::death::Death;
 use super::kill_score::KillScore;
 use super::prompt_lines::{champion, clock, describe};
@@ -13,7 +15,8 @@ pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here the player has just died to an enemy champion: `advice` says why and what to \
 change. Never name an item to buy: the overlay shows the build. When the death teaches \
 nothing, as in a fair trade, `advice` is null. ",
-    build_instructions!()
+    build_instructions!(),
+    swap_instructions!()
 );
 
 pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> String {
@@ -63,6 +66,7 @@ pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> Str
     }
     death_lines(&mut lines, death, build);
     build_lines(&mut lines, build, death.player, language);
+    swap_lines(&mut lines, build, death.player, language);
     lines
 }
 

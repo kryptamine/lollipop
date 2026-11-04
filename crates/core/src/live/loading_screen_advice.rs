@@ -9,7 +9,7 @@ use super::build::Build;
 use super::lane_opponent::lane_of;
 use super::loading_screen_prompt::{game_lines, input, INSTRUCTIONS};
 use super::payload::AllGameData;
-use crate::advice::{Advisor, ProposedChange, Question, Trigger};
+use crate::advice::{Advisor, AnswerParts, Question, Trigger};
 use crate::game_inputs::loading_tier;
 
 // `gameTime` after which a late answer is dropped rather than shown.
@@ -23,7 +23,7 @@ pub(super) struct LoadingScreenAdvice {
     lockfile: PathBuf,
     /// Since the last poll of a running game, so the next loading screen asks again.
     asked: bool,
-    asking: Option<JoinHandle<(Option<String>, Option<ProposedChange>)>>,
+    asking: Option<JoinHandle<AnswerParts>>,
 }
 
 impl LoadingScreenAdvice {
@@ -111,7 +111,8 @@ impl LoadingScreenAdvice {
         if game_time.is_some_and(|at| at >= DROP_AFTER) {
             return;
         }
-        let Ok((text, change)) = asking.await else {
+        // The inventory is never full on the loading screen, so no Swap is asked.
+        let Ok(AnswerParts { text, change, .. }) = asking.await else {
             return;
         };
         if let (Some(change), Some(player)) = (change, data.active_player()) {

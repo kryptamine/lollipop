@@ -12,6 +12,7 @@ import {
   onMarkers,
   onNotices,
   onSnapshot,
+  onSwap,
   onTimingHints,
   onWidgetSwitches,
   type Benchmarks,
@@ -19,6 +20,7 @@ import {
   type Markers,
   type Notices,
   type ShownAdvice,
+  type ShownSwap,
   type Snapshot,
   type TimingHintState,
   type WidgetSwitches,
@@ -33,6 +35,7 @@ export const App = () => {
   const [advice, setAdvice] = useState<ShownAdvice>();
   const [build, setBuild] = useState<BuildItem[]>([]);
   const [buildChange, setBuildChange] = useState<string>();
+  const [swap, setSwap] = useState<ShownSwap>();
   const [switches, setSwitches] = useState<WidgetSwitches>();
 
   useEffect(() => onSnapshot(setSnapshot), []);
@@ -43,6 +46,7 @@ export const App = () => {
   useEffect(() => onAdvice(setAdvice), []);
   useEffect(() => onBuild(setBuild), []);
   useEffect(() => onBuildChange(setBuildChange), []);
+  useEffect(() => onSwap(setSwap), []);
   useEffect(() => onWidgetSwitches(setSwitches), []);
 
   // No Widget draws until its switch is known.
@@ -61,7 +65,7 @@ export const App = () => {
         />
       )}
       {switches.timingHints && <TimingHintBanner hints={hints} />}
-      {switches.buildWidget && <BuildWidget build={build} change={buildChange} />}
+      {switches.buildWidget && <BuildWidget build={build} change={buildChange} swap={swap} />}
       {switches.adviceWidget && <AdviceWidget advice={advice} />}
     </>
   );

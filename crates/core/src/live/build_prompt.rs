@@ -67,3 +67,40 @@ pub(super) fn magic_damage(build: &Build, player: &Player) -> String {
         format!(", magic damage {:.0}%", share * 100.0)
     })
 }
+
+/// What a Trigger whose input may list Swap candidates adds to its instructions.
+macro_rules! swap_instructions {
+    () => {
+        " When the input lists Swap candidates, `swap` may sell one Swap sell option for one \
+Swap candidate, `sell` and `buy` by id, when the enemies' damage, items and levels, the kill \
+score or the player's deaths call for it, and its `reason` says why, at most 120 \
+characters, in the input's language. Otherwise `swap` is null."
+    };
+}
+pub(super) use swap_instructions;
+
+/// Once the inventory is full, the items a Swap may sell and the Item candidates it may
+/// buy. Nothing while a slot is free.
+pub(super) fn swap_lines(lines: &mut String, build: &Build, player: &Player, language: Language) {
+    let Some(options) = build.swap_options(player) else {
+        return;
+    };
+    if options.sells.is_empty() || options.buys.is_empty() {
+        let _ = writeln!(lines, "Inventory full, Swap candidates: none");
+        return;
+    }
+    let _ = writeln!(lines, "Inventory full");
+    for item in options.sells {
+        let _ = writeln!(lines, "Swap sell option: {} {}", item.id, item.shown_name());
+    }
+    for candidate in options.buys {
+        let _ = writeln!(
+            lines,
+            "Swap candidate: {} {}, bought in {:.0}% of games, first at minute {:.0}",
+            candidate.item,
+            build.name_of(candidate.item, language),
+            candidate.share * 100.0,
+            candidate.minute
+        );
+    }
+}
