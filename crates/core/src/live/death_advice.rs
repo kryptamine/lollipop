@@ -8,7 +8,7 @@ use super::build::Build;
 use super::death::Death;
 use super::death_prompt::{input, INSTRUCTIONS};
 use super::payload::{AllGameData, Player};
-use crate::advice::{Advisor, ProposedChange, Question, Trigger};
+use crate::advice::{Advisor, AnswerParts, Question, Trigger};
 
 /// Advice on a death to an enemy champion that teaches something, which may change the
 /// Next item.
@@ -16,7 +16,7 @@ use crate::advice::{Advisor, ProposedChange, Question, Trigger};
 pub(super) struct DeathAdvice {
     /// `ChampionKill` events already seen, `None` before the game's first poll.
     seen_kills: Option<usize>,
-    asking: Option<JoinHandle<(Option<String>, Option<ProposedChange>)>>,
+    asking: Option<JoinHandle<AnswerParts>>,
 }
 
 impl DeathAdvice {
@@ -92,11 +92,14 @@ impl DeathAdvice {
         if !player.is_dead {
             return;
         }
-        let Ok((text, change)) = asking.await else {
+        let Ok(AnswerParts { text, change, swap }) = asking.await else {
             return;
         };
         if let Some(change) = change {
             build.change(change, player, Some(data.game_time()));
+        }
+        if let Some(swap) = swap {
+            build.swap(swap, player);
         }
         if let Some(text) = text {
             let arrival = Arrival {

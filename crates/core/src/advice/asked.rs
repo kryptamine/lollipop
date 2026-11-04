@@ -1,5 +1,7 @@
 use super::answer::Answer;
+use super::answer_parts::AnswerParts;
 use super::proposed_change::ProposedChange;
+use super::proposed_swap::ProposedSwap;
 
 /// What asking came to, as the Trigger shows it.
 #[derive(Debug)]
@@ -13,24 +15,42 @@ pub(crate) enum Asked {
 impl Asked {
     /// The text the Widget shows, `None` for a null or blank `advice`.
     pub(crate) fn into_text(self) -> Option<String> {
-        self.into_parts().0
+        self.into_parts().text
     }
 
-    /// The text, and the Next item the model proposes. A proposal with no reason to
-    /// show is dropped.
-    pub(crate) fn into_parts(self) -> (Option<String>, Option<ProposedChange>) {
+    /// The text, and the Next item and the Swap the model proposes. A proposal with no
+    /// reason to show is dropped.
+    pub(crate) fn into_parts(self) -> AnswerParts {
         match self {
             Self::Answered(answer) => {
-                let reason = answer.reason.filter(|reason| !reason.trim().is_empty());
+                let reason = answer.reason.filter(|reason| !is_blank(reason));
                 let change = answer
                     .next_item
                     .zip(reason)
                     .map(|(item, reason)| ProposedChange { item, reason });
-                let text = answer.advice.filter(|advice| !advice.trim().is_empty());
-                (text, change)
+                let swap = answer
+                    .swap
+                    .filter(|swap| !is_blank(&swap.reason))
+                    .map(|swap| ProposedSwap {
+                        sell: swap.sell,
+                        buy: swap.buy,
+                        reason: swap.reason,
+                    });
+                AnswerParts {
+                    text: answer.advice.filter(|advice| !is_blank(advice)),
+                    change,
+                    swap,
+                }
             }
-            Self::Unavailable(text) => (Some(text.to_string()), None),
-            Self::Nothing => (None, None),
+            Self::Unavailable(text) => AnswerParts {
+                text: Some(text.to_string()),
+                ..AnswerParts::default()
+            },
+            Self::Nothing => AnswerParts::default(),
         }
     }
+}
+
+fn is_blank(text: &str) -> bool {
+    text.trim().is_empty()
 }

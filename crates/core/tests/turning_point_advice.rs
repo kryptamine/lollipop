@@ -25,7 +25,7 @@ const NEXT_PLAN: &str = "Толкай нижнюю линию, пока баро
 const LATE: f64 = 1200.0;
 
 fn answer(text: Option<&str>) -> String {
-    json!({ "advice": text, "next_item": null, "reason": null }).to_string()
+    json!({ "advice": text, "next_item": null, "reason": null, "swap": null }).to_string()
 }
 
 fn baron(at: f64, killer: &str) -> Value {

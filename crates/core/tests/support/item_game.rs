@@ -136,6 +136,19 @@ impl ItemGame {
         drop(state);
     }
 
+    /// The active player sells every `item` they hold.
+    pub fn sell(&self, item: u32) {
+        let mut state = self.state.lock().unwrap();
+        let player = state
+            .players
+            .iter_mut()
+            .find(|p| p["riotId"] == ME)
+            .unwrap();
+        let held = player["items"].as_array_mut().unwrap();
+        held.retain(|held| held["itemID"] != item);
+        drop(state);
+    }
+
     pub fn set_level(&self, level: u32) {
         self.set_player(ME, "level", json!(level));
     }

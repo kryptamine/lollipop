@@ -67,6 +67,7 @@ async fn publish_live_client(
             game,
             build,
             build_change,
+            swap,
             between_games,
         } = update;
         let running = game.is_some();
@@ -86,6 +87,7 @@ async fn publish_live_client(
         }
         let _ = app.emit("build", &build);
         let _ = app.emit("build-change", &build_change);
+        let _ = app.emit("swap", &swap);
         voiceover.show(
             game.as_ref().and_then(|game| game.advice.clone()),
             build_change,

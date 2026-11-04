@@ -18,6 +18,7 @@ use super::live_update::LiveUpdate;
 use super::loading_screen_advice::LoadingScreenAdvice;
 use super::notice::Notice;
 use super::payload::{AllGameData, Player};
+use super::shown_swap::ShownSwap;
 use super::snapshot::Snapshot;
 use super::turning_point_advice::TurningPointAdvice;
 use crate::advice::Advisor;
@@ -79,11 +80,12 @@ pub async fn poll(
             // A loading screen left without a game must not carry its Build into the next.
             game.forget_build();
         }
-        let (build, build_change) = game.build_at(data.as_ref());
+        let (build, build_change, swap) = game.build_at(data.as_ref());
         on_update(LiveUpdate {
             game: update,
             build,
             build_change,
+            swap,
             between_games,
         });
         // A failed poll does not end a game, so a game still held rules out a swap too.
@@ -146,19 +148,24 @@ impl CurrentGame<'_> {
         self.build_carried = false;
     }
 
-    /// The Build, and the reason of a Build change while it shows in a running match.
-    fn build_at(&mut self, data: Option<&AllGameData>) -> (Vec<BuildItem>, Option<String>) {
+    /// The Build, the reason of a Build change while it shows in a running match, and
+    /// the Swap.
+    fn build_at(
+        &mut self,
+        data: Option<&AllGameData>,
+    ) -> (Vec<BuildItem>, Option<String>, Option<ShownSwap>) {
         let running = data.filter(|data| data.at_loading_screen() || data.match_running());
         let (Some(data), Some(player)) = (running, running.and_then(AllGameData::active_player))
         else {
-            return (Vec::new(), None);
+            return (Vec::new(), None, None);
         };
         let change = if data.match_running() {
             self.build.change_at(data.game_time(), data.game_start())
         } else {
             None
         };
-        (self.build.at(player), change)
+        let swap = self.build.swap_at(player);
+        (self.build.at(player), change, swap)
     }
 
     async fn update(&mut self, data: &AllGameData) -> Option<LiveGame> {

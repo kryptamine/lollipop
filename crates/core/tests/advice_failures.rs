@@ -25,7 +25,9 @@ const UNREACHABLE: &str = "Advice unavailable: could not reach OpenAI";
 const NEW_KEY: &str = "sk-proj-New0123wxyz";
 
 fn plan() -> Reply {
-    Reply::advising(&json!({ "advice": PLAN, "next_item": null, "reason": null }).to_string())
+    Reply::advising(
+        &json!({ "advice": PLAN, "next_item": null, "reason": null, "swap": null }).to_string(),
+    )
 }
 
 /// A loading screen with Advice on, and what Advice told the app.
@@ -319,7 +321,7 @@ async fn the_log_names_the_trigger_failure_latency_and_retry() {
 // The log may end up in a bug report, so the key, prompt and answer stay out of it.
 #[tokio::test]
 async fn the_log_holds_no_key_prompt_or_answer() {
-    let long = json!({ "advice": format!("{PLAN}{}", "а".repeat(120)), "next_item": null, "reason": null });
+    let long = json!({ "advice": format!("{PLAN}{}", "а".repeat(120)), "next_item": null, "reason": null, "swap": null });
     let malformed = [
         (
             Reply::with_body("200 OK", responses_body(&format!("Sure! {PLAN}"))),

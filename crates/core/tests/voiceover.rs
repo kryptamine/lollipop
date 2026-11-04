@@ -21,7 +21,9 @@ const FIRST: &str = "Zed ловит тебя у стены: держи E на е
 const SECOND: &str = "Zed снова в лесу: отходи к башне до его ульты.";
 
 fn answer(text: &str) -> Reply {
-    Reply::advising(&json!({ "advice": text, "next_item": null, "reason": null }).to_string())
+    Reply::advising(
+        &json!({ "advice": text, "next_item": null, "reason": null, "swap": null }).to_string(),
+    )
 }
 
 /// What the voice was told over polls until OpenAI has answered, with the overlay

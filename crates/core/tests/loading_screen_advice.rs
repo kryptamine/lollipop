@@ -25,7 +25,7 @@ const PLAN: &str = "Играй от Electrocute: размени на 3 уров�
 const POLLS_ON_LOADING_SCREEN: usize = 8;
 
 fn answer(advice: &str) -> String {
-    json!({ "advice": advice, "next_item": null, "reason": null }).to_string()
+    json!({ "advice": advice, "next_item": null, "reason": null, "swap": null }).to_string()
 }
 
 fn switched_on() -> Arc<Mutex<bool>> {
@@ -109,13 +109,13 @@ async fn the_request_has_the_fixed_shape() {
     assert_eq!(body["model"], "gpt-6-luna");
     assert_eq!(body["store"], false);
     assert_eq!(body["reasoning"], json!({ "effort": "none" }));
-    assert_eq!(body["max_output_tokens"], 240);
+    assert_eq!(body["max_output_tokens"], 360);
     let format = &body["text"]["format"];
     assert_eq!(format["type"], "json_schema");
     assert_eq!(format["strict"], true);
     assert_eq!(
         format["schema"]["required"],
-        json!(["advice", "next_item", "reason"])
+        json!(["advice", "next_item", "reason", "swap"])
     );
     assert_eq!(format["schema"]["additionalProperties"], false);
 }
@@ -305,7 +305,8 @@ async fn advice_of_exactly_120_characters_is_shown() {
 
 #[tokio::test]
 async fn null_advice_shows_nothing() {
-    let text = json!({ "advice": null, "next_item": null, "reason": null }).to_string();
+    let text =
+        json!({ "advice": null, "next_item": null, "reason": null, "swap": null }).to_string();
     let (_openai, shown) = shown_after_answer(&text).await;
 
     assert!(shown.iter().all(Option::is_none));
@@ -316,9 +317,12 @@ async fn an_answer_outside_the_schema_is_dropped() {
     let outside = [
         json!({}).to_string(),
         json!({ "advice": PLAN }).to_string(),
+        json!({ "advice": PLAN, "next_item": null, "reason": null }).to_string(),
+        json!({ "advice": PLAN, "next_item": null, "reason": null, "swap": { "sell": 3157 } })
+            .to_string(),
         json!({ "advice": PLAN, "item": 3089 }).to_string(),
         json!({ "advice": PLAN, "why": "spikes" }).to_string(),
-        json!({ "advice": 42, "next_item": null, "reason": null }).to_string(),
+        json!({ "advice": 42, "next_item": null, "reason": null, "swap": null }).to_string(),
         format!("Sure! {}", answer(PLAN)),
     ];
     for text in outside {

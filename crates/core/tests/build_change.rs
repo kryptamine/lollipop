@@ -35,7 +35,7 @@ const FULL_BUILD: [u32; 6] = [3020, 3102, 3157, 3003, 3089, 3135];
 type Updates = UnboundedReceiver<LiveUpdate>;
 
 fn answer(next_item: Option<u32>, reason: Option<&str>) -> String {
-    json!({ "advice": TIP, "next_item": next_item, "reason": reason }).to_string()
+    json!({ "advice": TIP, "next_item": next_item, "reason": reason, "swap": null }).to_string()
 }
 
 /// Polls until OpenAI has answered every request and the poll loop has taken the answers.

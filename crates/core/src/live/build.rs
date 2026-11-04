@@ -4,7 +4,10 @@ use super::gold_earned::ItemCounts;
 use super::lead::Lead;
 use super::open_next::OpenNext;
 use super::payload::{AllGameData, Player};
-use crate::advice::{Language, ProposedChange};
+use super::shown_swap::ShownSwap;
+use super::swap::Swap;
+use super::swap_options::SwapOptions;
+use crate::advice::{Language, ProposedChange, ProposedSwap};
 use crate::benchmarks::{BenchmarkTable, ItemCandidate, ItemTable};
 use crate::game_inputs::{Patch, Role};
 
@@ -27,6 +30,7 @@ pub(super) struct Build {
     /// The items held when the lead was last checked.
     held: Option<ItemCounts>,
     change: Option<BuildChange>,
+    swap: Option<Swap>,
 }
 
 impl Build {
@@ -77,10 +81,7 @@ impl Build {
         self.track_lead(player);
         self.left(&owned)
             .into_iter()
-            .map(|candidate| BuildItem {
-                item: candidate.item,
-                icon: self.table.icon_url(candidate.item),
-            })
+            .map(|candidate| self.shown(candidate.item))
             .collect()
     }
 
@@ -173,13 +174,78 @@ impl Build {
 
     /// The items left to buy, as [`Self::at`] shows them.
     pub(super) fn left(&self, owned: &[u32]) -> Vec<&ItemCandidate> {
-        // A player holds one pair of boots, whichever it is.
-        let shod = owned.iter().any(|&item| self.table.is_boots(item));
+        let shod = self.shod(owned);
         self.items
             .iter()
             .filter(|candidate| !(candidate.held(owned) || candidate.boots && shod))
             .take(self.table.free_slots(owned))
             .collect()
+    }
+
+    /// Once the inventory is full, the held completed items a Swap may sell, never boots,
+    /// and the Item candidates it may buy: none held, and boots only with none held.
+    pub(super) fn swap_options<'a>(&'a self, player: &'a Player) -> Option<SwapOptions<'a>> {
+        let owned = player.item_ids();
+        if self.candidates.is_empty() || self.table.free_slots(&owned) > 0 {
+            return None;
+        }
+        let finished = self.table.finished(&owned);
+        let mut sells: Vec<_> = player
+            .items
+            .iter()
+            .filter(|item| finished.contains(&item.id) && !self.table.is_boots(item.id))
+            .collect();
+        sells.sort_by_key(|item| item.id);
+        sells.dedup_by_key(|item| item.id);
+        let shod = self.shod(&owned);
+        let buys = self
+            .candidates
+            .iter()
+            .filter(|candidate| !(candidate.held(&owned) || candidate.boots && shod))
+            .collect();
+        Some(SwapOptions { sells, buys })
+    }
+
+    /// Holds `proposed` as the one Swap, in place of the one before. Anything
+    /// `swap_options` does not offer is ignored: see ADR 0004.
+    pub(super) fn swap(&mut self, proposed: ProposedSwap, player: &Player) {
+        let Some(options) = self.swap_options(player) else {
+            return;
+        };
+        if !options.sells.iter().any(|item| item.id == proposed.sell) {
+            return;
+        }
+        let Some(buy) = options
+            .buys
+            .iter()
+            .find(|candidate| candidate.item == proposed.buy)
+            .map(|candidate| (*candidate).clone())
+        else {
+            return;
+        };
+        self.swap = Some(Swap {
+            sell: proposed.sell,
+            buy,
+            reason: proposed.reason,
+        });
+    }
+
+    /// The Swap while the inventory is full. It ends once its item to buy is held, or
+    /// the inventory is full again without its item to sell.
+    pub(super) fn swap_at(&mut self, player: &Player) -> Option<ShownSwap> {
+        let owned = player.item_ids();
+        let swap = self.swap.as_ref()?;
+        let full = self.table.free_slots(&owned) == 0;
+        let sold = !owned.contains(&swap.sell);
+        if swap.buy.held(&owned) || full && sold {
+            self.swap = None;
+        }
+        let swap = self.swap.as_ref().filter(|_| full)?;
+        Some(ShownSwap {
+            sell: self.shown(swap.sell),
+            buy: self.shown(swap.buy.item),
+            reason: swap.reason.clone(),
+        })
     }
 
     /// The name in `language`, or the id in a table built without names.
@@ -226,6 +292,18 @@ impl Build {
             .find(|candidate| candidate.boots == boots && !taken(candidate))
             .cloned();
         self.items.extend(next);
+    }
+
+    fn shown(&self, item: u32) -> BuildItem {
+        BuildItem {
+            item,
+            icon: self.table.icon_url(item),
+        }
+    }
+
+    /// A player holds one pair of boots, whichever it is.
+    fn shod(&self, owned: &[u32]) -> bool {
+        owned.iter().any(|&item| self.table.is_boots(item))
     }
 
     fn was_dropped(&self, item: u32) -> bool {
