@@ -1,4 +1,6 @@
+use std::error::Error;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 use clap::{Args, Parser, Subcommand};
 use lollipop_collector::{
@@ -125,7 +127,7 @@ fn parse_patch(value: &str) -> Result<Patch, String> {
     Patch::parse(value).ok_or_else(|| format!("{value} is not a patch such as 16.24"))
 }
 
-fn run_collect(args: CollectArgs) -> Result<(), String> {
+fn run_collect(args: CollectArgs) -> Result<(), Box<dyn Error>> {
     let key = std::fs::read_to_string(&args.key_file)
         .map_err(|error| format!("cannot read {}: {error}", args.key_file.display()))?;
     let config = Config {
@@ -140,14 +142,14 @@ fn run_collect(args: CollectArgs) -> Result<(), String> {
         .enable_all()
         .build()
         .map_err(|error| format!("cannot start the runtime: {error}"))?;
-    Err(runtime.block_on(collect(&config, &SystemClock)).to_string())
+    Err(runtime.block_on(collect(&config, &SystemClock)).into())
 }
 
 #[allow(
     clippy::print_stdout,
     reason = "the drift report and the schedule check are this command's output"
 )]
-fn run_build_table(args: BuildTableArgs) -> Result<(), String> {
+fn run_build_table(args: BuildTableArgs) -> Result<(), Box<dyn Error>> {
     let config = TableConfig {
         database: args.database,
         reworks: args.reworks,
@@ -156,15 +158,15 @@ fn run_build_table(args: BuildTableArgs) -> Result<(), String> {
         data_dragon_url: args.items.data_dragon_url,
         min_candidate_games: args.items.min_candidate_games,
     };
-    let report = build_table(&config).map_err(|error| error.to_string())?;
+    let report = build_table(&config)?;
     println!("{report}");
-    let check = check_schedule(&config.database).map_err(|error| error.to_string())?;
+    let check = check_schedule(&config.database)?;
     println!("{check}");
     Ok(())
 }
 
 #[allow(clippy::print_stdout, reason = "the outcome is this command's output")]
-fn run_publish(args: PublishArgs) -> Result<(), String> {
+fn run_publish(args: PublishArgs) -> Result<(), Box<dyn Error>> {
     let config = PublishConfig {
         database: args.database,
         reworks: args.reworks,
@@ -177,34 +179,48 @@ fn run_publish(args: PublishArgs) -> Result<(), String> {
         data_dragon_url: args.items.data_dragon_url,
         min_candidate_games: args.items.min_candidate_games,
     };
-    let published = publish(&config).map_err(|error| error.to_string())?;
+    let published = publish(&config)?;
     println!("{published}");
     Ok(())
 }
 
-fn run_rollback(args: RollbackArgs) -> Result<(), String> {
+fn run_rollback(args: RollbackArgs) -> Result<(), Box<dyn Error>> {
     let config = RollbackConfig {
         version: args.version,
         bucket: args.bucket,
         work_dir: args.work_dir,
         signing_key: args.signing_key_file,
     };
-    rollback(&config).map_err(|error| error.to_string())
+    Ok(rollback(&config)?)
 }
 
 #[allow(clippy::print_stdout, reason = "the key is this command's output")]
-fn run_manifest_public_key(args: &ManifestPublicKeyArgs) -> Result<(), String> {
-    let key = manifest_public_key(&args.signing_key_file).map_err(|error| error.to_string())?;
+fn run_manifest_public_key(args: &ManifestPublicKeyArgs) -> Result<(), Box<dyn Error>> {
+    let key = manifest_public_key(&args.signing_key_file)?;
     println!("{key}");
     Ok(())
 }
 
-fn main() -> Result<(), String> {
-    match Cli::parse().command {
+fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
+    match cli.command {
         Command::Collect(args) => run_collect(args),
         Command::BuildTable(args) => run_build_table(args),
         Command::Publish(args) => run_publish(args),
         Command::Rollback(args) => run_rollback(args),
         Command::ManifestPublicKey(args) => run_manifest_public_key(&args),
+    }
+}
+
+#[allow(
+    clippy::print_stderr,
+    reason = "a failure is reported to whoever ran the command"
+)]
+fn main() -> ExitCode {
+    match run(Cli::parse()) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
     }
 }
