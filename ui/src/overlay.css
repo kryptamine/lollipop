@@ -111,11 +111,11 @@ body {
   content: '▼';
 }
 
-/* Right edge, above the Advice Widget's three lines at most. */
+/* Right edge, above the Advice Widget and clear of the champion portraits. */
 #build-widget {
   position: fixed;
   right: 24px;
-  bottom: 430px;
+  bottom: 490px;
   padding: 6px;
   border-radius: 10px;
   background: rgba(10, 14, 20, 0.78);
