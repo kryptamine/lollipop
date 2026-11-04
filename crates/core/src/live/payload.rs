@@ -292,6 +292,13 @@ impl Event {
 }
 
 impl Player {
+    /// The name that tells players apart from one poll to the next.
+    pub(super) fn key(&self) -> Option<&str> {
+        [&self.riot_id, &self.summoner_name, &self.riot_id_game_name]
+            .into_iter()
+            .find_map(Option::as_deref)
+    }
+
     pub(super) const fn team(&self) -> Option<Team> {
         self.team
     }

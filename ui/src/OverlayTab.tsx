@@ -8,7 +8,7 @@ type OverlayTabProps = {
 };
 
 export const OverlayTab = ({
-  widgets: { markerStrip, timingHints, buildWidget, adviceWidget },
+  widgets: { markerStrip, timingHints, buildWidget, adviceWidget, enemyTracker },
   hasKey,
   onWidgetChange,
 }: OverlayTabProps) => (
@@ -34,6 +34,13 @@ export const OverlayTab = ({
         isOn={buildWidget}
         onChange={(isOn) => {
           onWidgetChange('buildWidget', isOn);
+        }}
+      />
+      <SwitchRow
+        label="Enemy tracker"
+        isOn={enemyTracker}
+        onChange={(isOn) => {
+          onWidgetChange('enemyTracker', isOn);
         }}
       />
       <SwitchRow

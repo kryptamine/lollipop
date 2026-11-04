@@ -37,13 +37,25 @@ _Avoid_: Damage type, AP/AD split
 A 500-gold consumable of Iron, Sorcery or Wrath, worth buying once the inventory is full and before Baron or Elder.
 _Avoid_: Potion
 
+**Enemy tracker**:
+The Widget that shows the Headcount, the Jungler sighting and the Lane opponent's Recall, worked out from the scoreboard and the kill feed.
+_Avoid_: Scout, radar, map hack
+
 **Gold earned**:
 All gold a player has received in a game, starting gold included. Spending never lowers it, and selling an item never raises it.
 _Avoid_: Net worth, total gold
 
+**Headcount**:
+How many champions each team has alive while one has more, and how long the lead lasts at least.
+_Avoid_: Numbers advantage, man advantage
+
 **Item candidate**:
 A completed item or boots that players of a champion and role commonly buy against a Damage profile. A Build holds no other item.
 _Avoid_: Recommended item, suggestion
+
+**Jungler sighting**:
+Where the enemy jungler last showed and how long ago: a kill or objective they took part in, or base after a Recall or a respawn.
+_Avoid_: Jungle tracking, jungler position
 
 **Lane opponent**:
 The enemy, or for the bottom lane the enemy pair, playing the same position as the active player.
@@ -71,6 +83,10 @@ The patches whose matches a Benchmark table is built from.
 **Proposal**:
 What a Trigger's answer may change in the Build: the Next item, a Swap or an Elixir. Which ones it may propose depends on the Trigger.
 _Avoid_: Capability, build proposal
+
+**Recall**:
+An enemy buying an item while alive, outside the game's first 90 s and the 30 s after a respawn: they are in base.
+_Avoid_: Back, base trip
 
 **Stale table**:
 A Benchmark table that cannot serve the patch of the game being played.

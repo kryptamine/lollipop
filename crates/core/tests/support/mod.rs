@@ -13,3 +13,4 @@ pub mod recorded_game;
 pub mod scripted_game;
 pub mod server;
 pub mod staged_game;
+pub mod tracker_game;

@@ -2,6 +2,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
+import type { EnemyTracker } from './enemy-tracker';
+
 export type Scores = {
   kills: number;
   deaths: number;
@@ -45,6 +47,7 @@ export type WidgetSwitches = {
   timingHints: boolean;
   buildWidget: boolean;
   adviceWidget: boolean;
+  enemyTracker: boolean;
 };
 
 export type WidgetId = keyof WidgetSwitches;
@@ -192,6 +195,13 @@ export const onTimingHints = (handler: (hints: TimingHintState[]) => void): (() 
 export const onNotices = (handler: (notices: Notices) => void): (() => void) =>
   stopWith(
     listen<Notices>('notices', ({ payload }) => {
+      handler(payload);
+    }),
+  );
+
+export const onEnemyTracker = (handler: (tracker: EnemyTracker) => void): (() => void) =>
+  stopWith(
+    listen<EnemyTracker>('enemy-tracker', ({ payload }) => {
       handler(payload);
     }),
   );

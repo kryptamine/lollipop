@@ -111,6 +111,55 @@ body {
   content: '▼';
 }
 
+/* Left edge, below the Marker strip and clear of the chat. */
+#enemy-tracker {
+  position: fixed;
+  top: 220px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 260px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(10, 14, 20, 0.78);
+  color: #e8edf2;
+  font:
+    600 14px/1.4 -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.tracker-label {
+  color: #9aa6b2;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tracker-detail {
+  color: #9aa6b2;
+  font-weight: 500;
+}
+
+/* A long purchase list ends in an ellipsis rather than widening the Widget. */
+.tracker-bought {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tracker-line.ahead .tracker-lead {
+  color: #3ddc84;
+}
+
+.tracker-line.behind .tracker-lead {
+  color: #ff5c5c;
+}
+
 /* Right edge, above the Advice Widget and clear of the champion portraits. */
 #build-widget {
   position: fixed;

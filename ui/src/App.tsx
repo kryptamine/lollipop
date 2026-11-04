@@ -3,12 +3,15 @@ import { useEffect, useState } from 'preact/hooks';
 import { BuildWidget } from './BuildWidget';
 import { MarkerStrip } from './MarkerStrip';
 import { AdviceWidget } from './AdviceWidget';
+import type { EnemyTracker } from './enemy-tracker';
 import { TimingHintBanner } from './TimingHintBanner';
+import { EnemyTrackerWidget } from './EnemyTrackerWidget';
 import {
   onAdvice,
   onBenchmarks,
   onBuild,
   onBuildChange,
+  onEnemyTracker,
   onMarkers,
   onNotices,
   onSnapshot,
@@ -36,6 +39,7 @@ export const App = () => {
   const [build, setBuild] = useState<BuildItem[]>([]);
   const [buildChange, setBuildChange] = useState<string>();
   const [swap, setSwap] = useState<ShownSwap>();
+  const [tracker, setTracker] = useState<EnemyTracker>();
   const [switches, setSwitches] = useState<WidgetSwitches>();
 
   useEffect(() => onSnapshot(setSnapshot), []);
@@ -47,6 +51,7 @@ export const App = () => {
   useEffect(() => onBuild(setBuild), []);
   useEffect(() => onBuildChange(setBuildChange), []);
   useEffect(() => onSwap(setSwap), []);
+  useEffect(() => onEnemyTracker(setTracker), []);
   useEffect(() => onWidgetSwitches(setSwitches), []);
 
   // No Widget draws until its switch is known.
@@ -67,6 +72,7 @@ export const App = () => {
       {switches.timingHints && <TimingHintBanner hints={hints} />}
       {switches.buildWidget && <BuildWidget build={build} change={buildChange} swap={swap} />}
       {switches.adviceWidget && <AdviceWidget advice={advice} />}
+      {switches.enemyTracker && <EnemyTrackerWidget tracker={tracker} />}
     </>
   );
 };
