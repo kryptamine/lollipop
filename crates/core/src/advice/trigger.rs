@@ -6,14 +6,12 @@ use serde::Serialize;
 pub enum Trigger {
     LoadingScreen,
     TurningPoint,
-    BackToBase,
     Death,
 }
 
-pub const TRIGGERS: [Trigger; 4] = [
+pub const TRIGGERS: [Trigger; 3] = [
     Trigger::LoadingScreen,
     Trigger::TurningPoint,
-    Trigger::BackToBase,
     Trigger::Death,
 ];
 
@@ -24,7 +22,6 @@ impl Trigger {
         match self {
             Self::LoadingScreen => "loadingScreen",
             Self::TurningPoint => "turningPoint",
-            Self::BackToBase => "backToBase",
             Self::Death => "death",
         }
     }
@@ -34,8 +31,7 @@ impl Trigger {
         match self {
             Self::LoadingScreen => 0,
             Self::TurningPoint => 1,
-            Self::BackToBase => 2,
-            Self::Death => 3,
+            Self::Death => 2,
         }
     }
 }

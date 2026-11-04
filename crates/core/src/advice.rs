@@ -17,7 +17,6 @@ mod trigger;
 
 pub use advice_call::AdviceCall;
 pub use advisor::Advisor;
-pub(crate) use asked::Asked;
 pub use key_check::{check_key, KeyCheck};
 pub use key_failure::KeyFailure;
 pub use language::Language;

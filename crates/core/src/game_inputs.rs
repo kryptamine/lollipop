@@ -5,6 +5,7 @@ mod client_inputs;
 mod client_reading;
 mod connection;
 mod gameflow_session;
+mod loading_patch;
 mod loading_tier;
 mod lockfile;
 mod patch;
@@ -20,6 +21,7 @@ use lockfile::Lockfile;
 
 pub use client_inputs::ClientInputs;
 pub use client_reading::ClientReading;
+pub(crate) use loading_patch::loading_patch;
 pub(crate) use loading_tier::loading_tier;
 pub use lockfile::LOCKFILE_PATH;
 pub use patch::Patch;

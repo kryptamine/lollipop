@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use lollipop_core::advice::{AdviceCall, Advisor, Language, Trigger};
 use lollipop_core::delivery::TableFile;
-use lollipop_core::live::{poll, League, LiveUpdate, ShownAdvice};
+use lollipop_core::live::{poll, BuildItem, League, LiveUpdate, ShownAdvice};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 use tokio::sync::mpsc;
@@ -166,6 +166,24 @@ impl ItemGame {
             })
         });
         let (updates, received) = mpsc::unbounded_channel();
+        self.spawn_poll(advisor, move |update| {
+            let _ = updates.send(update.game);
+        });
+        received
+    }
+
+    /// Polls with no OpenAI key, and gives the Build of every poll.
+    pub fn poll_builds(&self) -> mpsc::UnboundedReceiver<Vec<BuildItem>> {
+        // Nothing listens there: with no key, no Advice is ever asked.
+        let advisor = Advisor::new("http://127.0.0.1:9", |_| None);
+        let (builds, received) = mpsc::unbounded_channel();
+        self.spawn_poll(advisor, move |update| {
+            let _ = builds.send(update.build);
+        });
+        received
+    }
+
+    fn spawn_poll(&self, advisor: Advisor, send: impl FnMut(LiveUpdate) + Send + 'static) {
         let url = self.url.clone();
         let lockfile = self.lcu.lockfile();
         let table = self.dir.path().join("table.json");
@@ -178,13 +196,10 @@ impl ItemGame {
                 &TableFile::new(table),
                 &advisor,
                 &GameClock::starting_at(0.0),
-                move |update: LiveUpdate| {
-                    let _ = updates.send(update.game);
-                },
+                send,
             )
             .await;
         });
-        received
     }
 }
 
@@ -221,16 +236,14 @@ fn body(state: &State) -> String {
     .to_string()
 }
 
-/// A schema 2 table with no Cells and Ahri's Item candidates for the middle lane: one
-/// list for each Damage profile bucket, with `magic_share` per enemy champion. Zhonya's
-/// builds from the Rod, Banshee's comes first by its minute, and Rabadon's is a fourth.
+/// A schema 2 table with no Cells and Ahri's Item candidates for the middle lane, with
+/// `magic_share` per enemy champion. Against a magic-heavy team, Steelcaps, Morello and
+/// the Rod lose on share or as no completed item.
 pub fn item_table(magic_share: &Value) -> Value {
-    let candidate = |item: u32, share: f64, minute: f64, builds_from: &[u32]| json!({ "item": item, "share": share, "minute": minute, "builds_from": builds_from });
-    let zhonyas = candidate(3157, 0.6, 20.0, &[1052, 1058, 2420]);
-    let mut seraphs = candidate(3003, 0.4, 22.0, &[1027, 3070]);
-    seraphs["owned_as"] = json!([3040]);
-    // No `builds_from`, as a table built before components were listed.
-    let boots = |item: u32| json!({ "item": item, "share": 0.5, "minute": 12.0 });
+    let candidate = |item: u32, share: f64, minute: f64| json!({ "item": item, "share": share, "minute": minute });
+    let zhonyas = candidate(3157, 0.6, 20.0);
+    let mut archangels = candidate(3003, 0.4, 22.0);
+    archangels["owned_as"] = json!([3040]);
     json!({
         "schema_version": 2,
         "patch_window": ["16.20", "16.21"],
@@ -243,26 +256,23 @@ pub fn item_table(magic_share: &Value) -> Value {
         "item_candidates": [{
             "champion": "Ahri",
             "role": "MIDDLE",
-            "physical_heavy": [zhonyas, boots(3047)],
-            "mixed": [zhonyas, boots(3020)],
+            "physical_heavy": [zhonyas, candidate(3047, 0.5, 12.0)],
+            "mixed": [zhonyas, candidate(3020, 0.5, 12.0)],
             "magic_heavy": [
+                candidate(1058, 0.9, 8.0),
+                candidate(3047, 0.3, 9.0),
+                candidate(3020, 0.8, 10.0),
                 zhonyas,
-                candidate(3102, 0.45, 14.0, &[1033, 1052, 4632]),
-                seraphs,
-                candidate(3089, 0.3, 25.0, &[1026, 1058]),
+                candidate(3102, 0.45, 14.0),
+                archangels,
+                candidate(3089, 0.3, 25.0),
+                candidate(3135, 0.25, 28.0),
+                candidate(3165, 0.1, 18.0),
             ],
         }],
         "data_dragon_version": DATA_DRAGON_VERSION,
-        "item_names": {
-            "3157": { "en": "Zhonya's Hourglass", "ru": "Песочные часы Жони" },
-            "3047": { "en": "Plated Steelcaps", "ru": "Бронированные сапоги" },
-            "3020": { "en": "Sorcerer's Shoes", "ru": "Сапоги чародея" },
-            "3102": { "en": "Banshee's Veil", "ru": "Покров банши" },
-            "3003": { "en": "Archangel's Staff", "ru": "Посох архангела" },
-            "3089": { "en": "Rabadon's Deathcap", "ru": "Смертельная шляпа Рабадона" },
-        },
         "boots": [3006, 3020, 3047, 3111],
-        "completed": [3003, 3089, 3102, 3135, 3157],
+        "completed": [3003, 3089, 3102, 3135, 3157, 3165],
     })
 }
 

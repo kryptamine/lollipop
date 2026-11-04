@@ -3,8 +3,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::advice_slot::AdviceSlot;
-use super::advised_items::AdvisedItems;
-use super::back_to_base_advice::BackToBaseAdvice;
+use super::build::Build;
+use super::build_item::BuildItem;
 use super::clock::Clock;
 use super::death_advice::DeathAdvice;
 use super::game_hints::GameHints;
@@ -12,7 +12,6 @@ use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
 use super::gold_earned::GoldEarned;
 use super::inputs_of_game::InputsOfGame;
-use super::item_widget::ItemWidget;
 use super::league::League;
 use super::live_game::LiveGame;
 use super::live_update::LiveUpdate;
@@ -24,7 +23,7 @@ use super::turning_point_advice::TurningPointAdvice;
 use crate::advice::Advisor;
 use crate::benchmarks::BenchmarkTable;
 use crate::delivery::TableFile;
-use crate::game_inputs::GameInputs;
+use crate::game_inputs::{loading_patch, ClientInputs, GameInputs, Role};
 
 pub const LIVE_CLIENT_URL: &str = "https://127.0.0.1:2999/liveclientdata/allgamedata";
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
@@ -62,9 +61,9 @@ pub async fn poll(
         hints: GameHints::default(),
         loading_screen: LoadingScreenAdvice::new(&http, league.lockfile),
         death: DeathAdvice::default(),
-        back_to_base: BackToBaseAdvice::default(),
         turning_point: TurningPointAdvice::default(),
-        items: AdvisedItems::default(),
+        build: Build::default(),
+        build_carried: false,
         slot: AdviceSlot::default(),
         notices: Arc::from([]),
     };
@@ -77,9 +76,12 @@ pub async fn poll(
         let between_games = data.is_none() && !game.inputs.holds_game();
         if between_games {
             advisor.end_game();
+            // A loading screen left without a game must not carry its Build into the next.
+            game.forget_build();
         }
         on_update(LiveUpdate {
             game: update,
+            build: game.build_at(data.as_ref()),
             between_games,
         });
         // A failed poll does not end a game, so a game still held rules out a swap too.
@@ -106,9 +108,10 @@ struct CurrentGame<'a> {
     hints: GameHints,
     loading_screen: LoadingScreenAdvice,
     death: DeathAdvice,
-    back_to_base: BackToBaseAdvice,
     turning_point: TurningPointAdvice,
-    items: AdvisedItems,
+    build: Build,
+    /// The Build was read on this game's loading screen, so its start keeps it.
+    build_carried: bool,
     slot: AdviceSlot,
     notices: Arc<[Notice]>,
 }
@@ -120,8 +123,38 @@ impl CurrentGame<'_> {
         }
     }
 
+    /// Once per loading screen. Only the patch is read from the client, which may be
+    /// mid-load, and the role only from the payload.
+    async fn build_at_loading_screen(&mut self, data: &AllGameData) {
+        if self.build_carried {
+            return;
+        }
+        let Some(player) = data.active_player() else {
+            return;
+        };
+        let patch = loading_patch(self.http, self.lockfile).await;
+        let role = player.position.as_deref().and_then(Role::parse);
+        let mut table = BenchmarkTable::read(self.benchmark_table.path());
+        self.build = Build::start(table.as_mut(), patch, role, data, player);
+        self.build_carried = true;
+    }
+
+    fn forget_build(&mut self) {
+        self.build = Build::default();
+        self.build_carried = false;
+    }
+
+    fn build_at(&mut self, data: Option<&AllGameData>) -> Vec<BuildItem> {
+        let running = data.filter(|data| data.at_loading_screen() || data.match_running());
+        match running.and_then(AllGameData::active_player) {
+            Some(player) => self.build.at(player),
+            None => Vec::new(),
+        }
+    }
+
     async fn update(&mut self, data: &AllGameData) -> Option<LiveGame> {
         if data.at_loading_screen() {
+            self.build_at_loading_screen(data).await;
             self.loading_screen
                 .at_loading_screen(data, self.advisor, &mut self.slot)
                 .await;
@@ -130,17 +163,17 @@ impl CurrentGame<'_> {
             if data.game_ended() {
                 self.loading_screen.end_game();
                 self.death.end_game();
-                self.back_to_base.end_game();
                 self.turning_point.end_game();
                 self.slot.clear();
                 self.advisor.end_game();
+                self.forget_build();
             }
             self.gold_earned.end_game();
             self.end_held_game();
             return None;
         }
         let player = data.active_player()?;
-        let inputs = self.inputs_at(data.game_time(), player).await;
+        let inputs = self.inputs_at(data, player).await;
         let snapshot = Snapshot {
             cs: player.scores.creep_score,
             level: player.level,
@@ -156,13 +189,8 @@ impl CurrentGame<'_> {
         self.turning_point
             .at(data, player, self.advisor, &mut self.slot)
             .await;
-        let mut widget = ItemWidget {
-            items: &mut self.items,
-            slot: &mut self.slot,
-        };
-        self.death.at(data, player, self.advisor, &mut widget).await;
-        self.back_to_base
-            .at(data, player, self.advisor, &mut widget)
+        self.death
+            .at(data, player, self.advisor, &mut self.slot)
             .await;
         Some(LiveGame {
             snapshot,
@@ -176,7 +204,8 @@ impl CurrentGame<'_> {
         })
     }
 
-    async fn inputs_at(&mut self, game_time: f64, player: &Player) -> Arc<GameInputs> {
+    async fn inputs_at(&mut self, data: &AllGameData, player: &Player) -> Arc<GameInputs> {
+        let game_time = data.game_time();
         if let Some(inputs) = self.inputs.held_at(game_time) {
             return inputs;
         }
@@ -193,11 +222,16 @@ impl CurrentGame<'_> {
         self.notices = notices_of(&inputs, table.as_ref()).into();
         self.death.end_game();
         self.death = DeathAdvice::default();
-        self.back_to_base.end_game();
-        self.back_to_base = BackToBaseAdvice::default();
         self.turning_point.end_game();
         self.turning_point = TurningPointAdvice::default();
-        self.items = AdvisedItems::start(table.as_mut(), &inputs);
+        // A loading screen that gave no Build, say for want of a position, gets another try.
+        if !std::mem::take(&mut self.build_carried) || self.build.is_empty() {
+            let patch = match &inputs.client {
+                ClientInputs::Read(client) => client.patch,
+                ClientInputs::Unavailable => None,
+            };
+            self.build = Build::start(table.as_mut(), patch, inputs.role, data, player);
+        }
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)

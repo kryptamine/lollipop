@@ -12,8 +12,6 @@ pub(crate) struct Answer {
     // `Option::deserialize` makes a missing field an error, where serde would read it as null.
     #[serde(deserialize_with = "Option::deserialize")]
     pub(crate) advice: Option<String>,
-    #[serde(deserialize_with = "Option::deserialize")]
-    pub(crate) item: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -58,13 +56,5 @@ impl Answer {
             return Err(Failure::Length);
         }
         Ok(answer)
-    }
-
-    /// An item outside the candidates drops the whole Advice, as its text may name it.
-    pub(super) fn within(self, candidates: &[u32]) -> Result<Self, Failure> {
-        if self.item.is_some_and(|item| !candidates.contains(&item)) {
-            return Err(Failure::Candidate);
-        }
-        Ok(self)
     }
 }

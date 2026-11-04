@@ -4,5 +4,4 @@ use crate::advice::Trigger;
 pub(super) struct Arrival {
     pub(super) trigger: Trigger,
     pub(super) text: String,
-    pub(super) icon: Option<String>,
 }

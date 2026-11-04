@@ -8,8 +8,6 @@ pub(crate) struct Question<'a> {
     pub(crate) trigger: Trigger,
     pub(crate) instructions: &'a str,
     pub(crate) input: &'a str,
-    /// The items the answer may name.
-    pub(crate) candidates: &'a [u32],
     /// When the Trigger drops a late answer.
     pub(crate) deadline: Instant,
 }

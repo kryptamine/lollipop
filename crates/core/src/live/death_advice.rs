@@ -2,21 +2,19 @@ use std::time::{Duration, Instant};
 
 use tokio::task::JoinHandle;
 
-use super::advised_items::AdvisedItems;
-use super::answered::Answered;
+use super::advice_slot::AdviceSlot;
+use super::arrival::Arrival;
 use super::death::Death;
 use super::death_prompt::{input, INSTRUCTIONS};
-use super::item_widget::ItemWidget;
 use super::payload::{AllGameData, Player};
 use crate::advice::{Advisor, Question, Trigger};
 
-/// Advice on a death to an enemy champion that teaches something, which may name one of
-/// the Item options.
+/// Advice on a death to an enemy champion that teaches something.
 #[derive(Default)]
 pub(super) struct DeathAdvice {
     /// `ChampionKill` events already seen, `None` before the game's first poll.
     seen_kills: Option<usize>,
-    asking: Option<JoinHandle<Option<Answered>>>,
+    asking: Option<JoinHandle<Option<String>>>,
 }
 
 impl DeathAdvice {
@@ -26,7 +24,7 @@ impl DeathAdvice {
         data: &AllGameData,
         player: &Player,
         advisor: &Advisor,
-        widget: &mut ItemWidget<'_>,
+        slot: &mut AdviceSlot,
     ) {
         let kills: Vec<_> = data.events_named("ChampionKill").collect();
         let seen = self.seen_kills.replace(kills.len()).unwrap_or(kills.len());
@@ -40,10 +38,10 @@ impl DeathAdvice {
             // A new death means the player respawned since the last, whose answer is now late.
             self.end_game();
             if death.teaches() {
-                self.ask(&death, advisor, widget.items);
+                self.ask(&death, advisor);
             }
         }
-        self.collect(data, player, widget).await;
+        self.collect(data, player, slot).await;
     }
 
     pub(super) fn end_game(&mut self) {
@@ -52,7 +50,7 @@ impl DeathAdvice {
         }
     }
 
-    fn ask(&mut self, death: &Death<'_>, advisor: &Advisor, items: &AdvisedItems) {
+    fn ask(&mut self, death: &Death<'_>, advisor: &Advisor) {
         let player = death.player;
         if !player.is_dead || player.respawn_timer <= 0.0 {
             return;
@@ -60,10 +58,7 @@ impl DeathAdvice {
         let Some(call) = advisor.call_for(Trigger::Death) else {
             return;
         };
-        let options = items.options(player, death.enemies());
-        let recommended = items.recommended(player);
-        let input = input(call.language, death, &options, &recommended);
-        let ids: Vec<u32> = options.iter().map(|option| option.item).collect();
+        let input = input(call.language, death);
         let deadline = Instant::now() + Duration::from_secs_f64(player.respawn_timer);
         let advisor = advisor.clone();
         self.asking = Some(tokio::spawn(async move {
@@ -71,23 +66,26 @@ impl DeathAdvice {
                 trigger: Trigger::Death,
                 instructions: INSTRUCTIONS,
                 input: &input,
-                candidates: &ids,
                 deadline,
             };
-            Answered::of(advisor.ask(&call, &question).await)
+            advisor.ask(&call, &question).await.into_text()
         }));
     }
 
     /// An answer that arrives once the player has respawned is dropped.
-    async fn collect(&mut self, data: &AllGameData, player: &Player, widget: &mut ItemWidget<'_>) {
+    async fn collect(&mut self, data: &AllGameData, player: &Player, slot: &mut AdviceSlot) {
         let Some(asking) = self.asking.take_if(|asking| asking.is_finished()) else {
             return;
         };
         if !player.is_dead {
             return;
         }
-        if let Some(answered) = asking.await.ok().flatten() {
-            widget.offer(answered, Trigger::Death, data.game_time(), player);
+        if let Some(text) = asking.await.ok().flatten() {
+            let arrival = Arrival {
+                trigger: Trigger::Death,
+                text,
+            };
+            slot.offer(arrival, Some(data.game_time()));
         }
     }
 }

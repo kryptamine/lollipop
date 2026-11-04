@@ -8,3 +8,14 @@ pub(crate) enum Asked {
     Unavailable(&'static str),
     Nothing,
 }
+
+impl Asked {
+    /// The text the Widget shows, `None` for a null or blank `advice`.
+    pub(crate) fn into_text(self) -> Option<String> {
+        match self {
+            Self::Answered(answer) => answer.advice.filter(|advice| !advice.trim().is_empty()),
+            Self::Unavailable(text) => Some(text.to_string()),
+            Self::Nothing => None,
+        }
+    }
+}

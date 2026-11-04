@@ -17,7 +17,6 @@ pub(crate) enum Failure {
     Status(u16),
     Schema,
     Length,
-    Candidate,
 }
 
 impl Failure {
@@ -26,7 +25,7 @@ impl Failure {
         match self {
             Self::Network | Self::Timeout | Self::RateLimited { .. } => true,
             Self::Status(code) => code >= 500,
-            Self::NoQuota | Self::Schema | Self::Length | Self::Candidate => false,
+            Self::NoQuota | Self::Schema | Self::Length => false,
         }
     }
 
@@ -49,7 +48,6 @@ impl fmt::Display for Failure {
             Self::Status(code) => write!(f, "http {code}"),
             Self::Schema => f.write_str("schema"),
             Self::Length => f.write_str("length"),
-            Self::Candidate => f.write_str("candidate"),
         }
     }
 }

@@ -1,14 +1,19 @@
-use super::item_name::ItemName;
-
-/// An item the Cell's games bought: `share` of them, first at the median `minute`.
+/// An Item candidate the Build holds.
 #[derive(Debug)]
-pub(crate) struct ItemCandidate<'a> {
+pub(crate) struct ItemCandidate {
     pub(crate) item: u32,
-    pub(crate) share: f64,
-    pub(crate) minute: f64,
-    /// The Cell's games buy it before an item the player already holds.
-    pub(crate) skipped: bool,
-    /// Every component down its build tree; empty in a table built before they were listed.
-    pub(crate) builds_from: &'a [u32],
-    pub(crate) name: Option<&'a ItemName>,
+    pub(crate) boots: bool,
+    /// The transforms that hold `item`.
+    pub(super) owned_as: Vec<u32>,
+}
+
+impl ItemCandidate {
+    /// Whether `item` is this candidate, itself or transformed.
+    pub(crate) fn is(&self, item: u32) -> bool {
+        self.item == item || self.owned_as.contains(&item)
+    }
+
+    pub(crate) fn held(&self, owned: &[u32]) -> bool {
+        owned.iter().any(|&item| self.is(item))
+    }
 }

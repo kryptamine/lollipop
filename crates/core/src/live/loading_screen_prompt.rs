@@ -8,10 +8,8 @@ use super::payload::{AllGameData, FullRunes, Named, Player};
 use crate::advice::{instructions, Language};
 use crate::game_inputs::TierReading;
 
-pub(super) const INSTRUCTIONS: &str = instructions!(
-    "Here `advice` is a plan for the laning phase against the lane opponent, and `item` \
-is always null."
-);
+pub(super) const INSTRUCTIONS: &str =
+    instructions!("Here `advice` is a plan for the laning phase against the lane opponent.");
 
 /// The game's part of the input, read from the loading screen payload.
 pub(super) fn game_lines(data: &AllGameData, player: &Player, lane: &Lane<'_>) -> String {

@@ -2,10 +2,10 @@
 
 use std::fmt::Write;
 
-use super::item_prompt::{clock, describe};
 use super::kill_score::KillScore;
 use super::objective_score::ObjectiveScore;
 use super::payload::{AllGameData, Player};
+use super::prompt_lines::{clock, describe};
 use super::team::Team;
 use super::turning_point::TurningPoint;
 use crate::advice::{instructions, Language};
@@ -13,7 +13,7 @@ use crate::advice::{instructions, Language};
 pub(super) const INSTRUCTIONS: &str = instructions!(
     "Here a moment has just changed the game plan: `advice` is one macro idea for the next \
 few minutes: which objective to play for and what to prioritise. Where the player is on \
-the map is unknown, so never send them to a lane or to a named ally. `item` is always null. \
+the map is unknown, so never send them to a lane or to a named ally. \
 When nothing is worth saying, or an earlier Advice already says it, `advice` is null."
 );
 
