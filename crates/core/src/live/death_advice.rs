@@ -5,6 +5,7 @@ use super::arrival::Arrival;
 use super::build::Build;
 use super::death::Death;
 use super::death_prompt::{input, INSTRUCTIONS};
+use super::event_name::EventName;
 use super::payload::{AllGameData, Player};
 use super::pending_answer::PendingAnswer;
 use crate::advice::{Advisor, AnswerParts, Question, Trigger};
@@ -30,7 +31,7 @@ impl DeathAdvice {
         let Some(player) = data.active_player() else {
             return;
         };
-        let kills: Vec<_> = data.events_named("ChampionKill").collect();
+        let kills: Vec<_> = data.events_named(EventName::ChampionKill).collect();
         let seen = self.seen_kills.replace(kills.len()).unwrap_or(kills.len());
         let death = kills
             .get(seen..)

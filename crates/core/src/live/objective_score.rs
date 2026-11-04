@@ -1,5 +1,6 @@
 use std::fmt;
 
+use super::event_name::EventName;
 use super::payload::AllGameData;
 use super::team::Team;
 
@@ -20,13 +21,13 @@ impl ObjectiveScore {
                 .filter(move |event| data.taker_team(event) == Some(team))
         };
         Self {
-            dragons: taken("DragonKill")
+            dragons: taken(EventName::DragonKill)
                 .map(|kill| kill.dragon_type().unwrap_or("unknown").to_string())
                 .collect(),
-            heralds: taken("HeraldKill").count(),
-            barons: taken("BaronKill").count(),
-            turrets: taken("TurretKilled").count(),
-            inhibitors: taken("InhibKilled").count(),
+            heralds: taken(EventName::HeraldKill).count(),
+            barons: taken(EventName::BaronKill).count(),
+            turrets: taken(EventName::TurretKilled).count(),
+            inhibitors: taken(EventName::InhibKilled).count(),
         }
     }
 }

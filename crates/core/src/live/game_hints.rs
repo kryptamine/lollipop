@@ -1,5 +1,6 @@
 use super::build_item::BuildItem;
 use super::dragon_pit;
+use super::event_name::EventName;
 use super::objective_schedule::ObjectiveSchedule;
 use super::payload::AllGameData;
 use super::spawn::Spawn;
@@ -70,7 +71,7 @@ fn schedule_of(inputs: &GameInputs) -> Option<&'static ObjectiveSchedule> {
 }
 
 fn next_baron(schedule: &ObjectiveSchedule, data: &AllGameData) -> Option<Spawn> {
-    let at = match data.events_named("BaronKill").last() {
+    let at = match data.events_named(EventName::BaronKill).last() {
         Some(kill) => kill.time()? + schedule.baron_respawn,
         None => schedule.baron_first,
     };

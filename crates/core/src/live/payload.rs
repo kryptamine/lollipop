@@ -2,6 +2,7 @@
 
 use serde::Deserialize;
 
+use super::event_name::EventName;
 use super::gold_earned::ItemCounts;
 use super::team::Team;
 
@@ -74,7 +75,8 @@ pub(super) struct Player {
     riot_id: Option<String>,
     riot_id_game_name: Option<String>,
     summoner_name: Option<String>,
-    team: Option<String>,
+    #[serde(default, deserialize_with = "Team::deserialize_or_none")]
+    team: Option<Team>,
     pub(super) champion_name: Option<String>,
     raw_champion_name: Option<String>,
     pub(super) position: Option<String>,
@@ -129,7 +131,7 @@ struct Events {
 #[serde(rename_all = "PascalCase")]
 pub(super) struct Event {
     #[serde(rename = "EventName")]
-    name: String,
+    name: EventName,
     #[serde(rename = "EventTime")]
     time: Option<f64>,
     pub(super) killer_name: Option<String>,
@@ -139,7 +141,8 @@ pub(super) struct Event {
     dragon_type: Option<String>,
     turret_killed: Option<String>,
     inhib_killed: Option<String>,
-    acing_team: Option<String>,
+    #[serde(default, deserialize_with = "Team::deserialize_or_none")]
+    acing_team: Option<Team>,
 }
 
 #[derive(Deserialize)]
@@ -183,23 +186,25 @@ impl AllGameData {
 
     /// A 200 alone proves nothing: it can come about 56 s before `GameStart`.
     pub(super) fn match_running(&self) -> bool {
-        self.has_event("GameStart") && !self.has_event("GameEnd")
+        self.has_event(EventName::GameStart) && !self.has_event(EventName::GameEnd)
     }
 
     /// League answers for about 56 s of the loading screen before it logs `GameStart`.
     pub(super) fn at_loading_screen(&self) -> bool {
-        !self.has_event("GameStart")
+        !self.has_event(EventName::GameStart)
     }
 
     pub(super) fn game_ended(&self) -> bool {
-        self.has_event("GameEnd")
+        self.has_event(EventName::GameEnd)
     }
 
     pub(super) fn game_start(&self) -> Option<f64> {
-        self.events_named("GameStart").next().and_then(Event::time)
+        self.events_named(EventName::GameStart)
+            .next()
+            .and_then(Event::time)
     }
 
-    fn has_event(&self, name: &str) -> bool {
+    fn has_event(&self, name: EventName) -> bool {
         self.events.events.iter().any(|e| e.name == name)
     }
 
@@ -209,7 +214,7 @@ impl AllGameData {
     }
 
     /// The whole game's events of one kind, oldest first.
-    pub(super) fn events_named<'a>(&'a self, name: &'a str) -> impl Iterator<Item = &'a Event> {
+    pub(super) fn events_named(&self, name: EventName) -> impl Iterator<Item = &Event> {
         self.events.events.iter().filter(move |e| e.name == name)
     }
 
@@ -218,10 +223,7 @@ impl AllGameData {
         if !self.all_players.iter().any(|p| p.goes_by(killer)) {
             return Team::of_minion(killer);
         }
-        self.player_named(killer)?
-            .team
-            .as_deref()
-            .and_then(Team::of_player)
+        self.player_named(killer)?.team
     }
 
     /// The team that took an objective or structure, or aced the other.
@@ -229,10 +231,7 @@ impl AllGameData {
         if let Some(structure) = event.turret_killed.as_ref().or(event.inhib_killed.as_ref()) {
             return Team::destroyer_of(structure);
         }
-        if let Some(team) = &event.acing_team {
-            return Team::of_player(team);
-        }
-        self.killer_team(event)
+        event.acing_team.or_else(|| self.killer_team(event))
     }
 
     /// `None` also for a name two players go by: a game name is not unique, and picking
@@ -254,8 +253,8 @@ impl Item {
 }
 
 impl Event {
-    pub(super) fn name(&self) -> &str {
-        &self.name
+    pub(super) const fn name(&self) -> EventName {
+        self.name
     }
 
     /// `EventTime`, not the poll that saw it: an event can be logged seconds late.
@@ -273,8 +272,8 @@ impl Event {
 }
 
 impl Player {
-    pub(super) fn team(&self) -> Option<&str> {
-        self.team.as_deref()
+    pub(super) const fn team(&self) -> Option<Team> {
+        self.team
     }
 
     // Events give "a player name", and no recording shows which of these it is.

@@ -6,7 +6,6 @@ use super::kill_score::KillScore;
 use super::objective_score::ObjectiveScore;
 use super::payload::{AllGameData, Player};
 use super::prompt_lines::{clock, describe};
-use super::team::Team;
 use super::turning_point::TurningPoint;
 use crate::advice::{instructions, Language};
 
@@ -32,7 +31,7 @@ pub(super) fn input(language: Language, turn: &Turn<'_>) -> String {
         point,
         earlier,
     } = turn;
-    let own = player.team().and_then(Team::of_player);
+    let own = player.team();
     let mut lines = String::new();
     let _ = writeln!(lines, "Language: {}", language.name());
     let _ = writeln!(lines, "Moment: {}", point.moment.describe());

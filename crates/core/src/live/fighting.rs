@@ -1,3 +1,4 @@
+use super::event_name::EventName;
 use super::payload::{AllGameData, Player};
 
 // A champion kill is the only sign of a fight Live Client Data gives.
@@ -9,7 +10,7 @@ pub(super) fn fighting(data: &AllGameData, player: &Player) -> bool {
     let now = data.game_time();
     !player.is_dead
         && data
-            .events_named("ChampionKill")
+            .events_named(EventName::ChampionKill)
             .filter(|kill| kill.time().is_some_and(|at| now - at < FIGHT_LASTS))
             .any(|kill| {
                 kill.killer_name

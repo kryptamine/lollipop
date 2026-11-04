@@ -14,6 +14,7 @@ mod death_advice;
 mod death_prompt;
 mod dragon_pit;
 mod elixir;
+mod event_name;
 mod fighting;
 mod game_hints;
 mod game_markers;

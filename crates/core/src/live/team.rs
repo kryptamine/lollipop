@@ -1,3 +1,5 @@
+use serde::{Deserialize, Deserializer};
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Team {
     Order,
@@ -12,7 +14,16 @@ impl Team {
         }
     }
 
-    pub(super) fn of_player(team: &str) -> Option<Self> {
+    /// Reads `ORDER` or `CHAOS`. Any other value is no team rather than a failed poll.
+    pub(super) fn deserialize_or_none<'de, D: Deserializer<'de>>(
+        team: D,
+    ) -> Result<Option<Self>, D::Error> {
+        Ok(Option::<String>::deserialize(team)?
+            .as_deref()
+            .and_then(Self::of_player))
+    }
+
+    fn of_player(team: &str) -> Option<Self> {
         match team {
             "ORDER" => Some(Self::Order),
             "CHAOS" => Some(Self::Chaos),

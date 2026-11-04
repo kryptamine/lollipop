@@ -8,6 +8,7 @@ use super::build_prompt::{
     swap_instructions, swap_lines,
 };
 use super::death::Death;
+use super::event_name::EventName;
 use super::kill_score::KillScore;
 use super::prompt_lines::{champion, clock, describe};
 use crate::advice::{instructions, Language};
@@ -77,7 +78,7 @@ pub(super) fn input(language: Language, death: &Death<'_>, build: &Build) -> Str
 fn death_lines(lines: &mut String, death: &Death<'_>, build: &Build) {
     let (data, player) = (death.data, death.player);
     let deaths = data
-        .events_named("ChampionKill")
+        .events_named(EventName::ChampionKill)
         .filter_map(|kill| Death::of(data, player, kill));
     for earlier in deaths {
         let at = earlier
