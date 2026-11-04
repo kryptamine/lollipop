@@ -121,6 +121,20 @@ body {
   background: rgba(10, 14, 20, 0.78);
 }
 
+/* Same width cap as a reason; a long name ends in an ellipsis. */
+.build-name {
+  max-width: 222px;
+  margin: 0 0 4px;
+  overflow: hidden;
+  color: rgba(232, 237, 242, 0.75);
+  font:
+    500 11px/1.2 -apple-system,
+    'Segoe UI',
+    sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .build-items {
   display: flex;
   justify-content: flex-end;

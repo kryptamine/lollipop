@@ -12,9 +12,17 @@ pub(crate) fn advisor(app: AppHandle, store: SettingsStore, key: OpenAiKey) -> A
     let locale: Option<String> = None;
     let base_url = key.base_url().to_string();
     let refused = key.clone();
+    let (language_store, language_locale) = (store.clone(), locale.clone());
     Advisor::new(&base_url, move |trigger| {
         let key = key.current();
         store.read(|settings| settings.advice_call(trigger, key, locale.as_deref()))
+    })
+    .in_language(move || {
+        language_store.read(|settings| {
+            settings
+                .advice_language
+                .language(language_locale.as_deref())
+        })
     })
     .logging_to(log)
     .on_key_failure(move |failure| {

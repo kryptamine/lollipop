@@ -15,11 +15,14 @@ export const BuildWidget = ({ build, change, swap }: BuildWidgetProps) =>
   (build.length > 0 || swap !== undefined) && (
     <div id="build-widget">
       {build.length > 0 && (
-        <div class="build-items">
-          {build.map(({ item, icon }, index) => (
-            <BuildIcon key={item} src={icon} isNext={index === 0} />
-          ))}
-        </div>
+        <>
+          {build[0]?.name && <p class="build-name">{build[0].name}</p>}
+          <div class="build-items">
+            {build.map(({ item, icon }, index) => (
+              <BuildIcon key={item} src={icon} isNext={index === 0} />
+            ))}
+          </div>
+        </>
       )}
       {swap !== undefined && <SwapRow swap={swap} />}
       {change !== undefined && <p class="build-change">{change}</p>}

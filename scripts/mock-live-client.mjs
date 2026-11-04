@@ -46,6 +46,14 @@ function mockTable() {
       { champion: "Ahri", role: "MIDDLE", physical_heavy: candidates, mixed: candidates, magic_heavy: candidates },
     ],
     data_dragon_version: "16.21.1",
+    item_names: {
+      3020: { en: "Sorcerer's Shoes", ru: "Сапоги чародея" },
+      3047: { en: "Plated Steelcaps", ru: "Бронированные сапоги" },
+      3157: { en: "Zhonya's Hourglass", ru: "Песочные часы Жони" },
+      3102: { en: "Banshee's Veil", ru: "Покров банши" },
+      3089: { en: "Rabadon's Deathcap", ru: "Смертельная шляпа Рабадона" },
+      3135: { en: "Void Staff", ru: "Посох Бездны" },
+    },
     boots: [3006, 3020, 3047],
     completed: [3089, 3102, 3135, 3157],
   };

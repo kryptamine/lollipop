@@ -353,7 +353,8 @@ them; the [Build Widget](#build-widget) reads them.
   `completed` gives no Build.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
-  translation repeats the English one. Build change prompts name items by it.
+  translation repeats the English one. Build change prompts name items by it, and
+  the Build Widget shows the Next item's name in the Advice language.
   `data_dragon_version` is that version, which icon URLs take.
 
 ## Voiceover

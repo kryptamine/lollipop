@@ -213,8 +213,9 @@ impl ItemGame {
 
     /// Polls with no OpenAI key, and gives the Build of every poll.
     pub fn poll_builds(&self) -> mpsc::UnboundedReceiver<Vec<BuildItem>> {
-        // Nothing listens there: with no key, no Advice is ever asked.
-        let advisor = Advisor::new("http://127.0.0.1:9", |_| None);
+        // Nothing listens there: with no key, no Advice is ever asked, yet names are in Russian.
+        let advisor =
+            Advisor::new("http://127.0.0.1:9", |_| None).in_language(|| Language::Russian);
         let (builds, received) = mpsc::unbounded_channel();
         self.spawn_poll(advisor, move |update| {
             let _ = builds.send(update.build);

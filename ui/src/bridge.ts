@@ -78,6 +78,8 @@ export type BuildItem = {
   item: number;
   // The item's icon on the Data Dragon CDN.
   icon: string | null;
+  // In the Advice language; null for an item the table has no name for.
+  name: string | null;
 };
 
 // A held item to sell for an Item candidate, and why.

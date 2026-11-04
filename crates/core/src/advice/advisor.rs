@@ -7,6 +7,7 @@ use super::answer::Answer;
 use super::asked::Asked;
 use super::failure::Failure;
 use super::key_failure::KeyFailure;
+use super::language::Language;
 use super::openai::OpenAi;
 use super::question::Question;
 use super::request_guard::{Request, RequestGuard, REQUESTS_PER_GAME};
@@ -23,6 +24,7 @@ const UNREACHABLE: &str = "Advice unavailable: could not reach OpenAI";
 type CallFor = Arc<dyn Fn(Trigger) -> Option<AdviceCall> + Send + Sync>;
 type Log = Arc<dyn Fn(&str) + Send + Sync>;
 type OnKeyFailure = Arc<dyn Fn(KeyFailure) + Send + Sync>;
+type LanguageNow = Arc<dyn Fn() -> Language + Send + Sync>;
 
 /// Where Advice comes from. `call_for` is asked as each Trigger fires, so a switch
 /// flipped or a key saved mid-game applies to the next one.
@@ -32,6 +34,7 @@ pub struct Advisor {
     call_for: CallFor,
     log: Log,
     on_key_failure: OnKeyFailure,
+    language: LanguageNow,
     guard: Arc<Mutex<RequestGuard>>,
 }
 
@@ -45,6 +48,7 @@ impl Advisor {
             call_for: Arc::new(call_for),
             log: Arc::new(|_| {}),
             on_key_failure: Arc::new(|_| {}),
+            language: Arc::new(|| Language::English),
             guard: Arc::default(),
         }
     }
@@ -60,6 +64,17 @@ impl Advisor {
     pub fn on_key_failure(mut self, react: impl Fn(KeyFailure) + Send + Sync + 'static) -> Self {
         self.on_key_failure = Arc::new(react);
         self
+    }
+
+    /// Names the Build Widget shows follow it, with no key needed.
+    #[must_use]
+    pub fn in_language(mut self, language: impl Fn() -> Language + Send + Sync + 'static) -> Self {
+        self.language = Arc::new(language);
+        self
+    }
+
+    pub(crate) fn language(&self) -> Language {
+        (self.language)()
     }
 
     /// `None` also once OpenAI refused the key, until [`Self::key_saved`].

@@ -21,7 +21,7 @@ use super::payload::{AllGameData, Player};
 use super::shown_swap::ShownSwap;
 use super::snapshot::Snapshot;
 use super::turning_point_advice::TurningPointAdvice;
-use crate::advice::Advisor;
+use crate::advice::{Advisor, Language};
 use crate::benchmarks::BenchmarkTable;
 use crate::delivery::TableFile;
 use crate::game_inputs::{loading_patch, ClientInputs, GameInputs, Role};
@@ -70,8 +70,9 @@ pub async fn poll(
     };
     loop {
         let data = fetch(&http, league.live_client_url).await;
+        let language = advisor.language();
         let update = match &data {
-            Some(data) => game.update(data).await,
+            Some(data) => game.update(data, language).await,
             None => None,
         };
         let between_games = data.is_none() && !game.inputs.holds_game();
@@ -80,7 +81,7 @@ pub async fn poll(
             // A loading screen left without a game must not carry its Build into the next.
             game.forget_build();
         }
-        let (build, build_change, swap) = game.build_at(data.as_ref());
+        let (build, build_change, swap) = game.build_at(data.as_ref(), language);
         on_update(LiveUpdate {
             game: update,
             build,
@@ -153,6 +154,7 @@ impl CurrentGame<'_> {
     fn build_at(
         &mut self,
         data: Option<&AllGameData>,
+        language: Language,
     ) -> (Vec<BuildItem>, Option<String>, Option<ShownSwap>) {
         let running = data.filter(|data| data.at_loading_screen() || data.match_running());
         let (Some(data), Some(player)) = (running, running.and_then(AllGameData::active_player))
@@ -164,11 +166,11 @@ impl CurrentGame<'_> {
         } else {
             None
         };
-        let swap = self.build.swap_at(player);
-        (self.build.at(player), change, swap)
+        let swap = self.build.swap_at(player, language);
+        (self.build.at(player, language), change, swap)
     }
 
-    async fn update(&mut self, data: &AllGameData) -> Option<LiveGame> {
+    async fn update(&mut self, data: &AllGameData, language: Language) -> Option<LiveGame> {
         if data.at_loading_screen() {
             self.build_at_loading_screen(data).await;
             self.loading_screen
@@ -217,7 +219,9 @@ impl CurrentGame<'_> {
             benchmarks,
             hints: self.hints.at(
                 data,
-                self.build.elixir_at(player, data.current_gold()).as_ref(),
+                self.build
+                    .elixir_at(player, data.current_gold(), language)
+                    .as_ref(),
             ),
             advice: self.slot.at(data.game_time(), data.game_start()),
             notices: Arc::clone(&self.notices),
