@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use super::benchmark_file::ItemCandidatesEntry;
+use super::benchmark_file::{ItemCandidatesEntry, UsualBuildsEntry};
 use super::candidate_list::candidate_list;
 use super::damage_profile::DamageProfile;
 use super::first_purchase::FirstPurchase;
@@ -8,6 +8,7 @@ use super::item_catalog::ItemCatalog;
 use super::match_items::MatchItems;
 use super::profile_bucket::ProfileBucket;
 use super::reworks::Reworks;
+use super::usual_build::usual_build;
 
 // Riot leaves `teamPosition` empty on a game with no role, and no list has that.
 const ROLES: [&str; 5] = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
@@ -43,15 +44,24 @@ pub(super) fn item_candidates(
             if pooled.len() < min_games {
                 return None;
             }
-            let [physical_heavy, mixed, magic_heavy] = ProfileBucket::ALL.map(|bucket| {
+            let games: [&[&[FirstPurchase]]; 3] = ProfileBucket::ALL.map(|bucket| {
                 let own = buckets
                     .get(bucket.index())
                     .filter(|own| own.len() >= min_games);
-                candidate_list(own.unwrap_or(&pooled), catalog)
+                own.map_or(pooled.as_slice(), Vec::as_slice)
             });
+            let [physical_games, mixed_games, magic_games] = games;
+            let [physical_heavy, mixed, magic_heavy] =
+                games.map(|games| candidate_list(games, catalog));
+            let usual = |games, list: &[_]| usual_build(games, list, catalog, min_games);
             Some(ItemCandidatesEntry {
                 champion: champion.to_string(),
                 role: role.to_string(),
+                usual_builds: UsualBuildsEntry {
+                    physical_heavy: usual(physical_games, &physical_heavy),
+                    mixed: usual(mixed_games, &mixed),
+                    magic_heavy: usual(magic_games, &magic_heavy),
+                },
                 physical_heavy,
                 mixed,
                 magic_heavy,

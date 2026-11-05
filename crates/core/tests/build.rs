@@ -13,7 +13,10 @@ use lollipop_core::live::BuildItem;
 use serde_json::{json, Value};
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use support::item_game::{item_table, magic_heavy, physical_heavy, ItemGame};
+use support::item_game::{
+    item_table, magic_heavy, physical_heavy, table_with_cryptbloom, with_threats, ItemGame,
+    CRYPTBLOOM,
+};
 use support::loading_game::ME;
 
 const SORCERERS: (u32, &str) = (3020, "Сапоги чародея");
@@ -216,4 +219,184 @@ async fn a_missing_or_stale_table_gives_no_build() {
     stale["patch_window"] = json!(["16.10"]);
     let (_game, mut builds) = running(&stale).await;
     assert!(build_now(&mut builds).await.is_empty());
+}
+
+fn ahri_dealing_magic() -> Value {
+    let mut shares = magic_heavy();
+    shares["Ahri"] = json!(0.9);
+    shares
+}
+
+// Void Staff has the larger share, but the games that build Zhonya's and Banshee's go
+// to Morello instead.
+#[tokio::test]
+async fn the_build_takes_the_items_games_buy_together() {
+    let mut table = item_table(&magic_heavy());
+    table["item_candidates"][0]["usual_builds"] = json!({
+        "physical_heavy": [],
+        "mixed": [],
+        "magic_heavy": [3157, 3102, 3165, 3003, 3089],
+    });
+    let (_game, mut builds) = running(&table).await;
+
+    assert_eq!(
+        build_now(&mut builds).await,
+        [3020, 3102, 3165, 3157, 3003, 3089]
+    );
+}
+
+// Grievous Wounds answers a team that heals a lot; the last item, bought least surely,
+// makes room for it.
+#[tokio::test]
+async fn heavy_healing_puts_anti_heal_in_place_of_the_last_item() {
+    let table = with_threats(item_table(&magic_heavy()), true, false);
+    let (_game, mut builds) = running(&table).await;
+
+    assert_eq!(
+        build_now(&mut builds).await,
+        [3020, 3102, 3165, 3157, 3003, 3089]
+    );
+}
+
+#[tokio::test]
+async fn light_healing_and_mitigation_leave_the_build_alone() {
+    let table = with_threats(table_with_cryptbloom(&ahri_dealing_magic()), false, false);
+    let (_game, mut builds) = running(&table).await;
+
+    assert_eq!(build_now(&mut builds).await, FULL_BUILD);
+}
+
+// Ahri deals magic damage, so armor penetration would do her nothing.
+#[tokio::test]
+async fn heavy_mitigation_puts_penetration_of_the_players_damage_in_the_build() {
+    let table = with_threats(table_with_cryptbloom(&ahri_dealing_magic()), false, true);
+    let (_game, mut builds) = running(&table).await;
+
+    assert_eq!(
+        build_now(&mut builds).await,
+        [3020, 3102, 3157, 3003, 3089, CRYPTBLOOM]
+    );
+}
+
+// With no magic share the kind of penetration is a guess, and a wrong one is worse.
+#[tokio::test]
+async fn a_player_with_no_magic_share_gets_no_penetration() {
+    let table = with_threats(table_with_cryptbloom(&magic_heavy()), false, true);
+    let (_game, mut builds) = running(&table).await;
+
+    assert_eq!(build_now(&mut builds).await, FULL_BUILD);
+}
+
+// A Counter item put in is never the item the next one takes the place of, even when
+// it comes last: Morello is bought late here.
+#[tokio::test]
+async fn each_counter_item_takes_the_place_of_another_item() {
+    let mut table = with_threats(table_with_cryptbloom(&ahri_dealing_magic()), true, true);
+    let list = table["item_candidates"][0]["magic_heavy"]
+        .as_array_mut()
+        .unwrap();
+    let morello = list
+        .iter_mut()
+        .find(|item| item["item"] == MORELLO.0)
+        .unwrap();
+    morello["minute"] = json!(30.0);
+    let (_game, mut builds) = running(&table).await;
+
+    assert_eq!(
+        build_now(&mut builds).await,
+        [3020, 3102, 3157, 3003, CRYPTBLOOM, 3165]
+    );
+}
+
+#[tokio::test]
+async fn a_build_that_counters_already_takes_no_counter_item() {
+    let mut table = with_threats(item_table(&magic_heavy()), true, false);
+    table["counters"]["anti_heal"] = json!([RABADONS.0, MORELLO.0]);
+    let (_game, mut builds) = running(&table).await;
+
+    assert_eq!(build_now(&mut builds).await, FULL_BUILD);
+}
+
+// Morello bought early is still the anti-heal the team calls for.
+#[tokio::test]
+async fn a_player_holding_a_counter_item_takes_no_other() {
+    let table = with_threats(item_table(&magic_heavy()), true, false);
+    let game = ItemGame::running_at(300.0, &table).await;
+    game.give_items(ME, &[MORELLO]);
+    let mut builds = game.poll_builds();
+
+    assert_eq!(build_now(&mut builds).await, [3020, 3102, 3157, 3003, 3089]);
+}
+
+const CHEMPUNK: (u32, &str) = (6609, "Химтековый гнилокол");
+const EXECUTIONERS: (u32, &str) = (3123, "Призыв палача");
+
+/// Heavy healing, with Chempunk as a second anti-heal item Ahri rarely buys, built from
+/// the Executioner's Calling.
+fn table_with_chempunk() -> Value {
+    let mut table = with_threats(item_table(&magic_heavy()), true, false);
+    let list = table["item_candidates"][0]["magic_heavy"]
+        .as_array_mut()
+        .unwrap();
+    list.push(json!({ "item": CHEMPUNK.0, "share": 0.05, "minute": 19.0, "builds_from": [3123] }));
+    table["completed"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!(CHEMPUNK.0));
+    table["counters"]["anti_heal"] = json!([MORELLO.0, CHEMPUNK.0]);
+    table
+}
+
+// Executioner's Calling already bought would be wasted on another anti-heal item.
+#[tokio::test]
+async fn a_held_component_picks_the_counter_item_it_builds_into() {
+    let game = ItemGame::running_at(300.0, &table_with_chempunk()).await;
+    game.give_items(ME, &[EXECUTIONERS]);
+    let mut builds = game.poll_builds();
+
+    assert_eq!(
+        build_now(&mut builds).await,
+        [3020, 3102, CHEMPUNK.0, 3157, 3003, 3089]
+    );
+}
+
+// The player answered the healing with another anti-heal item, so Morello has no job.
+#[tokio::test]
+async fn an_off_build_counter_item_takes_the_counter_items_place() {
+    let (game, mut builds) = running(&table_with_chempunk()).await;
+    game.buy(&[SORCERERS], 0.0);
+    build_now(&mut builds).await;
+
+    game.buy(&[CHEMPUNK], 0.0);
+    assert_eq!(build_now(&mut builds).await, [3102, 3157, 3003, 3089]);
+}
+
+// Dominik's takes Zhonya's place, not Morello's, which the team still calls for.
+#[tokio::test]
+async fn an_off_build_item_never_drops_a_counter_item() {
+    let table = with_threats(item_table(&magic_heavy()), true, false);
+    let (game, mut builds) = running(&table).await;
+    game.buy(&[SORCERERS, BANSHEES], 0.0);
+    assert_eq!(build_now(&mut builds).await, [3165, 3157, 3003, 3089]);
+
+    game.buy(&[DOMINIKS], 0.0);
+    assert_eq!(build_now(&mut builds).await, [3165, 3003, 3089]);
+}
+
+// A new bucket makes the Build again from its usual build, and asks for Counter items
+// again: Morello is no usual buy against a mixed team.
+#[tokio::test]
+async fn a_new_bucket_builds_from_its_usual_build_with_counter_items() {
+    let mut table = with_threats(item_table(&magic_heavy()), true, false);
+    let mixed = table["item_candidates"][0]["mixed"].as_array_mut().unwrap();
+    mixed.push(json!({ "item": MORELLO.0, "share": 0.1, "minute": 18.0 }));
+    table["item_candidates"][0]["usual_builds"] = json!({
+        "physical_heavy": [],
+        "mixed": [3157],
+        "magic_heavy": [],
+    });
+    let (game, mut builds) = running(&table).await;
+
+    game.give_items(LUX, &[INFINITY_EDGE, DOMINIKS]);
+    assert_eq!(build_now(&mut builds).await, [3020, 3165, 3157]);
 }

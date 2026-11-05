@@ -36,6 +36,14 @@ pub const REMOVED_ITEM: u32 = 6630;
 pub const DEMOTED_ITEM: u32 = 6631;
 /// Sixteen more completed items from here, and five more tier-2 boots from `MORE_BOOTS`.
 pub const MORE_COMPLETED: u32 = 6600;
+/// Inflicts Grievous Wounds and penetrates armor.
+pub const MORTAL_REMINDER: u32 = 3033;
+pub const LORD_DOMINIKS: u32 = 3036;
+pub const VOID_STAFF: u32 = 3135;
+/// Inflicts Grievous Wounds.
+pub const MORELLONOMICON: u32 = 3165;
+/// Inflicts Grievous Wounds, and is a component.
+pub const EXECUTIONERS: u32 = 3123;
 pub const MORE_BOOTS: u32 = 6700;
 
 /// Stands in for Data Dragon on a thread of its own, so a blocking test can use it too.
@@ -127,6 +135,7 @@ fn items(older_patch: bool) -> Value {
     add(ZHONYAS, item(3250, &["SpellDamage", "Armor"], &[], None));
     add_boots(&mut add);
     add(DORANS_BLADE, item(450, &["Lane"], &[], None));
+    add_counters(&mut add);
     add(
         COSTLY_COMPONENT,
         built_from(item(2300, &["Damage"], &["3031"], Some(2)), &["1036"]),
@@ -163,6 +172,34 @@ fn items(older_patch: bool) -> Value {
         add(DEMOTED_ITEM, item(1300, &["Damage"], &["3031"], Some(2)));
     }
     json!({ "type": "item", "version": "16.21.1", "data": data })
+}
+
+fn add_counters(add: &mut impl FnMut(u32, Value)) {
+    let wounding = |mut item: Value| {
+        item["description"] =
+            json!("<mainText>Applies <status>Grievous Wounds</status>.</mainText>");
+        item
+    };
+    add(
+        MORTAL_REMINDER,
+        wounding(item(3000, &["Damage", "ArmorPenetration"], &[], None)),
+    );
+    add(
+        LORD_DOMINIKS,
+        item(3000, &["Damage", "ArmorPenetration"], &[], None),
+    );
+    add(
+        VOID_STAFF,
+        item(3000, &["SpellDamage", "MagicPenetration"], &[], None),
+    );
+    add(
+        MORELLONOMICON,
+        wounding(item(2950, &["SpellDamage"], &[], None)),
+    );
+    add(
+        EXECUTIONERS,
+        wounding(item(800, &["Damage"], &["3033"], Some(2))),
+    );
 }
 
 fn add_boots(add: &mut impl FnMut(u32, Value)) {

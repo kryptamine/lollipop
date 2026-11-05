@@ -1,4 +1,5 @@
-//! The archived `match-v5` match JSON document, as far as Item candidates read it.
+//! The archived `match-v5` match JSON document, as far as Item candidates and the
+//! Threats read it.
 
 use serde::Deserialize;
 
@@ -8,7 +9,10 @@ pub(super) struct ArchivedGame {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(super) struct GameInfo {
+    /// In seconds.
+    pub(super) game_duration: u64,
     pub(super) participants: Vec<GameParticipant>,
 }
 
@@ -21,4 +25,6 @@ pub(super) struct GameParticipant {
     pub(super) team_id: u32,
     pub(super) magic_damage_dealt_to_champions: u64,
     pub(super) total_damage_dealt_to_champions: u64,
+    pub(super) total_heal: u64,
+    pub(super) damage_self_mitigated: u64,
 }

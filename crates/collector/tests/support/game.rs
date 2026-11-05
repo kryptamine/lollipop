@@ -77,6 +77,8 @@ impl Game {
                     "magicDamageDealtToChampions": 1000 * id,
                     "physicalDamageDealtToChampions": 10_000 - 1000 * id,
                     "totalDamageDealtToChampions": 10_000,
+                    "totalHeal": 500 * id,
+                    "damageSelfMitigated": 2000,
                 })
             })
             .collect();

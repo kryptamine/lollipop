@@ -22,6 +22,8 @@ const SUMMONERS_RIFT: &str = "11";
 const COMPLETED_MIN_GOLD: u32 = 2200;
 const BOOTS_TIER_2_DEPTH: u32 = 2;
 const BOOTS_TAG: &str = "Boots";
+// No tag marks anti-heal, so the English description names the debuff.
+const GRIEVOUS_WOUNDS: &str = "Grievous Wounds";
 const NOT_COMPLETED_TAGS: [&str; 3] = [BOOTS_TAG, "Consumable", "Trinket"];
 // The support item takes three steps to reach its upgrades; the bound only stops a cycle.
 const MAX_TRANSFORM_STEPS: usize = 8;
@@ -42,6 +44,8 @@ struct Item {
     into: Vec<String>,
     #[serde(default)]
     tags: Vec<String>,
+    #[serde(default)]
+    description: String,
     #[serde(default)]
     maps: HashMap<String, bool>,
     depth: Option<u32>,
@@ -104,8 +108,15 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
         .iter()
         .map(|(&id, item)| (id, item.tags.clone()))
         .collect();
+    let mut grievous_wounds: Vec<u32> = items
+        .iter()
+        .filter(|(_, item)| item.description.contains(GRIEVOUS_WOUNDS))
+        .map(|(&id, _)| id)
+        .collect();
+    grievous_wounds.sort_unstable();
     Ok(ItemCatalog {
         version: version.to_string(),
+        grievous_wounds,
         classes,
         owned_as: owned_as(&items),
         boots: boots(&items, &builds_from),

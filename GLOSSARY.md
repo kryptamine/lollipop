@@ -33,6 +33,10 @@ _Avoid_: Bucket, segment, cohort
 CS a minute over at least the last three minutes, against what the Cell gains over the same stretch. It shows a player who stopped farming, which total CS hides once the lead is banked.
 _Avoid_: CS rate, farm speed, CS per minute
 
+**Counter item**:
+An Item candidate that answers a Threat the enemy team is heavy in: Grievous Wounds for healing, penetration of the player's damage for mitigation.
+_Avoid_: Counter build, situational item
+
 **Damage profile**:
 How much of a team's damage to champions is magic, from what its champions usually deal and the damage items they hold.
 _Avoid_: Damage type, AP/AD split
@@ -84,6 +88,14 @@ _Avoid_: Outdated, expired
 What the Build becomes once the inventory is full: sell one finished item, never boots, for an Item candidate the player lacks.
 _Avoid_: Rebuild, replacement
 
+**Threat**:
+What an enemy team may do a lot of that a Counter item answers: healing, or damage mitigated. A team is heavy in it from the top quarter of stored teams.
+_Avoid_: Danger, enemy profile
+
+**Threat profile**:
+Per champion, the amount of one Threat a minute, and the team sum from which a team is heavy in it.
+_Avoid_: Heal table, tankiness score
+
 **Timing hint**:
 A pop-up shown shortly before an objective spawns.
 _Avoid_: Timer, alert, notification
@@ -95,6 +107,10 @@ _Avoid_: Periodic, milestone
 **Trigger**:
 A moment in a game that asks for Advice, such as the loading screen or the player's death.
 _Avoid_: Event, hook
+
+**Usual build**:
+The completed items games of a champion and role buy together against a Damage profile, which the Build starts from.
+_Avoid_: Build path, core build
 
 **Voiceover**:
 Advice read aloud.

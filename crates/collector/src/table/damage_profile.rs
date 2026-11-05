@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
+use super::average::quantile;
 use super::benchmark_file::DamageProfileEntry;
 use super::match_items::MatchItems;
 use super::participant_items::ParticipantItems;
@@ -40,7 +41,7 @@ impl DamageProfile {
         };
         let mut sums: Vec<f64> = matches
             .iter()
-            .flat_map(|game| teams(game).map(|team| profile.team_sum(game, team)))
+            .flat_map(|game| game.teams().map(|team| profile.team_sum(game, team)))
             .collect();
         sums.sort_by(f64::total_cmp);
         profile.mixed_from = rounded(quantile(&sums, 1.0 / 3.0)?);
@@ -50,7 +51,7 @@ impl DamageProfile {
 
     /// The bucket of the team facing `player`. Each bound is the lowest sum of its bucket.
     pub(super) fn facing(&self, game: &MatchItems, player: &ParticipantItems) -> ProfileBucket {
-        let enemies = teams(game).find(|team| *team != player.team);
+        let enemies = game.teams().find(|team| *team != player.team);
         let sum = enemies.map_or(0.0, |team| self.team_sum(game, team));
         if sum >= self.magic_heavy_from {
             ProfileBucket::MagicHeavy
@@ -80,25 +81,6 @@ impl DamageProfile {
     }
 }
 
-fn teams(game: &MatchItems) -> impl Iterator<Item = u32> + '_ {
-    let mut seen: Vec<u32> = Vec::new();
-    game.participants.iter().filter_map(move |participant| {
-        let new = !seen.contains(&participant.team);
-        seen.push(participant.team);
-        new.then_some(participant.team)
-    })
-}
-
-/// Linear between the two nearest of sorted `values`.
-fn quantile(values: &[f64], share: f64) -> Option<f64> {
-    let last = values.len().checked_sub(1)?;
-    let position = share * count(last);
-    let below = position.floor();
-    let low = *values.get(index(below))?;
-    let high = values.get(index(below) + 1).copied().unwrap_or(low);
-    Some((high - low).mul_add(position - below, low))
-}
-
 // Three decimals: the app sums five of these, and the bounds are compared to that sum.
 fn rounded(value: f64) -> f64 {
     (value * 1000.0).round() / 1000.0
@@ -111,23 +93,4 @@ fn rounded(value: f64) -> f64 {
 )]
 fn ratio(part: u64, whole: u64) -> f64 {
     part as f64 / whole as f64
-}
-
-#[allow(
-    clippy::as_conversions,
-    clippy::cast_precision_loss,
-    reason = "a count of teams is far below 2^52"
-)]
-const fn count(value: usize) -> f64 {
-    value as f64
-}
-
-#[allow(
-    clippy::as_conversions,
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    reason = "a whole, non-negative position within the slice"
-)]
-const fn index(position: f64) -> usize {
-    position as usize
 }

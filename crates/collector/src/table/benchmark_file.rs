@@ -56,6 +56,10 @@ pub(super) struct ItemsEntry {
     pub(super) boots: Vec<u32>,
     /// Every completed item id, candidate or not, so the app sees a player finish one.
     pub(super) completed: Vec<u32>,
+    /// Left out when no stored match is archived.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) threats: Option<ThreatsEntry>,
+    pub(super) counters: CountersEntry,
 }
 
 #[derive(Serialize)]
@@ -95,6 +99,29 @@ pub(super) struct DamageProfileEntry {
     pub(super) magic_heavy_from: f64,
 }
 
+/// What enemy teams heal and mitigate, which Counter items answer.
+#[derive(Serialize)]
+pub(super) struct ThreatsEntry {
+    pub(super) healing: ThreatEntry,
+    pub(super) mitigation: ThreatEntry,
+}
+
+/// Per champion amount a minute; a team's is the sum of its five, heavy from the bound.
+#[derive(Serialize)]
+pub(super) struct ThreatEntry {
+    pub(super) per_minute: BTreeMap<String, f64>,
+    pub(super) heavy_from: f64,
+}
+
+/// The completed items of each kind of Counter item, in id order.
+#[derive(Serialize)]
+pub(super) struct CountersEntry {
+    /// Those that inflict Grievous Wounds.
+    pub(super) anti_heal: Vec<u32>,
+    pub(super) armor_penetration: Vec<u32>,
+    pub(super) magic_penetration: Vec<u32>,
+}
+
 /// Item candidates of one champion and role, by the enemy team's Damage profile bucket.
 #[derive(Serialize)]
 pub(super) struct ItemCandidatesEntry {
@@ -103,6 +130,15 @@ pub(super) struct ItemCandidatesEntry {
     pub(super) physical_heavy: Vec<CandidateEntry>,
     pub(super) mixed: Vec<CandidateEntry>,
     pub(super) magic_heavy: Vec<CandidateEntry>,
+    pub(super) usual_builds: UsualBuildsEntry,
+}
+
+/// Per bucket, the completed items its games buy together, most bought first.
+#[derive(Serialize)]
+pub(super) struct UsualBuildsEntry {
+    pub(super) physical_heavy: Vec<u32>,
+    pub(super) mixed: Vec<u32>,
+    pub(super) magic_heavy: Vec<u32>,
 }
 
 /// `share` of the games that bought `item`, and the median `minute` of its first purchase.
