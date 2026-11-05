@@ -1,7 +1,7 @@
 name: Release
 
-# A universal DMG and the signed updater manifest, left as a draft until the
-# real-match checklist passes. Ad-hoc signed until the Apple secrets exist (ADR 0012).
+# A universal DMG and the signed updater manifest, published as soon as they are
+# attached (ADR 0021). Ad-hoc signed until the Apple secrets exist (ADR 0012).
 on:
   push:
     tags: ['v*']
@@ -124,7 +124,6 @@ jobs:
             require("fs").writeFileSync("latest.json", JSON.stringify(manifest, null, 2));
           ' "$VERSION" "$(cat "$archive.sig")" "$url"
           echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
-      # The updater reads only published releases, so a draft reaches no one.
       # Release-please leaves a draft with the changelog; a tag pushed by hand has none.
       - name: Attach the build to the draft release
         env:
@@ -139,3 +138,8 @@ jobs:
             case "$body" in *"$note"*) ;; *) gh release edit "v$VERSION" --notes "$(printf '%s\n\n%s' "$note" "$body")" ;; esac
           fi
           gh release upload "v$VERSION" --clobber "$DMG" "$ARCHIVE" latest.json
+      # Last, so the updater never sees the release without its manifest.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "v$VERSION" --draft=false --latest

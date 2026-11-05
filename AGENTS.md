@@ -72,7 +72,7 @@ Only external processes (League, Riot API) are faked. `core` tests live in
 `crates/core/tests/`, against a local HTTP server on a controllable clock. Cover
 an edge case with a short synthetic scenario through the same harness. ADR 0001
 adds two levels above this: the built app through WebdriverIO, and a manual
-checklist in a real match before each release.
+checklist in a real match on each published release (ADR 0021).
 
 ## View rules (mandatory)
 

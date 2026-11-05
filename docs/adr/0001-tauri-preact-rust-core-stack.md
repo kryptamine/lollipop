@@ -15,7 +15,7 @@ Lollipop stays on Tauri 2, with all logic in Rust and a Preact view that only dr
 - **Repository:** a Cargo workspace of `core` (domain, API polling, table format, no Tauri), `app` (Tauri shell) and `collector` (Benchmark CLI).
 - **OS-specific code:** one `platform` module in `app`, the only place `unsafe` is allowed.
 - **Linters:** strict and blocking on every pull request, with complexity limits in Rust and TypeScript. An exception must state its reason. Nothing blocks on GitHub for now, see [ADR 0009](0009-ci-is-off-while-the-gate-runs-locally.md).
-- **Tests:** integration tests through an external boundary, with no unit tests. Only external processes (League, Riot API) are faked. Three levels: `core` against a local HTTP server replaying recorded games, the built app driven through WebdriverIO, and a manual checklist in a real match before each release.
+- **Tests:** integration tests through an external boundary, with no unit tests. Only external processes (League, Riot API) are faked. Three levels: `core` against a local HTTP server replaying recorded games, the built app driven through WebdriverIO, and a manual checklist in a real match on each release, run once it is out ([ADR 0021](0021-releases-publish-at-once.md)).
 
 ## Considered options
 
