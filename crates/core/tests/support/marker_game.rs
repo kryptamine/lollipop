@@ -163,6 +163,12 @@ impl MarkerBench {
         self.over(beats, |_| {}, |game| game.benchmarks).await
     }
 
+    /// The CS pace the strip shows at each moment, with or without a table.
+    pub async fn paces_for(&self, moments: &[Moment]) -> Vec<Option<f64>> {
+        let beats = moments.iter().copied().map(Beat::Running).collect();
+        self.over(beats, |_| {}, |game| game.snapshot.cs_pace).await
+    }
+
     async fn over<T: Default>(
         &self,
         beats: Vec<Beat>,

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Lollipop is a Tauri overlay for League of Legends. It polls Riot's Live Client
-Data API and shows the active player's CS, Gold earned and level.
+Data API and shows the active player's CS, CS pace, Gold earned and level.
 
 ## Layout
 

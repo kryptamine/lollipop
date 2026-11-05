@@ -30,6 +30,7 @@ const fn strip(cs: u32, level: u32, gold_earned: u32) -> Snapshot {
         level,
         gold_earned: Some(gold_earned),
         scores: None,
+        cs_pace: None,
     }
 }
 
@@ -63,7 +64,11 @@ async fn replays_a_recorded_game_on_game_time() {
             ));
             next_minute += 5.0;
         }
-        last = Some(snapshot);
+        last = Some(strip(
+            snapshot.cs,
+            snapshot.level,
+            snapshot.gold_earned.unwrap(),
+        ));
     };
 
     assert_eq!(

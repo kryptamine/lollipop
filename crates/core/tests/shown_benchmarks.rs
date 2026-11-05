@@ -54,6 +54,7 @@ async fn shows_the_benchmark_of_the_last_whole_minute() {
         gold: Some(4500.0),
         level: Some(6.0),
         scores: None,
+        cs_pace: None,
     };
     assert_eq!(shown[1].cs, Some(54.0));
     assert_eq!(&shown[2..5], [at_ten; 3]);

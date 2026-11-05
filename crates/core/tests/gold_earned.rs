@@ -119,6 +119,7 @@ async fn a_later_first_snapshot_shows_a_dash_for_the_whole_game() {
             level: LEVEL,
             gold_earned: None,
             scores: None,
+            cs_pace: None,
         })
     };
     assert_eq!(updates, [dash(), dash()]);

@@ -1,6 +1,7 @@
 import { Metric } from './Metric';
 import { Notices } from './Notices';
-import { scoreLine, whole } from './format';
+import { MetricsHead } from './MetricsHead';
+import { scoreLine, tenths, whole } from './format';
 import type { Benchmarks, Markers, Notices as NoticesState, Snapshot } from './bridge';
 
 type MarkerStripProps = {
@@ -11,26 +12,26 @@ type MarkerStripProps = {
 };
 
 export const MarkerStrip = ({
-  snapshot: { cs, goldEarned, level, scores },
-  markers: { cs: csMarker, gold: goldMarker, level: levelMarker, scores: scoresMarker },
+  snapshot: { cs, goldEarned, level, scores, csPace },
+  markers: {
+    cs: csMarker,
+    gold: goldMarker,
+    level: levelMarker,
+    scores: scoresMarker,
+    csPace: csPaceMarker,
+  },
   benchmarks: {
     cs: csBenchmark,
     gold: goldBenchmark,
     level: levelBenchmark,
     scores: scoresBenchmark,
+    csPace: csPaceBenchmark,
   },
   notices,
 }: MarkerStripProps) => (
   <div id="marker-strip">
     <table class="metrics">
-      <thead>
-        <tr>
-          <th scope="col">Stat</th>
-          <td />
-          <th scope="col">Current</th>
-          <th scope="col">Benchmark</th>
-        </tr>
-      </thead>
+      <MetricsHead />
       <tbody>
         {scores && (
           <Metric
@@ -41,6 +42,12 @@ export const MarkerStrip = ({
           />
         )}
         <Metric label="CS" value={cs} marker={csMarker} benchmark={whole(csBenchmark)} />
+        <Metric
+          label="CS / min"
+          value={tenths(csPace) ?? '—'}
+          marker={csPaceMarker}
+          benchmark={tenths(csPaceBenchmark)}
+        />
         <Metric
           label="Gold earned"
           value={goldEarned ?? '—'}

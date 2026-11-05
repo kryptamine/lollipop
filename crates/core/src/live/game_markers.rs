@@ -1,5 +1,6 @@
 use super::compared_game::ComparedGame;
 use super::markers::Markers;
+use super::recent_cs::RecentCs;
 use super::shown_benchmarks::ShownBenchmarks;
 use super::snapshot::Snapshot;
 use crate::benchmarks::BenchmarkTable;
@@ -24,9 +25,16 @@ impl GameMarkers {
         }
     }
 
-    pub(super) fn at(&mut self, game_time: f64, snapshot: &Snapshot) -> (Markers, ShownBenchmarks) {
+    pub(super) fn at(
+        &mut self,
+        game_time: f64,
+        snapshot: &Snapshot,
+        recent: Option<RecentCs>,
+    ) -> (Markers, ShownBenchmarks) {
         self.compared
             .as_mut()
-            .map_or_else(Default::default, |game| game.at(game_time, snapshot))
+            .map_or_else(Default::default, |game| {
+                game.at(game_time, snapshot, recent)
+            })
     }
 }

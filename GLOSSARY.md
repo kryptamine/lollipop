@@ -29,6 +29,10 @@ _Avoid_: Build update, item alert
 One champion, role and tier combination, the group of games a player is compared to.
 _Avoid_: Bucket, segment, cohort
 
+**CS pace**:
+CS a minute over at least the last three minutes, against what the Cell gains over the same stretch. It shows a player who stopped farming, which total CS hides once the lead is banked.
+_Avoid_: CS rate, farm speed, CS per minute
+
 **Damage profile**:
 How much of a team's damage to champions is magic, from what its champions usually deal and the damage items they hold.
 _Avoid_: Damage type, AP/AD split
