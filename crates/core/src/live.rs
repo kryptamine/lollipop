@@ -10,6 +10,7 @@ mod build_prompt;
 mod clock;
 mod compared_game;
 mod comparison;
+mod counter_item;
 mod cs_pace;
 mod cs_pace_watch;
 mod cs_step;

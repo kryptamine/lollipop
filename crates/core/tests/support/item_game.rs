@@ -358,3 +358,34 @@ pub fn magic_heavy() -> Value {
 pub fn physical_heavy() -> Value {
     json!({ "Darius": 0.1, "LeeSin": 0.1, "Zed": 0.1, "Caitlyn": 0.1, "Lux": 0.1 })
 }
+
+pub const CRYPTBLOOM: u32 = 3137;
+
+/// The magic-heavy list with Cryptbloom added, which penetrates magic resist.
+pub fn table_with_cryptbloom(magic_share: &Value) -> Value {
+    let mut table = item_table(magic_share);
+    let list = table["item_candidates"][0]["magic_heavy"]
+        .as_array_mut()
+        .unwrap();
+    list.push(json!({ "item": CRYPTBLOOM, "share": 0.2, "minute": 26.0 }));
+    table["completed"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!(CRYPTBLOOM));
+    table
+}
+
+/// Darius heals and mitigates enough a minute to make his team heavy in each one asked.
+pub fn with_threats(mut table: Value, healing: bool, mitigation: bool) -> Value {
+    let profile = |heavy: bool| {
+        let darius = if heavy { 600.0 } else { 100.0 };
+        json!({ "per_minute": { "Darius": darius, "Zed": 0.0 }, "heavy_from": 500.0 })
+    };
+    table["threats"] = json!({ "healing": profile(healing), "mitigation": profile(mitigation) });
+    table["counters"] = json!({
+        "anti_heal": [3165],
+        "armor_penetration": [3036],
+        "magic_penetration": [CRYPTBLOOM],
+    });
+    table
+}

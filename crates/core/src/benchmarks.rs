@@ -11,6 +11,7 @@ mod item_name;
 mod item_table;
 mod minute_entry;
 mod scores_at;
+mod threats;
 
 pub use benchmark_table::BenchmarkTable;
 pub(crate) use benchmark_table::SCHEMA_VERSION;

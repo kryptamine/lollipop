@@ -24,3 +24,32 @@ pub(super) fn mean(values: &[f64]) -> f64 {
 pub(super) fn rounded(value: f64) -> f64 {
     (value * 100.0).round() / 100.0
 }
+
+/// Linear between the two nearest of sorted `values`, `None` with none.
+pub(super) fn quantile(values: &[f64], share: f64) -> Option<f64> {
+    let last = values.len().checked_sub(1)?;
+    let position = share * count(last);
+    let below = position.floor();
+    let low = *values.get(index(below))?;
+    let high = values.get(index(below) + 1).copied().unwrap_or(low);
+    Some((high - low).mul_add(position - below, low))
+}
+
+#[allow(
+    clippy::as_conversions,
+    clippy::cast_precision_loss,
+    reason = "a count of values is far below 2^52"
+)]
+const fn count(value: usize) -> f64 {
+    value as f64
+}
+
+#[allow(
+    clippy::as_conversions,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "a whole, non-negative position within the slice"
+)]
+const fn index(position: f64) -> usize {
+    position as usize
+}

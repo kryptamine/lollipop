@@ -558,6 +558,10 @@ async fn collected_matches_give_candidates_in_a_table_the_app_reads() {
         build.table()["damage_profile"]["magic_share"]["Champion3"],
         json!(0.3)
     );
+    assert_eq!(
+        build.table()["threats"]["healing"]["per_minute"]["Champion3"],
+        json!(50.0)
+    );
     let table = scenario.dir.path().join("table.json");
     assert!(BenchmarkTable::read(&table).is_some());
 }

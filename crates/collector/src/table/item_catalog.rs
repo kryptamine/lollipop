@@ -1,7 +1,10 @@
 use std::collections::{BTreeMap, HashMap};
 
-use super::benchmark_file::ItemNameEntry;
+use super::benchmark_file::{CountersEntry, ItemNameEntry};
 use super::item_class::ItemClass;
+
+const ARMOR_PENETRATION_TAG: &str = "ArmorPenetration";
+const MAGIC_PENETRATION_TAG: &str = "MagicPenetration";
 
 /// What Data Dragon says of the items, at the newest patch of the Patch window.
 pub(super) struct ItemCatalog {
@@ -17,6 +20,8 @@ pub(super) struct ItemCatalog {
     pub(super) tags: HashMap<u32, Vec<String>>,
     /// Every boots of the Rift past the first tier, in id order.
     pub(super) boots: Vec<u32>,
+    /// Every item whose description names Grievous Wounds, in id order.
+    pub(super) grievous_wounds: Vec<u32>,
 }
 
 impl ItemCatalog {
@@ -38,5 +43,27 @@ impl ItemCatalog {
             .chain(self.boots.iter().copied())
             .filter_map(|id| Some((id, self.tags.get(&id)?.clone())))
             .collect()
+    }
+
+    /// Only completed items: a Counter item takes the place of one.
+    pub(super) fn counters(&self) -> CountersEntry {
+        let completed = self.completed();
+        let tagged = |tag: &str| -> Vec<u32> {
+            let has = |id: &u32| {
+                self.tags
+                    .get(id)
+                    .is_some_and(|tags| tags.iter().any(|own| own == tag))
+            };
+            completed.iter().copied().filter(has).collect()
+        };
+        CountersEntry {
+            anti_heal: completed
+                .iter()
+                .copied()
+                .filter(|id| self.grievous_wounds.contains(id))
+                .collect(),
+            armor_penetration: tagged(ARMOR_PENETRATION_TAG),
+            magic_penetration: tagged(MAGIC_PENETRATION_TAG),
+        }
     }
 }

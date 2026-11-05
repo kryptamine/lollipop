@@ -252,8 +252,21 @@ OpenAI key, and its own switch in the Overlay tab turns it off.
 
 - **Build:** sum the five enemies' magic share from `allPlayers` and read the Damage
   profile bucket. From the list for the player's champion, role and bucket, the
-  boots with the largest `share` and the five items of `completed` with the largest
-  shares, ordered by `minute`, ties to the larger `share`.
+  boots with the largest `share` and the five items of its
+  [Usual build](../adr/0022-build-starts-from-items-bought-together.md), ordered by
+  `minute`, ties to the larger `share`. A table without `usual_builds` takes the five
+  items of `completed` with the largest shares.
+- **Counter items:** against a team heavy in a Threat, the candidate of its `counters`
+  list built from a component the player holds, else the one with the largest share,
+  unless the Build or the inventory holds one of that list
+  ([ADR 0023](../adr/0023-counter-items-answer-healing-and-mitigation.md)). Healing
+  takes `anti_heal`; mitigation takes `magic_penetration` for a champion with a
+  `magic_share` of at least 0.5, `armor_penetration` below, and none with no share. It
+  goes after the Next item by `minute`. In a Build of five completed items, the last one
+  left that is neither the Next item nor a Counter item drops for it; with none, no
+  Counter item. Read when the Build is made, at the start and on a new bucket. Once in,
+  an off-build item drops another item, and a Build change never replaces it; an
+  off-build item of the same `counters` list takes its place.
 - **When:** read on the loading screen, from the payload's position and the
   client's patch alone, so it is ready at `GameStart`; a loading screen that gave
   none is read again then. It ends with the game.
@@ -283,7 +296,7 @@ key: without one the Build stays as code built it.
   Every enemy carries its `damage_profile.magic_share`; Death adds every death of the
   player this game, with the killer, assisters and their magic shares. Live Client
   Data gives no damage numbers.
-- **Open to change:** only the Next item, while it is not started: no item of its
+- **Open to change:** only the Next item, while it is not started and is no Counter item: no item of its
   `builds_from` bought since it took the lead, the poll that made it lead included.
   Its replacement is an Item candidate of its kind, boots for boots, neither held nor
   dropped.
@@ -376,6 +389,18 @@ them; the [Build Widget](#build-widget) reads them.
   `tags`, such as `Armor` or `SpellDamage`. Item candidates, Swap candidates and Swap
   sell options carry them in the prompt, since a model trained before the patch may
   not know an item. A table built before them gives none.
+- **Usual builds:** `usual_builds` beside each entry's lists, one per bucket, from the
+  same games as its list: up to five completed candidates, most bought first. Each pick
+  is the candidate most games bought, and keeps only the games holding it while those
+  are at least the threshold; past that, picks count over the games last kept.
+- **Threats:** `threats.healing` and `threats.mitigation`, each `per_minute` by
+  champion, `totalHeal` or `damageSelfMitigated` over game minutes across the Patch
+  window, to a tenth, and `heavy_from`, the 75th percentile of team sums over every
+  stored team. Left out with no archived match.
+- **Counters:** `counters.anti_heal`, completed items whose English Data Dragon
+  description names Grievous Wounds, since no tag does; `armor_penetration` and
+  `magic_penetration`, completed items with the `ArmorPenetration` or
+  `MagicPenetration` tag.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from
   Data Dragon at the newest patch of the Patch window; a name with no `ru_RU`
   translation repeats the English one. Build change prompts name items by it, and

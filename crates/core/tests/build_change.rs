@@ -16,7 +16,7 @@ use serde_json::{json, Value};
 use tokio::sync::mpsc::UnboundedReceiver;
 
 use support::fake_openai::FakeOpenAi;
-use support::item_game::{item_table, magic_heavy, ItemGame, SETTLING_POLLS};
+use support::item_game::{item_table, magic_heavy, with_threats, ItemGame, SETTLING_POLLS};
 use support::loading_game::ME;
 
 const KILLER: &str = "Foe2#EUW";
@@ -61,8 +61,16 @@ fn items(update: &LiveUpdate) -> Vec<u32> {
 /// A game at 5:00 on a magic-heavy enemy team, set up by `prepare`, after one death to
 /// Zed that OpenAI answers with `text`.
 async fn after_death(text: &str, prepare: impl FnOnce(&ItemGame)) -> (LiveUpdate, FakeOpenAi) {
+    after_death_on(&item_table(&magic_heavy()), text, prepare).await
+}
+
+async fn after_death_on(
+    table: &Value,
+    text: &str,
+    prepare: impl FnOnce(&ItemGame),
+) -> (LiveUpdate, FakeOpenAi) {
     let openai = FakeOpenAi::advising(text).await;
-    let game = ItemGame::running_at(300.0, &item_table(&magic_heavy())).await;
+    let game = ItemGame::running_at(300.0, table).await;
     let mut updates = game.poll_updates(&openai.url);
     settle(&mut updates, &openai).await;
     prepare(&game);
@@ -289,4 +297,16 @@ async fn no_build_offers_no_item_candidates() {
 
     let input = input_of(&openai);
     assert!(input.contains("Build: none\nItem candidates: none\n"));
+}
+
+// The team still heals a lot, so the model may not trade the anti-heal item away.
+#[tokio::test]
+async fn a_counter_item_leading_the_build_is_never_replaced() {
+    let table = with_threats(item_table(&magic_heavy()), true, false);
+    let bought = |game: &ItemGame| game.buy(&[SORCERERS, (3102, "Покров банши")], 0.0);
+    let (update, _openai) =
+        after_death_on(&table, &answer(Some(RABADONS), Some(REASON)), bought).await;
+
+    assert_eq!(items(&update), [3165, ZHONYAS, 3003, RABADONS]);
+    assert_eq!(update.build_change, None);
 }

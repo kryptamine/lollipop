@@ -27,6 +27,9 @@ mod reworks;
 mod stored_payloads;
 mod table_config;
 mod table_error;
+mod threat;
+mod threat_profile;
+mod usual_build;
 
 use std::path::Path;
 
@@ -34,7 +37,7 @@ use lollipop_core::game_inputs::Patch;
 
 use crate::seed_tier::SeedTier;
 use crate::store::Store;
-use benchmark_file::{BenchmarkFile, CellEntry, ItemsEntry};
+use benchmark_file::{BenchmarkFile, CellEntry, ItemsEntry, ThreatsEntry};
 use cell_drift::CellDrift;
 use cell_samples::CellSamples;
 use damage_profile::DamageProfile;
@@ -43,6 +46,8 @@ use drift_comparison::DriftComparison;
 use item_candidates::item_candidates;
 use item_names::item_names;
 use match_items::MatchItems;
+use threat::Threat;
+use threat_profile::ThreatProfile;
 
 pub(crate) use benchmark_file::SCHEMA_VERSION;
 pub use drift_report::DriftReport;
@@ -94,8 +99,18 @@ pub fn build_table(config: &TableConfig) -> Result<DriftReport, TableError> {
             config.min_candidate_games,
         )
     });
+    let threat = |threat| ThreatProfile::of(&matches, &reworks, threat).map(ThreatProfile::entry);
+    let threats =
+        threat(Threat::Healing)
+            .zip(threat(Threat::Mitigation))
+            .map(|(healing, mitigation)| ThreatsEntry {
+                healing,
+                mitigation,
+            });
     let items = ItemsEntry {
         damage_profile: profile.map(DamageProfile::entry),
+        threats,
+        counters: catalog.counters(),
         item_names: item_names(&candidates, &catalog),
         item_tags: catalog.item_tags(),
         completed: catalog.completed(),

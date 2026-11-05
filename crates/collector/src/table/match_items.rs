@@ -11,9 +11,10 @@ use super::participant_items::ParticipantItems;
 use super::stored_payloads::StoredPayloads;
 use super::table_error::TableError;
 
-/// One archived match, as Item candidates and the Damage profile read it.
+/// One archived match, as Item candidates and the Damage and Threats read it.
 pub(super) struct MatchItems {
     pub(super) patch: Patch,
+    pub(super) minutes: f64,
     pub(super) participants: Vec<ParticipantItems>,
 }
 
@@ -35,12 +36,25 @@ impl MatchItems {
                 team: participant.team_id,
                 magic_damage: participant.magic_damage_dealt_to_champions,
                 total_damage: participant.total_damage_dealt_to_champions,
+                heal: participant.total_heal,
+                mitigated: participant.damage_self_mitigated,
                 purchases: first_purchases(&bought, classes),
             }
         });
         Ok(Self {
             patch: stored.patch,
+            minutes: seconds(game.info.game_duration) / 60.0,
             participants: participants.collect(),
+        })
+    }
+
+    /// Each team id once, in seat order.
+    pub(super) fn teams(&self) -> impl Iterator<Item = u32> + '_ {
+        let mut seen: Vec<u32> = Vec::new();
+        self.participants.iter().filter_map(move |participant| {
+            let new = !seen.contains(&participant.team);
+            seen.push(participant.team);
+            new.then_some(participant.team)
         })
     }
 }
@@ -94,4 +108,13 @@ fn first_purchases(bought: &[(u32, u64)], classes: &HashMap<u32, ItemClass>) -> 
         }
     }
     firsts
+}
+
+#[allow(
+    clippy::as_conversions,
+    clippy::cast_precision_loss,
+    reason = "a game lasts far below 2^52 seconds"
+)]
+const fn seconds(value: u64) -> f64 {
+    value as f64
 }

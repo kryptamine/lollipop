@@ -14,7 +14,10 @@ pub struct Seat {
 /// rest on 200. Only the fields the table build reads, and some it must skip.
 pub struct ArchivedMatch {
     pub patch: (u32, u32),
+    minutes: u64,
     seats: Vec<Seat>,
+    /// Healing and damage mitigated per seat.
+    threats: Vec<(u64, u64)>,
     events: Vec<Value>,
 }
 
@@ -30,7 +33,9 @@ impl ArchivedMatch {
             .collect();
         Self {
             patch: (16, 21),
+            minutes: 30,
             seats,
+            threats: vec![(0, 0); 10],
             // The support item granted at start sits at participant 0, which is no player.
             events: vec![purchase(0, 0, 3865), purchase(0, 0, 3865)],
         }
@@ -38,6 +43,17 @@ impl ArchivedMatch {
 
     pub const fn on_patch(mut self, major: u32, minor: u32) -> Self {
         self.patch = (major, minor);
+        self
+    }
+
+    pub const fn lasting(mut self, minutes: u64) -> Self {
+        self.minutes = minutes;
+        self
+    }
+
+    /// What the seat healed and mitigated over the game.
+    pub fn threats(mut self, participant: u32, heal: u64, mitigated: u64) -> Self {
+        self.threats[usize::try_from(participant - 1).unwrap()] = (heal, mitigated);
         self
     }
 
@@ -78,21 +94,32 @@ impl ArchivedMatch {
         let participants: Vec<Value> = self
             .seats
             .iter()
+            .zip(&self.threats)
             .zip(1..)
-            .map(|(seat, id): (&Seat, u32)| {
-                json!({
-                    "participantId": id,
-                    "championName": seat.champion,
-                    "teamPosition": seat.role,
-                    "teamId": if id <= 5 { 100 } else { 200 },
-                    "magicDamageDealtToChampions": seat.magic,
-                    "physicalDamageDealtToChampions": seat.total - seat.magic,
-                    "totalDamageDealtToChampions": seat.total,
-                    "item0": 0,
-                })
-            })
+            .map(
+                |((seat, &(heal, mitigated)), id): ((&Seat, &(u64, u64)), u32)| {
+                    json!({
+                        "participantId": id,
+                        "championName": seat.champion,
+                        "teamPosition": seat.role,
+                        "teamId": if id <= 5 { 100 } else { 200 },
+                        "magicDamageDealtToChampions": seat.magic,
+                        "physicalDamageDealtToChampions": seat.total - seat.magic,
+                        "totalDamageDealtToChampions": seat.total,
+                        "totalHeal": heal,
+                        "damageSelfMitigated": mitigated,
+                        "item0": 0,
+                    })
+                },
+            )
             .collect();
-        json!({ "info": { "gameVersion": "16.21.1.1", "participants": participants } })
+        json!({
+            "info": {
+                "gameDuration": self.minutes * 60,
+                "gameVersion": "16.21.1.1",
+                "participants": participants,
+            },
+        })
     }
 
     pub fn timeline_body(&self) -> Value {
