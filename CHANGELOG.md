@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/kryptamine/lollipop/compare/v0.2.0...v0.3.0) (2026-11-05)
+
+
+### Features
+
+* **live:** build from items bought together and counter threats ([ae93ab6](https://github.com/kryptamine/lollipop/commit/ae93ab6e693705ad6454362020aa4677db0db9f2))
+* **live:** build from items bought together and counter threats ([5b76edd](https://github.com/kryptamine/lollipop/commit/5b76edd84720b22dbc4358361b3898071e97008f))
+* **release:** publish the release once its files are attached ([48fb428](https://github.com/kryptamine/lollipop/commit/48fb42860f9d7c0fc59dc98d6cdb4d73e9a686f5))
+* **release:** publish the release once its files are attached ([40c624f](https://github.com/kryptamine/lollipop/commit/40c624fc08cbe2b9461ad93b9da7f0d90aacab14))
+
+
+### Bug Fixes
+
+* **collector:** count items that name Wounds alone as anti-heal ([02708e6](https://github.com/kryptamine/lollipop/commit/02708e66d115f448ceabd4800bb24828ac634321))
+* **collector:** count items that name Wounds alone as anti-heal ([f3fde22](https://github.com/kryptamine/lollipop/commit/f3fde229e6bb39547ec5f5974d04c22da160b3d4))
+
 ## [0.2.0](https://github.com/kryptamine/lollipop/compare/v0.1.1...v0.2.0) (2026-11-05)
 
 
