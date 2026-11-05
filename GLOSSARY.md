@@ -30,7 +30,7 @@ One champion, role and tier combination, the group of games a player is compared
 _Avoid_: Bucket, segment, cohort
 
 **Damage profile**:
-How much of a team's damage to champions is magic, from what its champions usually deal.
+How much of a team's damage to champions is magic, from what its champions usually deal and the damage items they hold.
 _Avoid_: Damage type, AP/AD split
 
 **Elixir**:

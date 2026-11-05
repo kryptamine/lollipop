@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use super::champion_key::champion_key;
 use super::damage_profile::{DamageProfile, ProfileBucket};
+use super::enemy_magic_share::enemy_magic_share;
 use super::item_candidate::ItemCandidate;
 use super::item_name::ItemName;
 use crate::game_inputs::Role;
@@ -55,24 +56,34 @@ struct CandidateEntry {
 }
 
 impl ItemTable {
-    /// The boots and completed items of the list for the enemy team's bucket, largest
-    /// share first. No list for the champion and role gives none: see ADR 0004.
-    pub(crate) fn candidates<'a>(
+    /// The bucket of enemies, each a champion with the items it holds, `None` in a file
+    /// with no Damage profile. A champion with no share counts as all physical, as the
+    /// collector counts it.
+    pub(crate) fn bucket_of<'a>(
+        &self,
+        enemies: impl Iterator<Item = (&'a str, Vec<u32>)>,
+    ) -> Option<ProfileBucket> {
+        let profile = self.damage_profile.as_ref()?;
+        let shares = enemies
+            .map(|(champion, items)| enemy_magic_share(self, profile.share_of(champion), &items));
+        Some(profile.bucket_of(shares))
+    }
+
+    /// The boots and completed items of the list for `bucket`, largest share first. No
+    /// list for the champion and role gives none: see ADR 0004.
+    pub(crate) fn candidates(
         &self,
         champion: &str,
         role: Role,
-        enemies: impl Iterator<Item = &'a str>,
+        bucket: ProfileBucket,
     ) -> Vec<ItemCandidate> {
-        let Some(profile) = &self.damage_profile else {
-            return Vec::new();
-        };
         let champion = champion_key(champion);
         let Some(entry) = self.item_candidates.iter().find(|entry| {
             champion_key(&entry.champion) == champion && Role::parse(&entry.role) == Some(role)
         }) else {
             return Vec::new();
         };
-        let list = match profile.bucket_of(enemies) {
+        let list = match bucket {
             ProfileBucket::PhysicalHeavy => &entry.physical_heavy,
             ProfileBucket::Mixed => &entry.mixed,
             ProfileBucket::MagicHeavy => &entry.magic_heavy,

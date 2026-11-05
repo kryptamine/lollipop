@@ -296,7 +296,7 @@ fn body(state: &State) -> String {
 /// A schema 2 table with no Cells and Ahri's Item candidates for the middle lane, with
 /// `magic_share` per enemy champion. Against a magic-heavy team, Steelcaps, Morello and
 /// the Rod lose on share or as no completed item. Only Banshee's lists its components,
-/// and only Steelcaps and Zhonya's their tags.
+/// and only Steelcaps, Zhonya's and the enemies' items their tags.
 pub fn item_table(magic_share: &Value) -> Value {
     let candidate = |item: u32, share: f64, minute: f64| json!({ "item": item, "share": share, "minute": minute });
     let zhonyas = candidate(3157, 0.6, 20.0);
@@ -340,9 +340,12 @@ pub fn item_table(magic_share: &Value) -> Value {
         "item_tags": {
             "3047": ["Armor", "Boots"],
             "3157": ["SpellDamage", "Armor", "Active"],
+            "3031": ["CriticalStrike", "Damage"],
+            "3036": ["Damage", "CriticalStrike", "ArmorPenetration"],
+            "3075": ["Health", "Armor"],
         },
         "boots": [3006, 3020, 3047, 3111],
-        "completed": [3003, 3089, 3102, 3135, 3157, 3165],
+        "completed": [3003, 3031, 3036, 3075, 3089, 3102, 3135, 3157, 3165],
     })
 }
 
