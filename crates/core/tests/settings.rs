@@ -104,11 +104,11 @@ fn a_damaged_file_gives_the_defaults() {
 fn the_view_is_told_about_every_widget() {
     assert_eq!(
         serde_json::to_value(Settings::default().widget_switches()).unwrap(),
-        json!({ "adviceWidget": true, "buildWidget": true, "enemyTracker": true, "markerStrip": true, "timingHints": true })
+        json!({ "adviceWidget": true, "buildWidget": true, "markerStrip": true, "timingHints": true })
     );
     assert_eq!(
         serde_json::to_value(all_widgets_off().widget_switches()).unwrap(),
-        json!({ "adviceWidget": false, "buildWidget": false, "enemyTracker": false, "markerStrip": false, "timingHints": false })
+        json!({ "adviceWidget": false, "buildWidget": false, "markerStrip": false, "timingHints": false })
     );
 }
 
@@ -125,7 +125,6 @@ fn the_settings_window_is_told_every_switch() {
             "widgets": {
                 "adviceWidget": true,
                 "buildWidget": true,
-                "enemyTracker": true,
                 "markerStrip": true,
                 "timingHints": false,
             },

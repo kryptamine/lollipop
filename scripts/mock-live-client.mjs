@@ -41,7 +41,7 @@ function mockTable() {
     schema_version: 2,
     patch_window: ["16.20", "16.21"],
     cells: [{ champion: "Ahri", role: "MIDDLE", tier: "GOLD", minutes }],
-    damage_profile: { magic_share: { Zed: 0.1, Vi: 0.1 }, mixed_from: 1, magic_heavy_from: 1.5 },
+    damage_profile: { magic_share: { Zed: 0.1 }, mixed_from: 1, magic_heavy_from: 1.5 },
     item_candidates: [
       { champion: "Ahri", role: "MIDDLE", physical_heavy: candidates, mixed: candidates, magic_heavy: candidates },
     ],
@@ -67,13 +67,6 @@ const RESPAWN_S = 15;
 const BUY_AT_S = 120;
 const SHOES = { itemID: 3020, count: 1, displayName: "Sorcerer's Shoes" };
 const SHOES_COST = 1100;
-
-// For the Enemy tracker: Vi helps in the kill, Zed goes back to buy at ZED_BUYS_AT_S,
-// and Vi is dead for VI_DEAD_S from VI_DIES_AT_S, a 2v1 lead.
-const ZED_BUYS_AT_S = 150;
-const DIRK = { itemID: 3134, count: 1, displayName: "Serrated Dirk" };
-const VI_DIES_AT_S = 200;
-const VI_DEAD_S = 25;
 
 // The first seconds are the loading screen, which asks for loading screen Advice.
 const LOADING_SCREEN_S = 5;
@@ -101,8 +94,7 @@ function liveClientData() {
   const minutes = gameTime / 60;
   const isDead = gameTime >= DEATH_AT_S && gameTime < DEATH_AT_S + RESPAWN_S;
   const hasBought = gameTime >= BUY_AT_S;
-  const death = { EventName: "ChampionKill", EventTime: DEATH_AT_S, KillerName: "Rival#DEV", VictimName: "Me#DEV", Assisters: ["Vi#DEV"] };
-  const viDead = gameTime >= VI_DIES_AT_S && gameTime < VI_DIES_AT_S + VI_DEAD_S;
+  const death = { EventName: "ChampionKill", EventTime: DEATH_AT_S, KillerName: "Rival#DEV", VictimName: "Me#DEV", Assisters: [] };
   const events = loading ? [] : [{ EventName: "GameStart", EventTime: 0 }];
   if (gameTime >= DEATH_AT_S) {
     events.push(death);
@@ -115,26 +107,6 @@ function liveClientData() {
         championName: "Zed",
         team: "CHAOS",
         position: "MIDDLE",
-        level: 1,
-        items: gameTime >= ZED_BUYS_AT_S ? [DIRK] : [],
-        scores: { creepScore: 0 },
-      },
-      {
-        riotId: "Vi#DEV",
-        championName: "Vi",
-        team: "CHAOS",
-        position: "JUNGLE",
-        level: 1,
-        isDead: viDead,
-        respawnTimer: viDead ? VI_DIES_AT_S + VI_DEAD_S - gameTime : 0,
-        items: [],
-        scores: { creepScore: 0 },
-      },
-      {
-        riotId: "Ally#DEV",
-        championName: "Lee Sin",
-        team: "ORDER",
-        position: "JUNGLE",
         level: 1,
         items: [],
         scores: { creepScore: 0 },

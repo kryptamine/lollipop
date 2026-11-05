@@ -7,10 +7,9 @@ pub struct Widget {
 pub const ADVICE_WIDGET: &str = "adviceWidget";
 pub const BUILD_WIDGET: &str = "buildWidget";
 
-pub const WIDGETS: [Widget; 5] = [
+pub const WIDGETS: [Widget; 4] = [
     Widget { id: "markerStrip" },
     Widget { id: "timingHints" },
     Widget { id: BUILD_WIDGET },
     Widget { id: ADVICE_WIDGET },
-    Widget { id: "enemyTracker" },
 ];
