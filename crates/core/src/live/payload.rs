@@ -63,8 +63,6 @@ pub(super) struct Runes {
 #[serde(rename_all = "camelCase")]
 pub(super) struct Named {
     pub(super) display_name: Option<String>,
-    /// Such as `GeneratedTip_SummonerSpell_SummonerSmite_DisplayName`, in every language.
-    pub(super) raw_display_name: Option<String>,
 }
 
 /// A stat shard has no display name, only one such as `perk_tooltip_StatModAdaptive`.
@@ -184,13 +182,6 @@ impl AllGameData {
             .filter(|other| other.team().is_some() && other.team() != player.team())
     }
 
-    /// The player's team, the player included.
-    pub(super) fn allies_of<'a>(&'a self, player: &'a Player) -> impl Iterator<Item = &'a Player> {
-        self.all_players
-            .iter()
-            .filter(|other| other.team().is_some() && other.team() == player.team())
-    }
-
     pub(super) const fn full_runes(&self) -> Option<&FullRunes> {
         self.active_player.full_runes.as_ref()
     }
@@ -301,23 +292,6 @@ impl Event {
 }
 
 impl Player {
-    /// The name that tells players apart from one poll to the next.
-    pub(super) fn identity(&self) -> Option<&str> {
-        [&self.riot_id, &self.summoner_name, &self.riot_id_game_name]
-            .into_iter()
-            .find_map(Option::as_deref)
-    }
-
-    /// Whether a summoner spell's raw name holds `spell`, such as `SummonerSmite`.
-    pub(super) fn has_summoner(&self, spell: &str) -> bool {
-        self.summoner_spells
-            .iter()
-            .flat_map(|spells| [&spells.summoner_spell_one, &spells.summoner_spell_two])
-            .flatten()
-            .filter_map(|named| named.raw_display_name.as_deref())
-            .any(|raw| raw.contains(spell))
-    }
-
     pub(super) const fn team(&self) -> Option<Team> {
         self.team
     }
