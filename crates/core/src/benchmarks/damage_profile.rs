@@ -12,17 +12,17 @@ pub(super) struct DamageProfile {
     magic_heavy_from: f64,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub(super) enum ProfileBucket {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ProfileBucket {
     PhysicalHeavy,
     Mixed,
     MagicHeavy,
 }
 
 impl DamageProfile {
-    /// A champion the file has no share for counts as all physical, as the collector counts it.
-    pub(super) fn bucket_of<'a>(&self, team: impl Iterator<Item = &'a str>) -> ProfileBucket {
-        let sum: f64 = team.filter_map(|champion| self.share_of(champion)).sum();
+    /// The bucket of a team whose champions' magic shares are `shares`.
+    pub(super) fn bucket_of(&self, shares: impl Iterator<Item = f64>) -> ProfileBucket {
+        let sum: f64 = shares.sum();
         if sum >= self.magic_heavy_from {
             ProfileBucket::MagicHeavy
         } else if sum >= self.mixed_from {

@@ -9,7 +9,7 @@ use super::shown_swap::ShownSwap;
 use super::swap::Swap;
 use super::swap_options::SwapOptions;
 use crate::advice::{Language, ProposedChange, ProposedSwap};
-use crate::benchmarks::{BenchmarkTable, ItemCandidate, ItemTable};
+use crate::benchmarks::{BenchmarkTable, ItemCandidate, ItemTable, ProfileBucket};
 use crate::game_inputs::{Patch, Role};
 
 // Completed items in a Build, beside its boots.
@@ -20,6 +20,9 @@ const BUILD_ITEMS: usize = 5;
 pub(super) struct Build {
     /// Empty when the game's table is missing or Stale: see ADR 0004.
     table: ItemTable,
+    /// The player's champion and role, to read the candidates of another bucket by.
+    seat: Option<(String, Role)>,
+    bucket: Option<ProfileBucket>,
     /// The Item candidates, largest share first.
     candidates: Vec<ItemCandidate>,
     items: Vec<ItemCandidate>,
@@ -50,18 +53,43 @@ impl Build {
         else {
             return Self::default();
         };
-        let candidates = match (role, player.cell_champion()) {
-            (Some(role), Some(champion)) => {
-                let enemies = data.enemies_of(player).filter_map(Player::cell_champion);
-                table.candidates(champion, role, enemies)
-            }
+        let seat = player.cell_champion().map(str::to_string).zip(role);
+        let bucket = table.bucket_of(enemy_items(data, player));
+        let candidates = match (&seat, bucket) {
+            (Some((champion, role)), Some(bucket)) => table.candidates(champion, *role, bucket),
             _ => Vec::new(),
         };
         Self {
             items: first_build(&candidates),
             table,
+            seat,
+            bucket,
             candidates,
             ..Self::default()
+        }
+    }
+
+    /// Builds again from the candidates of the bucket the enemies' items put them in.
+    /// Held items and a started Next item stay; nothing else does: see ADR 0019.
+    pub(super) fn follow_enemies(&mut self, data: &AllGameData, player: &Player) {
+        let Some((champion, role)) = self.seat.clone() else {
+            return;
+        };
+        let bucket = self.table.bucket_of(enemy_items(data, player));
+        let Some(new) = bucket.filter(|_| bucket != self.bucket) else {
+            return;
+        };
+        let owned = player.item_ids();
+        let started = self.started_next(player).cloned();
+        self.bucket = bucket;
+        self.candidates = self.table.candidates(&champion, role, new);
+        self.items = first_build(&self.candidates);
+        self.dropped.clear();
+        for item in self.table.finished(&owned) {
+            self.finish(item, &owned);
+        }
+        if let Some(next) = started {
+            self.keep_next(next, &owned);
         }
     }
 
@@ -314,6 +342,40 @@ impl Build {
         }
     }
 
+    fn started_next(&self, player: &Player) -> Option<&ItemCandidate> {
+        let lead = self.lead.as_ref()?;
+        let next = self.items.iter().find(|item| item.item == lead.item)?;
+        lead.started(&next.builds_from, &player.item_counts())
+            .then_some(next)
+    }
+
+    /// Puts the started Next item first among those left, the last item left of its
+    /// kind making room when the Build is full of that kind.
+    fn keep_next(&mut self, next: ItemCandidate, owned: &[u32]) {
+        self.dropped.retain(|dropped| dropped.item != next.item);
+        if let Some(index) = self.items.iter().position(|item| item.item == next.item) {
+            self.items.remove(index);
+        } else {
+            let cap = if next.boots { 1 } else { BUILD_ITEMS };
+            let kind = self.items.iter().filter(|item| item.boots == next.boots);
+            if kind.count() >= cap {
+                let last = self
+                    .items
+                    .iter()
+                    .rposition(|item| item.boots == next.boots && !item.held(owned));
+                if let Some(index) = last {
+                    self.dropped.push(self.items.remove(index));
+                }
+            }
+        }
+        let first_left = self
+            .items
+            .iter()
+            .position(|item| !item.held(owned))
+            .unwrap_or(self.items.len());
+        self.items.insert(first_left, next);
+    }
+
     fn refill(&mut self, boots: bool, owned: &[u32]) {
         let taken = |candidate: &ItemCandidate| {
             candidate.held(owned)
@@ -350,6 +412,14 @@ impl Build {
     fn was_dropped(&self, item: u32) -> bool {
         self.dropped.iter().any(|dropped| dropped.item == item)
     }
+}
+
+fn enemy_items<'a>(
+    data: &'a AllGameData,
+    player: &'a Player,
+) -> impl Iterator<Item = (&'a str, Vec<u32>)> {
+    data.enemies_of(player)
+        .filter_map(|enemy| Some((enemy.cell_champion()?, enemy.item_ids())))
 }
 
 /// The boots with the largest share and the five completed items with the largest

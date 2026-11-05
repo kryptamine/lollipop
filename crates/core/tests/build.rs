@@ -26,6 +26,11 @@ const RABADONS: (u32, &str) = (3089, "Смертельная шляпа Раба
 const VOID_STAFF: (u32, &str) = (3135, "Посох пустоты");
 const MORELLO: (u32, &str) = (3165, "Морелономикон");
 const ROD: (u32, &str) = (1058, "Огромный жезл");
+const TOME: (u32, &str) = (1052, "Усиливающий фолиант");
+const INFINITY_EDGE: (u32, &str) = (3031, "Грань бесконечности");
+const DOMINIKS: (u32, &str) = (3036, "Последний довод лорда Доминика");
+const THORNMAIL: (u32, &str) = (3075, "Шипованный доспех");
+const LUX: &str = "Foe4#EUW";
 
 const FULL_BUILD: [u32; 6] = [3020, 3102, 3157, 3003, 3089, 3135];
 
@@ -84,6 +89,37 @@ async fn the_build_follows_the_enemy_damage_profile() {
     let (_game, mut builds) = running(&item_table(&physical_heavy())).await;
 
     assert_eq!(build_now(&mut builds).await, [3047, 3157]);
+}
+
+// Lux usually deals magic damage, but two items of attack damage halve her share
+// twice over, and the team sinks into the mixed bucket.
+#[tokio::test]
+async fn the_build_follows_the_items_enemies_build() {
+    let (game, mut builds) = running(&item_table(&magic_heavy())).await;
+
+    game.give_items(LUX, &[INFINITY_EDGE, DOMINIKS]);
+    assert_eq!(build_now(&mut builds).await, [3020, 3157]);
+}
+
+#[tokio::test]
+async fn an_enemy_tank_item_leaves_the_profile_alone() {
+    let (game, mut builds) = running(&item_table(&magic_heavy())).await;
+
+    game.give_items(LUX, &[THORNMAIL]);
+    assert_eq!(build_now(&mut builds).await, FULL_BUILD);
+}
+
+// A Tome bought for Banshee's would be wasted if the new bucket dropped it.
+#[tokio::test]
+async fn a_started_next_item_outlasts_a_new_profile() {
+    let (game, mut builds) = running(&item_table(&magic_heavy())).await;
+    game.buy(&[SORCERERS], 0.0);
+    assert_eq!(build_now(&mut builds).await, [3102, 3157, 3003, 3089, 3135]);
+    game.buy(&[TOME], 0.0);
+    build_now(&mut builds).await;
+
+    game.give_items(LUX, &[INFINITY_EDGE, DOMINIKS]);
+    assert_eq!(build_now(&mut builds).await, [3102, 3157]);
 }
 
 // Seraph's Embrace is the Archangel's Staff it grew from.

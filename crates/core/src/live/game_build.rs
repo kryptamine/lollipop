@@ -90,6 +90,7 @@ impl<'a> GameBuild<'a> {
         } else {
             None
         };
+        self.build.follow_enemies(data, player);
         let swap = self.build.swap_at(player, language);
         (self.build.at(player, language), change, swap)
     }
