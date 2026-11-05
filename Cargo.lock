@@ -2118,7 +2118,7 @@ checksum = "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c"
 
 [[package]]
 name = "lollipop"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "block2",
  "lollipop-core",
@@ -2136,7 +2136,7 @@ dependencies = [
 
 [[package]]
 name = "lollipop-collector"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "clap",
  "ed25519-dalek",
@@ -2155,7 +2155,7 @@ dependencies = [
 
 [[package]]
 name = "lollipop-core"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
