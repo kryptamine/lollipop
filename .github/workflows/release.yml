@@ -12,14 +12,13 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: release
   cancel-in-progress: false
 
 env:
-  RELEASES_REPO: kryptamine/lollipop-releases
   BUNDLE_DIR: target/universal-apple-darwin/release/bundle
   TAG: ${{ inputs.tag || github.ref_name }}
 
@@ -113,7 +112,7 @@ jobs:
       - name: Write the updater manifest
         run: |
           archive="$BUNDLE_DIR/macos/Lollipop.app.tar.gz"
-          url="https://github.com/$RELEASES_REPO/releases/download/v$VERSION/Lollipop.app.tar.gz"
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/Lollipop.app.tar.gz"
           node -e '
             const [version, signature, url] = process.argv.slice(1);
             const platform = { signature, url };
@@ -126,14 +125,17 @@ jobs:
           ' "$VERSION" "$(cat "$archive.sig")" "$url"
           echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
       # The updater reads only published releases, so a draft reaches no one.
-      - name: Create the draft release
+      # Release-please leaves a draft with the changelog; a tag pushed by hand has none.
+      - name: Attach the build to the draft release
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          notes=""
-          if [ "$SIGNED" != true ]; then
-            notes='Ad-hoc signed: after copying the app to Applications, run `xattr -dr com.apple.quarantine /Applications/Lollipop.app` once.'
+          if ! gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release create "v$VERSION" --draft --verify-tag --title "Lollipop $VERSION" --notes ""
           fi
-          gh release create "v$VERSION" --repo "$RELEASES_REPO" --draft \
-            --title "Lollipop $VERSION" --notes "$notes" \
-            "$DMG" "$ARCHIVE" latest.json
+          if [ "$SIGNED" != true ]; then
+            note='Ad-hoc signed: after copying the app to Applications, run `xattr -dr com.apple.quarantine /Applications/Lollipop.app` once.'
+            body=$(gh release view "v$VERSION" --json body --jq .body)
+            case "$body" in *"$note"*) ;; *) gh release edit "v$VERSION" --notes "$(printf '%s\n\n%s' "$note" "$body")" ;; esac
+          fi
+          gh release upload "v$VERSION" --clobber "$DMG" "$ARCHIVE" latest.json
