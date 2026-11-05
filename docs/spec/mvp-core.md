@@ -356,8 +356,8 @@ A release starts once from `scripts/release-setup.sh`, which makes the updater
 key, the Apple credentials and the GitHub secrets. After that, release-please
 keeps a release pull request open on `main`, with the next version from the
 Conventional Commits and its `CHANGELOG.md`. Merging it tags the version and runs
-`.github/workflows/release.yml`, which fills the draft release it opened. The real-match checklist runs on that draft's DMG,
-and the draft is published by hand: the updater sees only published releases.
+`.github/workflows/release.yml`, which fills the draft release it opened and publishes it
+([ADR 0021](../adr/0021-releases-publish-at-once.md)). The real-match checklist runs on the published build.
 
 Before a public release: Riot registration and product audit, a production key,
 and a recheck of the seed's tier label against a lookup per participant.
@@ -371,7 +371,7 @@ is removed in the implementation.
 Tests are integration tests through an external boundary, with no unit tests:
 `core` against a local HTTP server replaying recorded games and short synthetic
 scenarios on a controllable clock, the built app through WebdriverIO, and a manual
-checklist in a real match before release.
+checklist in a real match on each release.
 
 ## First-build checks
 
