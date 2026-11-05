@@ -20,7 +20,7 @@ pub(super) struct ItemCatalog {
     pub(super) tags: HashMap<u32, Vec<String>>,
     /// Every boots of the Rift past the first tier, in id order.
     pub(super) boots: Vec<u32>,
-    /// Every item whose description names Grievous Wounds, in id order.
+    /// Every item whose description names Wounds, Grievous or not, in id order.
     pub(super) grievous_wounds: Vec<u32>,
 }
 

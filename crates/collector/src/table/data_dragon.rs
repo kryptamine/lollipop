@@ -22,8 +22,9 @@ const SUMMONERS_RIFT: &str = "11";
 const COMPLETED_MIN_GOLD: u32 = 2200;
 const BOOTS_TIER_2_DEPTH: u32 = 2;
 const BOOTS_TAG: &str = "Boots";
-// No tag marks anti-heal, so the English description names the debuff.
-const GRIEVOUS_WOUNDS: &str = "Grievous Wounds";
+// No tag marks anti-heal. The English description names the debuff Grievous Wounds,
+// or just Wounds as Thornmail and Chempunk Chainsword do.
+const WOUNDS: &str = "Wounds";
 const NOT_COMPLETED_TAGS: [&str; 3] = [BOOTS_TAG, "Consumable", "Trinket"];
 // The support item takes three steps to reach its upgrades; the bound only stops a cycle.
 const MAX_TRANSFORM_STEPS: usize = 8;
@@ -110,7 +111,7 @@ pub(super) fn item_catalog(url: &str, newest: Patch) -> Result<ItemCatalog, Tabl
         .collect();
     let mut grievous_wounds: Vec<u32> = items
         .iter()
-        .filter(|(_, item)| item.description.contains(GRIEVOUS_WOUNDS))
+        .filter(|(_, item)| item.description.contains(WOUNDS))
         .map(|(&id, _)| id)
         .collect();
     grievous_wounds.sort_unstable();

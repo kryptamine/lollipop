@@ -398,7 +398,8 @@ them; the [Build Widget](#build-widget) reads them.
   window, to a tenth, and `heavy_from`, the 75th percentile of team sums over every
   stored team. Left out with no archived match.
 - **Counters:** `counters.anti_heal`, completed items whose English Data Dragon
-  description names Grievous Wounds, since no tag does; `armor_penetration` and
+  description names Wounds, as Grievous Wounds or alone as Thornmail does, since no tag
+  does; `armor_penetration` and
   `magic_penetration`, completed items with the `ArmorPenetration` or
   `MagicPenetration` tag.
 - **Names:** `item_names` maps every candidate id to its `en` and `ru` name, from

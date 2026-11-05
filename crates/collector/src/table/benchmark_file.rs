@@ -116,7 +116,7 @@ pub(super) struct ThreatEntry {
 /// The completed items of each kind of Counter item, in id order.
 #[derive(Serialize)]
 pub(super) struct CountersEntry {
-    /// Those that inflict Grievous Wounds.
+    /// Those that inflict Wounds, Grievous or not.
     pub(super) anti_heal: Vec<u32>,
     pub(super) armor_penetration: Vec<u32>,
     pub(super) magic_penetration: Vec<u32>,

@@ -42,6 +42,8 @@ pub const LORD_DOMINIKS: u32 = 3036;
 pub const VOID_STAFF: u32 = 3135;
 /// Inflicts Grievous Wounds.
 pub const MORELLONOMICON: u32 = 3165;
+/// Inflicts Wounds, named without Grievous.
+pub const THORNMAIL: u32 = 3075;
 /// Inflicts Grievous Wounds, and is a component.
 pub const EXECUTIONERS: u32 = 3123;
 pub const MORE_BOOTS: u32 = 6700;
@@ -196,6 +198,9 @@ fn add_counters(add: &mut impl FnMut(u32, Value)) {
         MORELLONOMICON,
         wounding(item(2950, &["SpellDamage"], &[], None)),
     );
+    let mut thornmail = item(2450, &["Health", "Armor"], &[], None);
+    thornmail["description"] = json!("<mainText>Applies <keyword>Wounds</keyword>.</mainText>");
+    add(THORNMAIL, thornmail);
     add(
         EXECUTIONERS,
         wounding(item(800, &["Damage"], &["3033"], Some(2))),
