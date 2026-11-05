@@ -1,7 +1,9 @@
 use super::comparison::Comparison;
+use super::cs_pace::CsPace;
 use super::held_marker::HeldMarker;
+use super::likely_cs::likely_cs;
 use super::markers::Markers;
-use super::recent_cs::RecentCs;
+use super::per_minute::per_minute;
 use super::shown_benchmarks::ShownBenchmarks;
 use super::snapshot::Snapshot;
 use crate::benchmarks::{BenchmarkTable, BenchmarksAt, CellBenchmarks};
@@ -11,9 +13,6 @@ use crate::game_inputs::{ClientInputs, GameInputs, Role, TierReading};
 // unknown fall outside, and that is no fault worth a notice.
 pub(super) const MARKER_QUEUES: [u32; 4] = [400, 420, 430, 440];
 
-// The API floors CS to 10, so the true value is on average 5 above it.
-pub(super) const CS_OFFSET: f64 = 5.0;
-const SECONDS_PER_MINUTE: f64 = 60.0;
 const ZONE_SHARE: f64 = 0.08;
 const CS_ZONE_FLOOR: f64 = 8.0;
 const GOLD_ZONE_FLOOR: f64 = 150.0;
@@ -66,12 +65,7 @@ impl ComparedGame {
         })
     }
 
-    pub(super) fn at(
-        &mut self,
-        game_time: f64,
-        snapshot: &Snapshot,
-        recent: Option<RecentCs>,
-    ) -> (Markers, ShownBenchmarks) {
+    pub(super) fn at(&mut self, game_time: f64, snapshot: &Snapshot) -> (Markers, ShownBenchmarks) {
         let benchmarks = self.cell.at(game_time);
         let cs_benchmarks = benchmarks.filter(|_| self.has_cs_marker);
         let gold_benchmarks = benchmarks.filter(|_| snapshot.gold_earned.is_some());
@@ -93,8 +87,8 @@ impl ComparedGame {
                 neutral_zone: SCORES_ZONE,
             });
         let cs_pace = cs_benchmarks
-            .zip(recent)
-            .and_then(|(now, recent)| self.pace_comparison(game_time, &now, recent));
+            .zip(snapshot.cs_pace)
+            .and_then(|(now, pace)| self.pace_comparison(game_time, &now, pace));
         let markers = Markers {
             cs: self.cs.update(cs),
             gold: self.gold.update(gold),
@@ -116,17 +110,17 @@ impl ComparedGame {
         (markers, shown)
     }
 
-    /// The player's CS a minute against what the Cell gains over the same stretch.
+    /// `None` when the Cell has no Benchmark where the pace starts.
     fn pace_comparison(
         &self,
         game_time: f64,
         now: &BenchmarksAt,
-        recent: RecentCs,
+        pace: CsPace,
     ) -> Option<Comparison> {
-        let then = self.cell.at(recent.since)?;
-        let benchmark = (now.cs - then.cs) / ((game_time - recent.since) / SECONDS_PER_MINUTE);
+        let then = self.cell.at(pace.since)?;
+        let benchmark = per_minute(now.cs - then.cs, pace.since, game_time);
         Some(Comparison {
-            value: recent.per_minute,
+            value: pace.per_minute,
             benchmark,
             neutral_zone: (benchmark * PACE_ZONE_SHARE).max(PACE_ZONE_FLOOR),
         })
@@ -135,7 +129,7 @@ impl ComparedGame {
 
 fn cs_comparison(cs: u32, benchmarks: &BenchmarksAt) -> Comparison {
     Comparison {
-        value: f64::from(cs) + CS_OFFSET,
+        value: likely_cs(cs),
         benchmark: benchmarks.cs,
         neutral_zone: (benchmarks.cs * ZONE_SHARE).max(CS_ZONE_FLOOR),
     }

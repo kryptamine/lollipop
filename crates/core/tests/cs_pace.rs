@@ -14,6 +14,7 @@ use lollipop_core::live::Marker::{Above, Below, Neutral};
 use serde_json::Value;
 
 use support::benchmark_file::{cell, minute, table_of, ENOUGH_GAMES};
+use support::fake_lcu::SESSION;
 use support::marker_game::{MarkerBench, Moment, Seat, CHAMPION, MASTER_YI_MID, ROLE, TIER};
 
 /// 6 CS a minute at every minute of a 40 minute game.
@@ -69,6 +70,21 @@ async fn the_window_starts_at_the_latest_step_three_minutes_back() {
     assert_eq!(pace_after(&bench, &moments).await, Some(Neutral));
 }
 
+// A start inside a stretch with no step would guess up to 9 CS. Since the step at 5:00 the
+// player farmed 15 in 10.5 min, below; from 12:30 alone it would read 5, neutral.
+#[tokio::test]
+async fn a_stretch_with_no_step_stretches_the_window() {
+    let bench = steady_bench().await;
+    let moments = [
+        Moment::at(290.0).cs(30),
+        Moment::at(300.0).cs(40),
+        Moment::at(900.0).cs(50),
+        Moment::at(930.0).cs(50),
+    ];
+
+    assert_eq!(pace_after(&bench, &moments).await, Some(Below));
+}
+
 // The first poll of a game first seen late is no step, so its CS is never counted as exact.
 #[tokio::test]
 async fn no_pace_until_a_step_lies_three_minutes_back() {
@@ -84,7 +100,7 @@ async fn no_pace_until_a_step_lies_three_minutes_back() {
 
     assert_eq!(
         markers.iter().map(|m| m.cs_pace).collect::<Vec<_>>(),
-        [None, None, None, Some(Neutral),]
+        [None, None, None, Some(Neutral)]
     );
 }
 
@@ -110,7 +126,23 @@ async fn the_pace_shows_without_a_table() {
     assert_eq!(paces, [None, None, Some(6.0)]);
 }
 
-// Supports do not farm, so like their CS their pace is compared to nothing.
+// Swiftplay has no Markers, though the player's own pace still shows.
+#[tokio::test]
+async fn a_queue_without_markers_has_no_pace_marker() {
+    let bench = steady_bench().await;
+    bench
+        .lcu
+        .set(SESSION, r#"{ "gameData": { "queue": { "id": 480 } } }"#);
+
+    let markers = bench.markers_for(&three_minutes_to(60)).await;
+    let paces = bench.paces_for(&three_minutes_to(60)).await;
+
+    assert_eq!(markers[2].cs_pace, None);
+    assert_eq!(paces[2], Some(25.0 / 3.0));
+}
+
+// Supports do not farm, so like their CS their pace is compared to nothing, and like their
+// CS the value still shows.
 #[tokio::test]
 async fn a_support_has_no_pace_marker() {
     let mut bench = MarkerBench::new().await;
@@ -128,6 +160,9 @@ async fn a_support_has_no_pace_marker() {
     let markers = bench.markers_for(&three_minutes_to(60)).await;
     let shown = bench.benchmarks_for(&three_minutes_to(60)).await;
 
+    let paces = bench.paces_for(&three_minutes_to(60)).await;
+
     assert_eq!(markers[2].cs_pace, None);
     assert_eq!(shown[2].cs_pace, None);
+    assert_eq!(paces[2], Some(25.0 / 3.0));
 }

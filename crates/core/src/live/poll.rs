@@ -147,9 +147,6 @@ impl CurrentGame<'_> {
         }
         let player = data.active_player()?;
         let inputs = self.inputs_at(data, player).await;
-        let recent = self
-            .cs_pace
-            .observe(data.game_time(), player.scores.creep_score);
         let snapshot = Snapshot {
             cs: player.scores.creep_score,
             level: player.level,
@@ -159,9 +156,11 @@ impl CurrentGame<'_> {
                 player.item_counts(),
             ),
             scores: player.scores.player_scores(),
-            cs_pace: recent.map(|recent| recent.per_minute),
+            cs_pace: self
+                .cs_pace
+                .observe(data.game_time(), player.scores.creep_score),
         };
-        let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot, recent);
+        let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
         let facts = GameFacts {
             snapshot: &snapshot,
             benchmarks: &benchmarks,

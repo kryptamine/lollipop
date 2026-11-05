@@ -43,7 +43,7 @@ export const MarkerStrip = ({
         )}
         <Metric label="CS" value={cs} marker={csMarker} benchmark={whole(csBenchmark)} />
         <Metric
-          label="CS / min"
+          label="CS pace"
           value={tenths(csPace) ?? '—'}
           marker={csPaceMarker}
           benchmark={tenths(csPaceBenchmark)}

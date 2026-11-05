@@ -91,10 +91,11 @@ stays.
   The ±2 zone is untested against real spread.
 - CS pace starts at the latest poll, at least 3 min back, at which the floored CS
   stepped up: only there is the count exact. The end is the API value + 5. Until
-  such a step exists, as in a game first seen late, the value is a dash. Its
-  Benchmark is shown as compared, to a tenth, and a support has neither. The ±2
-  floor sits above the 1.7 a minute the 10-CS floor can move it; the zone is
-  untested against real spread.
+  such a step exists, as in a game first seen late, the value is a dash. A stretch
+  with no step stretches the window rather than start inside it, where the count
+  could be up to 9 off. Its Benchmark is shown as compared, to a tenth. A support
+  keeps the value and has no Marker or Benchmark. The ±2 floor sits above the 1.7
+  a minute the 10-CS floor can move it; the zone is untested against real spread.
 
 ### Counting Gold earned
 

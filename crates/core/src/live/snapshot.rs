@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+use super::cs_pace::CsPace;
 use super::scores::Scores;
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -11,7 +12,6 @@ pub struct Snapshot {
     pub gold_earned: Option<u32>,
     /// `None` when the payload lacks them, which the view shows as no K/D/A row.
     pub scores: Option<Scores>,
-    /// CS a minute over at least the last three minutes, `None` until three minutes of CS
-    /// are seen, which the view shows as a dash.
-    pub cs_pace: Option<f64>,
+    /// `None` until a CS step lies three minutes back.
+    pub cs_pace: Option<CsPace>,
 }
