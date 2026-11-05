@@ -61,7 +61,7 @@ The overlay is shown only when the game is frontmost and the match is running:
 
 ## Marker strip
 
-A table at the top left, with a row each for K/D/A, CS, Gold earned and level and
+A table at the top left, with a row each for K/D/A, CS, CS pace, Gold earned and level and
 the columns Stat, Marker, Current and Benchmark, such as `Gold earned ▼ 2000 2450`.
 The gold label reads "Gold earned", so the value cannot pass for current gold or
 net worth. A neutral Marker draws nothing: the Benchmark beside it already
@@ -72,6 +72,7 @@ stays.
 | Metric | Shown value | Compared value | Benchmark | Neutral zone |
 | --- | --- | --- | --- | --- |
 | CS | API value, floored to 10 | API value + 5 | Median | ±8% of Benchmark, at least ±8 |
+| CS pace | CS a minute over at least the last 3 min, to a tenth | Same | The Cell's CS gain a minute over the same stretch | ±20% of Benchmark, at least ±2 |
 | Gold | Gold earned, counted live | Same | Median of `totalGold` | ±8% of Benchmark, at least ±150 |
 | Level | API value | Same | Mean | ±1 |
 | K/D/A | API values, as `3 / 1 / 4` | Kills + assists − deaths | Mean of each, shown whole | ±2 |
@@ -88,6 +89,13 @@ stays.
 - K/D/A counts only games kept with scores, as `scores_n`, and a minute where that
   is below 100 has no K/D/A Marker. A payload without scores has no K/D/A row.
   The ±2 zone is untested against real spread.
+- CS pace starts at the latest poll, at least 3 min back, at which the floored CS
+  stepped up: only there is the count exact. The end is the API value + 5. Until
+  such a step exists, as in a game first seen late, the value is a dash. A stretch
+  with no step stretches the window rather than start inside it, where the count
+  could be up to 9 off. Its Benchmark is shown as compared, to a tenth. A support
+  keeps the value and has no Marker or Benchmark. The ±2 floor sits above the 1.7
+  a minute the 10-CS floor can move it; the zone is untested against real spread.
 
 ### Counting Gold earned
 

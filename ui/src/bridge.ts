@@ -13,6 +13,7 @@ export type Snapshot = {
   level: number;
   goldEarned: number | null;
   scores: Scores | null;
+  csPace: number | null;
 };
 
 export type MarkerState = 'above' | 'below' | 'neutral';
@@ -22,6 +23,7 @@ export type Markers = {
   gold: MarkerState | null;
   level: MarkerState | null;
   scores: MarkerState | null;
+  csPace: MarkerState | null;
 };
 
 export type Benchmarks = {
@@ -29,6 +31,7 @@ export type Benchmarks = {
   gold: number | null;
   level: number | null;
   scores: Scores | null;
+  csPace: number | null;
 };
 
 export type TimingHintState = {

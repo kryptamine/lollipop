@@ -30,6 +30,7 @@ const fn strip(cs: u32, level: u32, gold_earned: u32) -> Snapshot {
         level,
         gold_earned: Some(gold_earned),
         scores: None,
+        cs_pace: None,
     }
 }
 
@@ -48,6 +49,7 @@ async fn replays_a_recorded_game_on_game_time() {
     assert_eq!(updates.recv().await.unwrap().1, None);
 
     let mut at_minute = Vec::new();
+    let mut paces = Vec::new();
     let mut last = None;
     let mut next_minute = 5.0;
     let ended_at = loop {
@@ -61,9 +63,18 @@ async fn replays_a_recorded_game_on_game_time() {
                 snapshot.level,
                 snapshot.gold_earned.unwrap(),
             ));
+            paces.push(
+                snapshot
+                    .cs_pace
+                    .map(|pace| (pace.per_minute * 10.0).round() / 10.0),
+            );
             next_minute += 5.0;
         }
-        last = Some(snapshot);
+        last = Some(strip(
+            snapshot.cs,
+            snapshot.level,
+            snapshot.gold_earned.unwrap(),
+        ));
     };
 
     assert_eq!(
@@ -78,6 +89,12 @@ async fn replays_a_recorded_game_on_game_time() {
         ]
     );
     assert_eq!(last, Some(strip(220, 18, 17672)));
+    // Worked out from the recording's CS steps. At 5:00 no step lies 3 min back yet, and
+    // at 30:00 no step fell between 23:09 and 27:00, which stretches the window.
+    assert_eq!(
+        paces,
+        [None, Some(8.7), Some(6.4), Some(7.1), Some(8.0), Some(3.7)]
+    );
     assert!((1995.0..1997.0).contains(&ended_at), "ended at {ended_at}");
 }
 

@@ -53,6 +53,7 @@ const NO_MARKERS: Markers = Markers {
     gold: None,
     level: None,
     scores: None,
+    cs_pace: None,
 };
 
 // Protects the whole path on real data. The expected states are worked out by hand from

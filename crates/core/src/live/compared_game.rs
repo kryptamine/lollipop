@@ -1,6 +1,9 @@
 use super::comparison::Comparison;
+use super::cs_pace::CsPace;
 use super::held_marker::HeldMarker;
+use super::likely_cs::likely_cs;
 use super::markers::Markers;
+use super::per_minute::per_minute;
 use super::shown_benchmarks::ShownBenchmarks;
 use super::snapshot::Snapshot;
 use crate::benchmarks::{BenchmarkTable, BenchmarksAt, CellBenchmarks};
@@ -10,14 +13,16 @@ use crate::game_inputs::{ClientInputs, GameInputs, Role, TierReading};
 // unknown fall outside, and that is no fault worth a notice.
 pub(super) const MARKER_QUEUES: [u32; 4] = [400, 420, 430, 440];
 
-// The API floors CS to 10, so the true value is on average 5 above it.
-const CS_OFFSET: f64 = 5.0;
 const ZONE_SHARE: f64 = 0.08;
 const CS_ZONE_FLOOR: f64 = 8.0;
 const GOLD_ZONE_FLOOR: f64 = 150.0;
 const LEVEL_ZONE: f64 = 1.0;
 // On kills and assists less deaths; not yet tested against real spread.
 const SCORES_ZONE: f64 = 2.0;
+// In CS a minute. The 10-CS floor alone moves a three-minute pace by up to 1.7, so the
+// floor stays above it; not yet tested against real spread.
+const PACE_ZONE_SHARE: f64 = 0.2;
+const PACE_ZONE_FLOOR: f64 = 2.0;
 
 pub(super) struct ComparedGame {
     cell: CellBenchmarks,
@@ -26,6 +31,7 @@ pub(super) struct ComparedGame {
     gold: HeldMarker,
     level: HeldMarker,
     scores: HeldMarker,
+    cs_pace: HeldMarker,
 }
 
 impl ComparedGame {
@@ -55,6 +61,7 @@ impl ComparedGame {
             gold: HeldMarker::default(),
             level: HeldMarker::default(),
             scores: HeldMarker::default(),
+            cs_pace: HeldMarker::default(),
         })
     }
 
@@ -79,11 +86,15 @@ impl ComparedGame {
                 benchmark: b.net(),
                 neutral_zone: SCORES_ZONE,
             });
+        let cs_pace = cs_benchmarks
+            .zip(snapshot.cs_pace)
+            .and_then(|(now, pace)| self.pace_comparison(game_time, &now, pace));
         let markers = Markers {
             cs: self.cs.update(cs),
             gold: self.gold.update(gold),
             level: self.level.update(level),
             scores: self.scores.update(scores),
+            cs_pace: self.cs_pace.update(cs_pace),
         };
         let behind = self.cell.at_minute_behind(game_time);
         let shown = ShownBenchmarks {
@@ -94,14 +105,31 @@ impl ComparedGame {
                 .and(snapshot.scores)
                 .and(behind)
                 .and_then(|b| b.scores),
+            cs_pace: cs_pace.map(|pace| pace.benchmark),
         };
         (markers, shown)
+    }
+
+    /// `None` when the Cell has no Benchmark where the pace starts.
+    fn pace_comparison(
+        &self,
+        game_time: f64,
+        now: &BenchmarksAt,
+        pace: CsPace,
+    ) -> Option<Comparison> {
+        let then = self.cell.at(pace.since)?;
+        let benchmark = per_minute(now.cs - then.cs, pace.since, game_time);
+        Some(Comparison {
+            value: pace.per_minute,
+            benchmark,
+            neutral_zone: (benchmark * PACE_ZONE_SHARE).max(PACE_ZONE_FLOOR),
+        })
     }
 }
 
 fn cs_comparison(cs: u32, benchmarks: &BenchmarksAt) -> Comparison {
     Comparison {
-        value: f64::from(cs) + CS_OFFSET,
+        value: likely_cs(cs),
         benchmark: benchmarks.cs,
         neutral_zone: (benchmarks.cs * ZONE_SHARE).max(CS_ZONE_FLOOR),
     }

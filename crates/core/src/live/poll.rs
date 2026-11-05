@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::clock::Clock;
+use super::cs_pace_watch::CsPaceWatch;
 use super::game_advice::GameAdvice;
 use super::game_build::GameBuild;
 use super::game_facts::GameFacts;
@@ -56,6 +57,7 @@ pub async fn poll(
         inputs: InputsOfGame::default(),
         loading_screen: HeldLoadingScreen::default(),
         markers: GameMarkers::default(),
+        cs_pace: CsPaceWatch::default(),
         hints: GameHints::default(),
         advice: GameAdvice::new(&http, league.lockfile, advisor),
         build: GameBuild::new(&http, league.lockfile, benchmark_table),
@@ -101,6 +103,7 @@ struct CurrentGame<'a> {
     inputs: InputsOfGame,
     loading_screen: HeldLoadingScreen,
     markers: GameMarkers,
+    cs_pace: CsPaceWatch,
     hints: GameHints,
     advice: GameAdvice,
     build: GameBuild<'a>,
@@ -153,6 +156,9 @@ impl CurrentGame<'_> {
                 player.item_counts(),
             ),
             scores: player.scores.player_scores(),
+            cs_pace: self
+                .cs_pace
+                .observe(data.game_time(), player.scores.creep_score),
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
         let facts = GameFacts {
@@ -199,6 +205,7 @@ impl CurrentGame<'_> {
         self.build
             .at_game_start(table.as_mut(), &inputs, data, player);
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
+        self.cs_pace = CsPaceWatch::default();
         self.hints = GameHints::start(&inputs);
         self.inputs.hold(game_time, inputs)
     }
