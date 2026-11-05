@@ -180,8 +180,7 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 cd "$(dirname "$0")/.."
-TOTAL_STAGES=7
-RELEASES_REPO=kryptamine/lollipop-releases
+TOTAL_STAGES=5
 UPDATER_KEY="$HOME/.tauri/lollipop-updater.key"
 CONFIG=crates/app/tauri.conf.json
 
@@ -225,15 +224,6 @@ node -e '
 ' "$CONFIG" "$UPDATER_KEY.pub"
 printf '  %s✓ wrote%s the public key → %s\n' "$GREEN" "$RESET" "$CONFIG"
 warn "Back up $UPDATER_KEY and its password: a lost key strands every install."
-pause
-
-stage "Public releases repository"
-if gh repo view "$RELEASES_REPO" >/dev/null 2>&1; then
-  note "$RELEASES_REPO already exists"
-elif confirm "Create the public repository $RELEASES_REPO?"; then
-  gh repo create "$RELEASES_REPO" --public --add-readme \
-    --description "Signed macOS releases of Lollipop"
-fi
 pause
 
 # Without the Apple Developer Program, builds go out ad-hoc signed (ADR 0012).
@@ -292,16 +282,6 @@ if [[ $APPLE_ENROLLED == yes ]]; then
 else
   note "skipped: no Apple Developer Program"
 fi
-pause
-
-stage "Token to publish into $RELEASES_REPO"
-open_url "https://github.com/settings/personal-access-tokens/new"
-step "Fine-grained token, resource owner kryptamine, expiry as you like."
-step "Repository access: Only select repositories → lollipop-releases."
-step "Permissions → Repository → Contents: Read and write. Generate and copy."
-ask_secret RELEASES_TOKEN "Paste the token:"
-need RELEASES_TOKEN
-set_secret RELEASES_TOKEN "$RELEASES_TOKEN"
 pause
 
 stage "Commit the public key"

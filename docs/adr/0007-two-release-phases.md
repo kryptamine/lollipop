@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, its releases repository superseded by ADR 0020
 ---
 
 # Two release phases, split at the first other person

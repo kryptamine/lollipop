@@ -343,7 +343,7 @@ See [ADR 0007](../adr/0007-two-release-phases.md).
 | | Private phase (owner only) | Public phase (anyone else) |
 | --- | --- | --- |
 | Signature | Ad-hoc | Developer ID, notarized; ad-hoc until the Apple account exists ([ADR 0012](../adr/0012-ad-hoc-releases-until-the-apple-account-exists.md)) |
-| Package | Local DMG | Universal DMG on `lollipop-releases` |
+| Package | Local DMG | Universal DMG on this repository's releases ([ADR 0020](../adr/0020-releases-from-the-source-repository.md)) |
 | Update | `git pull` and rebuild | Tauri updater |
 | Build | Local | GitHub Actions on a tag |
 
@@ -356,7 +356,7 @@ A release starts once from `scripts/release-setup.sh`, which makes the updater
 key, the Apple credentials and the GitHub secrets. After that, release-please
 keeps a release pull request open on `main`, with the next version from the
 Conventional Commits and its `CHANGELOG.md`. Merging it tags the version and runs
-`.github/workflows/release.yml`, which leaves a draft on `lollipop-releases`. The real-match checklist runs on that draft's DMG,
+`.github/workflows/release.yml`, which fills the draft release it opened. The real-match checklist runs on that draft's DMG,
 and the draft is published by hand: the updater sees only published releases.
 
 Before a public release: Riot registration and product audit, a production key,

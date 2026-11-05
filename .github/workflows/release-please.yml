@@ -1,7 +1,7 @@
 name: Release Please
 
-# Keeps a release pull request open on main. Merging it tags the version and
-# starts the release build.
+# Keeps a release pull request open on main. Merging it tags the version,
+# opens a draft release and starts the build that fills it.
 on:
   push:
     branches: [main]
@@ -28,6 +28,8 @@ jobs:
   # A tag pushed with GITHUB_TOKEN starts no workflow, so the build is called here.
   release:
     needs: release-please
+    permissions:
+      contents: write
     if: needs.release-please.outputs.release_created == 'true'
     uses: ./.github/workflows/release.yml
     with:
