@@ -14,7 +14,9 @@ mod support;
 use serde_json::json;
 
 use support::archived_match::{damage, ArchivedMatch};
-use support::fake_data_dragon::{LORD_DOMINIKS, MORELLONOMICON, MORTAL_REMINDER, VOID_STAFF};
+use support::fake_data_dragon::{
+    LORD_DOMINIKS, MORELLONOMICON, MORTAL_REMINDER, THORNMAIL, VOID_STAFF,
+};
 use support::played::Played;
 use support::table_bench::TableBench;
 
@@ -65,7 +67,8 @@ fn each_threat_holds_a_champions_amount_a_minute_and_the_top_quarter_bound() {
     );
 }
 
-// Grievous Wounds has no Data Dragon tag, and a component is never in a Build.
+// Wounds has no Data Dragon tag, Thornmail's description leaves out Grievous, and a
+// component is never in a Build.
 #[test]
 fn counters_are_the_completed_items_that_wound_or_penetrate() {
     let build = bench_with_soraka_and_malphite().build(&[]);
@@ -73,7 +76,7 @@ fn counters_are_the_completed_items_that_wound_or_penetrate() {
     assert_eq!(
         build.table()["counters"],
         json!({
-            "anti_heal": [MORTAL_REMINDER, MORELLONOMICON],
+            "anti_heal": [MORTAL_REMINDER, THORNMAIL, MORELLONOMICON],
             "armor_penetration": [MORTAL_REMINDER, LORD_DOMINIKS],
             "magic_penetration": [VOID_STAFF],
         })
