@@ -22,11 +22,14 @@ export const RIGHT = 8;
 export const TOP = 14;
 export const BOTTOM = 20;
 
-export type Scale = {
-  x: (minute: number) => number;
+export type ValueScale = {
   y: (value: number) => number;
   // Round values for four to six gridlines.
   ticks: number[];
+};
+
+export type Scale = ValueScale & {
+  x: (minute: number) => number;
 };
 
 const roundStep = (top: number): number => {
@@ -36,20 +39,24 @@ const roundStep = (top: number): number => {
   return [1, 2, 2.5, 5, 10].map((factor) => factor * power).find((step) => step >= rough) ?? rough;
 };
 
-export const scaleOf = (points: ChartPoint[], lastMinute: number): Scale => {
-  const highest = Math.max(
-    1,
-    ...points.flatMap(({ value, benchmark }) => (benchmark === null ? value : [value, benchmark])),
-  );
-
+// From 0 to a round value at or above every value and Benchmark given.
+export const valueScaleOf = (readings: (number | null)[]): ValueScale => {
+  const highest = Math.max(1, ...readings.filter((reading) => reading !== null));
   const step = roundStep(highest);
   const top = Math.ceil(highest / step) * step;
+
+  return {
+    y: (value) => TOP + (1 - value / top) * (HEIGHT - TOP - BOTTOM),
+    ticks: Array.from({ length: Math.round(top / step) + 1 }, (_, index) => index * step),
+  };
+};
+
+export const scaleOf = (points: ChartPoint[], lastMinute: number): Scale => {
   const span = Math.max(1, lastMinute);
 
   return {
+    ...valueScaleOf(points.flatMap(({ value, benchmark }) => [value, benchmark])),
     x: (minute) => LEFT + (minute / span) * (WIDTH - LEFT - RIGHT),
-    y: (value) => TOP + (1 - value / top) * (HEIGHT - TOP - BOTTOM),
-    ticks: Array.from({ length: Math.round(top / step) + 1 }, (_, index) => index * step),
   };
 };
 

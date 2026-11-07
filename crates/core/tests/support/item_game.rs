@@ -11,6 +11,7 @@ use super::fake_lcu::FakeLcu;
 use super::fake_openai::FakeOpenAi;
 use super::game_clock::GameClock;
 use super::loading_game::{lineup, Updates, KEY, ME};
+use super::polling::with_table;
 use super::server::serve;
 
 pub const FED: &str = "Foe2#EUW";
@@ -246,7 +247,7 @@ impl ItemGame {
                     live_client_url: &url,
                     lockfile: &lockfile,
                 },
-                &TableFile::new(table),
+                with_table(&TableFile::new(table)),
                 &advisor,
                 &GameClock::starting_at(0.0),
                 send,

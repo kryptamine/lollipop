@@ -18,6 +18,7 @@ use super::league::League;
 use super::live_game::LiveGame;
 use super::live_update::LiveUpdate;
 use super::notice::Notice;
+use super::on_disk::OnDisk;
 use super::payload::{AllGameData, Player};
 use super::snapshot::Snapshot;
 use crate::advice::{Advisor, Language};
@@ -33,7 +34,7 @@ const POLL_INTERVAL: Duration = Duration::from_secs(1);
 /// If the HTTP client cannot be built, which only a broken TLS backend causes.
 pub async fn poll(
     league: League<'_>,
-    benchmark_table: &TableFile,
+    on_disk: OnDisk<'_>,
     advisor: &Advisor,
     clock: &impl Clock,
     mut on_update: impl FnMut(LiveUpdate) + Send,
@@ -50,6 +51,7 @@ pub async fn poll(
         .build()
         .expect("HTTP client should build");
 
+    let benchmark_table = on_disk.benchmark_table;
     let mut game = CurrentGame {
         http: &http,
         lockfile: league.lockfile,
@@ -62,7 +64,7 @@ pub async fn poll(
         hints: GameHints::default(),
         advice: GameAdvice::new(&http, league.lockfile, advisor),
         build: GameBuild::new(&http, league.lockfile, benchmark_table),
-        recap: GameRecap::new(advisor),
+        recap: GameRecap::new(advisor, on_disk.history),
         notices: Arc::from([]),
     };
     loop {

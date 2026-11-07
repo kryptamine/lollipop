@@ -2160,6 +2160,7 @@ dependencies = [
  "ed25519-dalek",
  "hex",
  "reqwest 0.12.28",
+ "rusqlite",
  "serde",
  "serde_json",
  "sha2 0.10.9",

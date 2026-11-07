@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use lollipop_core::advice::{AdviceCall, Advisor, Language, LessonsOff};
 use lollipop_core::delivery::TableFile;
-use lollipop_core::live::{poll, League, Lessons, LiveUpdate, Recap};
+use lollipop_core::live::{poll, GameHistory, League, Lessons, LiveUpdate, OnDisk, Recap};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 use tokio::sync::mpsc;
@@ -79,20 +79,26 @@ impl Played {
     }
 }
 
-/// Ahri in the middle lane against Zed, the League client and a table on disk.
+/// Ahri in the middle lane against Zed, the League client, a table and a history on
+/// disk. Games played on one bench share its history.
 pub struct RecapBench {
     lcu: FakeLcu,
     dir: TempDir,
     /// Game times the player dies to Zed at.
     pub deaths: Vec<f64>,
+    pub champion: &'static str,
+    pub history: std::path::PathBuf,
 }
 
 impl RecapBench {
     pub async fn new() -> Self {
+        let dir = TempDir::new().unwrap();
         let bench = Self {
             lcu: FakeLcu::start().await,
-            dir: TempDir::new().unwrap(),
+            history: dir.path().join("history.sqlite"),
+            dir,
             deaths: Vec::new(),
+            champion: "Ahri",
         };
         bench.lcu.set(PHASE, r#""InProgress""#);
         std::fs::write(bench.table(), ahri_table()).unwrap();
@@ -164,12 +170,14 @@ impl RecapBench {
         advisor: Advisor,
     ) -> mpsc::UnboundedReceiver<LiveUpdate> {
         let served = Mutex::new(beats.into_iter());
-        let (route, deaths) = (self.lcu.router(), self.deaths.clone());
+        let (route, deaths, champion) = (self.lcu.router(), self.deaths.clone(), self.champion);
         let url = serve(Box::new(move || {
             let beat = served.lock().unwrap().next()?;
             match beat {
-                Beat::Running { at, cs } => Some(body(at, cs, &deaths, None)),
-                Beat::Ended { at, cs, result } => Some(body(at, cs, &deaths, Some(result))),
+                Beat::Running { at, cs } => Some(body(champion, at, cs, &deaths, None)),
+                Beat::Ended { at, cs, result } => {
+                    Some(body(champion, at, cs, &deaths, Some(result)))
+                }
                 Beat::Gone(phase) => {
                     route(PHASE, Some(&format!("\"{phase}\"")));
                     None
@@ -183,13 +191,17 @@ impl RecapBench {
         .await;
         let (updates, received) = mpsc::unbounded_channel();
         let (lockfile, table) = (self.lcu.lockfile(), self.table());
+        let history = GameHistory::new(self.history.clone());
         tokio::spawn(async move {
             poll(
                 League {
                     live_client_url: &url,
                     lockfile: &lockfile,
                 },
-                &TableFile::new(table),
+                OnDisk {
+                    benchmark_table: &TableFile::new(table),
+                    history: &history,
+                },
                 &advisor,
                 &GameClock::starting_at(0.0),
                 move |update| {
@@ -202,7 +214,7 @@ impl RecapBench {
     }
 }
 
-fn body(at: f64, cs: u32, deaths: &[f64], result: Option<&str>) -> String {
+fn body(champion: &str, at: f64, cs: u32, deaths: &[f64], result: Option<&str>) -> String {
     let mut events = vec![json!({ "EventName": "GameStart", "EventTime": 0.0 })];
     for death in deaths.iter().filter(|death| **death <= at) {
         events.push(json!({
@@ -216,11 +228,12 @@ fn body(at: f64, cs: u32, deaths: &[f64], result: Option<&str>) -> String {
     if let Some(result) = result {
         events.push(json!({ "EventName": "GameEnd", "EventTime": at, "Result": result }));
     }
-    let mut players = lineup("Ahri", "MIDDLE");
+    let mut players = lineup(champion, "MIDDLE");
     for player in &mut players {
         player["scores"] = json!({ "creepScore": 0, "kills": 1, "deaths": 2, "assists": 3 });
         if player["riotId"] == ME {
             player["scores"]["creepScore"] = json!(cs);
+            player["rawChampionName"] = json!(format!("game_character_displayname_{champion}"));
         }
     }
     // Gold earned grows 300 a minute over the starting 500, with nothing bought.
