@@ -156,10 +156,6 @@ impl RecapBench {
                 played.opened_at.push(polls);
             }
             polls += 1;
-            // Past the script every poll fails at once, so give OpenAI time to answer.
-            if polls > script {
-                tokio::time::sleep(Duration::from_millis(5)).await;
-            }
         }
         played
     }

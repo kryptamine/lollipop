@@ -17,7 +17,6 @@ use super::responses_request::ResponsesRequest;
 use super::trigger::Trigger;
 
 // Twice the measured worst answer of 3.7 s.
-const CALL_TIMEOUT: Duration = Duration::from_secs(8);
 const RETRY_WAIT: Duration = Duration::from_secs(1);
 // A retry with less than this before the deadline would rarely answer in time.
 const RETRY_LEFT: Duration = Duration::from_secs(4);
@@ -173,8 +172,9 @@ impl Advisor {
                 }
                 Request::Refused => return None,
             }
-            let timeout =
-                CALL_TIMEOUT.min(question.deadline.saturating_duration_since(Instant::now()));
+            let timeout = question
+                .attempt_timeout
+                .min(question.deadline.saturating_duration_since(Instant::now()));
             let failure = match self.attempt(call, request, timeout, read).await {
                 Ok(answer) => return Some(Ok(answer)),
                 Err(failure) => failure,

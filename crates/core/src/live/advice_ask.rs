@@ -9,7 +9,7 @@ use super::payload::AllGameData;
 use super::pending_answer::PendingAnswer;
 use super::proposals::Proposals;
 use super::until::Until;
-use crate::advice::{Advisor, AnswerParts, Question, Trigger};
+use crate::advice::{Advisor, AnswerParts, Question, Trigger, TRIGGER_ATTEMPT};
 
 /// One Trigger's Advice from asking to showing. A new ask replaces the one in flight,
 /// and an answer past its [`Until`] is dropped with every Build proposal in it.
@@ -119,6 +119,7 @@ impl AdviceAsk {
                 instructions: &instructions,
                 input: &input,
                 deadline,
+                attempt_timeout: TRIGGER_ATTEMPT,
             };
             advisor.ask(&call, &question).await.into_parts()
         });

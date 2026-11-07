@@ -31,7 +31,7 @@ pub use lessons_off::LessonsOff;
 pub use masked_key::masked_key;
 pub(crate) use proposed_change::ProposedChange;
 pub(crate) use proposed_swap::ProposedSwap;
-pub(crate) use question::Question;
+pub(crate) use question::{Question, TRIGGER_ATTEMPT};
 pub use trigger::{Trigger, TRIGGERS};
 
 /// What every Trigger tells the model before its own part.

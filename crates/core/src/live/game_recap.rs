@@ -19,6 +19,9 @@ use crate::game_inputs::{ClientPhase, GameInputs};
 
 // No player waits on a Recap's Lessons, so they get far longer than any Trigger's.
 const LESSONS_DEADLINE: Duration = Duration::from_secs(30);
+// Up to three Lessons take far longer to write than one Trigger's Advice, and 20 s
+// still leaves the deadline room for a retry.
+const LESSONS_ATTEMPT: Duration = Duration::from_secs(20);
 const ASKER: &str = "lessons";
 
 /// The last game's Recap: made as the game ends, its Lessons asked for, and its window
@@ -139,6 +142,7 @@ impl GameRecap {
                         instructions: INSTRUCTIONS,
                         input: &input,
                         deadline: Instant::now() + LESSONS_DEADLINE,
+                        attempt_timeout: LESSONS_ATTEMPT,
                     };
                     match advisor.review(&call, &question).await {
                         Some(lessons) if lessons.is_empty() => Lessons::Empty,
