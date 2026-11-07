@@ -37,12 +37,12 @@ Gold earned, as on the Marker strip.
   Trigger: they never reach the Advice Widget or change the Build.
 - When not asked, the Recap carries the first reason that holds, in that order, and
   the window says it.
-- Their own schema: `{"lessons": [string]}`. More than three, or one over 160
-  characters, drops them all.
+- Their own schema: `{"lessons": [string]}`. More than three drops them all. One
+  over 160 characters is cut at its last whole word and ends in `…`.
 - The input holds the game line, CS and Gold earned against their Benchmarks every
   fifth minute and the last, each death and its killer's champion, the slow farm
   stretches and all nine other players. Never a Riot ID or summoner name.
-- 30 s to answer, with the Advisor's one retry. They count against the per-game
+- 30 s to answer, at most 20 s an attempt, with the Advisor's one retry. They count against the per-game
   request cap of the game that starts after the one they review.
 - The window tells apart a model with no Lessons and a call that failed. A failure
   is logged as `Advice lessons:` and never spends the next game's "could not reach

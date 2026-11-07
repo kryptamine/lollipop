@@ -9,6 +9,8 @@
 #[allow(dead_code, reason = "each test crate uses only part of the harness")]
 mod support;
 
+use std::time::Duration;
+
 use lollipop_core::advice::LessonsOff;
 use lollipop_core::game_inputs::Role;
 use lollipop_core::live::{Lessons, Outcome, RecapMinute, Scores, TrendGame};
@@ -233,7 +235,7 @@ async fn no_lessons_and_failed_lessons_differ() {
     assert_eq!(failed.last().lessons, Lessons::Failed);
 }
 
-// Lessons are never cut to fit: an answer past the cap is dropped whole.
+// Which three of four the model meant is unknown, so the answer is dropped whole.
 #[tokio::test]
 async fn more_than_three_lessons_are_dropped_whole() {
     let openai = FakeOpenAi::advising(&lessons_reply(&["Один.", "Два.", "Три.", "Четыре."])).await;
@@ -243,6 +245,42 @@ async fn more_than_three_lessons_are_dropped_whole() {
         .await;
 
     assert_eq!(played.last().lessons, Lessons::Failed);
+}
+
+// Models count characters poorly, Russian above all; one long Lesson must not cost all three.
+#[tokio::test]
+async fn a_lesson_over_the_length_is_shortened_at_a_word() {
+    let long = vec!["слово"; 40].join(" ");
+    let openai = FakeOpenAi::advising(&lessons_reply(&[&long, LESSON])).await;
+    let played = RecapBench::new()
+        .await
+        .play_asking(ten_minute_win(), &openai.url, Ok(()))
+        .await;
+
+    let shortened = format!("{}…", vec!["слово"; 26].join(" "));
+    assert_eq!(
+        played.last().lessons,
+        Lessons::Given(vec![shortened, LESSON.to_string()])
+    );
+}
+
+// Three Lessons take longer to write than a Trigger's Advice, and the Recap can wait.
+#[tokio::test]
+async fn lessons_that_take_ten_seconds_still_arrive() {
+    let openai = FakeOpenAi::replying(vec![Reply::Delayed {
+        wait: Duration::from_secs(10),
+        reply: Box::new(Reply::advising(&lessons_reply(&[LESSON]))),
+    }])
+    .await;
+    let played = RecapBench::new()
+        .await
+        .play_asking(ten_minute_win(), &openai.url, Ok(()))
+        .await;
+
+    assert_eq!(
+        played.last().lessons,
+        Lessons::Given(vec![LESSON.to_string()])
+    );
 }
 
 /// A game ending at `minutes` past 0:00, the player farming `cs_per_minute`.
