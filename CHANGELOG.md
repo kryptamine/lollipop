@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/kryptamine/lollipop/compare/v0.3.0...v0.4.0) (2026-11-07)
+
+
+### Features
+
+* **live:** show a Recap after each game ([ae02d79](https://github.com/kryptamine/lollipop/commit/ae02d7997681d08ec720003b532c62274e3d22ea))
+* **live:** show a Recap after each game ([5e81187](https://github.com/kryptamine/lollipop/commit/5e8118756ab98ef2d188e0808b1c6925b1dfe9f2)), closes [#198](https://github.com/kryptamine/lollipop/issues/198)
+* **live:** show a Trend of CS at 10:00 in the Recap ([e8229f4](https://github.com/kryptamine/lollipop/commit/e8229f46673dd8b66bfcdf1705ec31b22cd847b8))
+* **live:** show a Trend of CS at 10:00 in the Recap ([5d17dbf](https://github.com/kryptamine/lollipop/commit/5d17dbf7ecddaec32f37e2112f58b14f1ba6f757)), closes [#201](https://github.com/kryptamine/lollipop/issues/201)
+
 ## [0.3.0](https://github.com/kryptamine/lollipop/compare/v0.2.0...v0.3.0) (2026-11-05)
 
 
