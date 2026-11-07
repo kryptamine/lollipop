@@ -24,7 +24,9 @@ use std::sync::Arc;
 use last_recap::LastRecap;
 use lollipop_core::delivery::TableFile;
 use lollipop_core::game_inputs::LOCKFILE_PATH;
-use lollipop_core::live::{poll, status_line, League, LiveUpdate, SystemClock, LIVE_CLIENT_URL};
+use lollipop_core::live::{
+    poll, status_line, GameHistory, League, LiveUpdate, OnDisk, SystemClock, LIVE_CLIENT_URL,
+};
 use lollipop_core::overlay::GAME_BUNDLE_ID;
 use openai_key::OpenAiKey;
 use overlay::Overlay;
@@ -58,13 +60,41 @@ async fn publish_live_client(
     benchmark_table: Arc<TableFile>,
 ) {
     let key = app.state::<OpenAiKey>().inner().clone();
-    let voiceover = app.state::<Voiceover>().inner().clone();
     let advisor = advice_source::advisor(app.clone(), store.clone(), key);
     app.manage(advisor.clone());
+    let history = app.state::<GameHistory>().inner().clone();
+    let on_update = update_publisher(app, overlay, store, status);
+    let url = dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL);
+    let lockfile = dev_setting("LOLLIPOP_LOCKFILE", LOCKFILE_PATH);
+    let league = League {
+        live_client_url: &url,
+        lockfile: Path::new(&lockfile),
+    };
+    poll(
+        league,
+        OnDisk {
+            benchmark_table: &benchmark_table,
+            history: &history,
+        },
+        &advisor,
+        &SystemClock,
+        on_update,
+    )
+    .await;
+}
+
+/// Sends each poll's update to the views, the menu bar and the voiceover.
+fn update_publisher(
+    app: AppHandle,
+    overlay: Overlay,
+    store: SettingsStore,
+    status: MenuItem<Wry>,
+) -> impl FnMut(LiveUpdate) + Send {
+    let voiceover = app.state::<Voiceover>().inner().clone();
     let last_recap = app.state::<LastRecap>().inner().clone();
     let mut shown_status = status_line(None);
     let mut was_running = false;
-    let on_update = move |update: LiveUpdate| {
+    move |update: LiveUpdate| {
         let LiveUpdate {
             game,
             build,
@@ -105,14 +135,7 @@ async fn publish_live_client(
             let _ = status.set_text(&next_status);
             shown_status = next_status;
         }
-    };
-    let url = dev_setting("LOLLIPOP_LIVE_URL", LIVE_CLIENT_URL);
-    let lockfile = dev_setting("LOLLIPOP_LOCKFILE", LOCKFILE_PATH);
-    let league = League {
-        live_client_url: &url,
-        lockfile: Path::new(&lockfile),
-    };
-    poll(league, &benchmark_table, &advisor, &SystemClock, on_update).await;
+    }
 }
 
 #[allow(
@@ -169,6 +192,9 @@ fn main() {
             if benchmark_table.path() == delivered {
                 tauri::async_runtime::spawn(table_downloads::run(Arc::clone(&benchmark_table)));
             }
+            let kept = app.path().app_data_dir()?.join("history.sqlite");
+            let history = dev_setting("LOLLIPOP_HISTORY", &kept.to_string_lossy());
+            app.manage(GameHistory::new(PathBuf::from(history)));
             tauri::async_runtime::spawn(publish_live_client(
                 app.handle().clone(),
                 overlay,

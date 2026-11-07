@@ -44,6 +44,13 @@ type LessonsFailed = {
 
 export type Lessons = LessonsOff | LessonsAsking | LessonsGiven | LessonsEmpty | LessonsFailed;
 
+// One game's CS at 10:00 against its Cell's.
+export type TrendGame = {
+  cs: number;
+  // Null where the game had no CS Benchmark, as for a support.
+  benchmark: number | null;
+};
+
 type Role = 'Top' | 'Jungle' | 'Mid' | 'Bot' | 'Support';
 
 export type Recap = {
@@ -57,5 +64,7 @@ export type Recap = {
   minutes: RecapMinute[];
   deaths: number[];
   slowFarm: Stretch[];
+  // The last ten games on this champion, oldest first.
+  trend: TrendGame[];
   lessons: Lessons;
 };

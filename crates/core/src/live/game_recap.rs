@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use super::game_history::GameHistory;
 use super::lessons::Lessons;
 use super::marker::Marker;
 use super::payload::AllGameData;
@@ -24,6 +25,7 @@ const ASKER: &str = "lessons";
 /// opened once the League client reaches the post-game screens.
 pub(super) struct GameRecap {
     advisor: Advisor,
+    history: GameHistory,
     watch: Option<RecapWatch>,
     recap: Option<Recap>,
     lessons: PendingAnswer<Lessons>,
@@ -33,9 +35,10 @@ pub(super) struct GameRecap {
 }
 
 impl GameRecap {
-    pub(super) fn new(advisor: &Advisor) -> Self {
+    pub(super) fn new(advisor: &Advisor, history: &GameHistory) -> Self {
         Self {
             advisor: advisor.clone(),
+            history: history.clone(),
             watch: None,
             recap: None,
             lessons: PendingAnswer::default(),
@@ -123,6 +126,9 @@ impl GameRecap {
         let Some(mut recap) = watch.recap(data) else {
             return;
         };
+        if let Some(champion) = data.active_player().and_then(|p| p.champion_id()) {
+            recap.trend = self.history.trend_with(champion, watch.at_ten());
+        }
         recap.lessons = match self.advisor.lessons_call() {
             Ok(call) => {
                 let input = input(call.language, &recap, data, watch.tier());

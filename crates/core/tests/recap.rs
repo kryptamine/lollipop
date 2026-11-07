@@ -11,7 +11,7 @@ mod support;
 
 use lollipop_core::advice::LessonsOff;
 use lollipop_core::game_inputs::Role;
-use lollipop_core::live::{Lessons, Outcome, RecapMinute, Scores};
+use lollipop_core::live::{Lessons, Outcome, RecapMinute, Scores, TrendGame};
 
 use support::fake_openai::{FakeOpenAi, Reply};
 use support::recap_game::{farming, lessons_reply, Beat, RecapBench};
@@ -243,4 +243,112 @@ async fn more_than_three_lessons_are_dropped_whole() {
         .await;
 
     assert_eq!(played.last().lessons, Lessons::Failed);
+}
+
+/// A game ending at `minutes` past 0:00, the player farming `cs_per_minute`.
+fn game_of(minutes: u32, cs_per_minute: u32) -> Vec<Beat> {
+    let mut beats = farming(minutes, cs_per_minute);
+    beats.push(Beat::Ended {
+        at: f64::from(minutes).mul_add(60.0, 30.0),
+        cs: cs_per_minute * minutes,
+        result: "Win",
+    });
+    beats
+}
+
+const fn at_ten(cs: u32) -> TrendGame {
+    TrendGame {
+        cs,
+        benchmark: Some(80.0),
+    }
+}
+
+#[tokio::test]
+async fn games_on_one_champion_trend_their_cs_at_ten_minutes() {
+    let bench = RecapBench::new().await;
+    for cs_per_minute in [5, 6, 7] {
+        bench.play(game_of(12, cs_per_minute)).await;
+    }
+    let played = bench.play(game_of(12, 8)).await;
+
+    assert_eq!(
+        played.last().trend,
+        [at_ten(50), at_ten(60), at_ten(70), at_ten(80)]
+    );
+}
+
+// A month of games on a main would otherwise flatten the progress of the last week.
+#[tokio::test]
+async fn the_trend_keeps_the_last_ten_games() {
+    let bench = RecapBench::new().await;
+    for cs_per_minute in 1..=11 {
+        bench.play(game_of(10, cs_per_minute)).await;
+    }
+    let played = bench.play(game_of(10, 12)).await;
+
+    let expected: Vec<TrendGame> = (3..=12).map(|cs| at_ten(cs * 10)).collect();
+    assert_eq!(played.last().trend, expected);
+}
+
+#[tokio::test]
+async fn games_on_another_champion_stay_out_of_the_trend() {
+    let mut bench = RecapBench::new().await;
+    bench.play(game_of(10, 5)).await;
+    bench.champion = "Syndra";
+    let syndra = bench.play(game_of(10, 9)).await;
+    bench.champion = "Ahri";
+    let ahri = bench.play(game_of(10, 6)).await;
+
+    assert_eq!(
+        syndra.last().trend,
+        [TrendGame {
+            cs: 90,
+            benchmark: None
+        }]
+    );
+    assert_eq!(ahri.last().trend, [at_ten(50), at_ten(60)]);
+}
+
+// A game over before 10:00 has no CS at 10:00 to compare, yet still shows the Trend.
+#[tokio::test]
+async fn a_game_over_before_ten_minutes_joins_no_trend() {
+    let bench = RecapBench::new().await;
+    bench.play(game_of(10, 6)).await;
+    let short = bench.play(game_of(8, 7)).await;
+
+    assert_eq!(short.recaps.len(), 1);
+    assert_eq!(short.last().trend, [at_ten(60)]);
+}
+
+// A game joined after 10:00 would put its later, larger CS among games read at 10:00.
+#[tokio::test]
+async fn a_game_joined_after_ten_minutes_joins_no_trend() {
+    let bench = RecapBench::new().await;
+    bench.play(game_of(10, 6)).await;
+    let mut late: Vec<Beat> = (21..=32)
+        .map(|half| Beat::Running {
+            at: f64::from(half) * 30.0,
+            cs: 4 * half,
+        })
+        .collect();
+    late.push(Beat::Ended {
+        at: 990.0,
+        cs: 132,
+        result: "Lose",
+    });
+    let played = bench.play(late).await;
+
+    assert_eq!(played.recaps.len(), 1);
+    assert_eq!(played.last().trend, [at_ten(60)]);
+}
+
+// A full disk or a locked file must cost the Trend, never the Recap.
+#[tokio::test]
+async fn a_history_that_cannot_be_written_still_shows_this_game() {
+    let mut bench = RecapBench::new().await;
+    bench.history = "/nonexistent/history.sqlite".into();
+    let played = bench.play(game_of(10, 6)).await;
+
+    assert_eq!(played.recaps.len(), 1);
+    assert_eq!(played.last().trend, [at_ten(60)]);
 }

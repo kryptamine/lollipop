@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use lollipop_core::advice::Advisor;
 use lollipop_core::delivery::TableFile;
-use lollipop_core::live::{poll, League, LiveGame, LiveUpdate, Snapshot};
+use lollipop_core::live::{poll, GameHistory, League, LiveGame, LiveUpdate, OnDisk, Snapshot};
 use tokio::sync::mpsc;
 
 use super::game_clock::GameClock;
@@ -14,6 +14,24 @@ const NO_TABLE: &str = "/nonexistent/benchmark-table.json";
 /// Advice with every Trigger off, so no test reaches OpenAI by accident.
 pub fn no_advice() -> Advisor {
     Advisor::new("http://127.0.0.1:9", |_| None)
+}
+
+// A history that cannot be written, so a test keeps no games past its run.
+static NO_HISTORY: LazyLock<GameHistory> =
+    LazyLock::new(|| GameHistory::new("/nonexistent/history.sqlite".into()));
+static NO_TABLE_FILE: LazyLock<TableFile> = LazyLock::new(|| TableFile::new(NO_TABLE.into()));
+
+/// No Benchmark table and no history.
+pub fn no_files() -> OnDisk<'static> {
+    with_table(&NO_TABLE_FILE)
+}
+
+/// `table`, with no history.
+pub fn with_table(table: &TableFile) -> OnDisk<'_> {
+    OnDisk {
+        benchmark_table: table,
+        history: &NO_HISTORY,
+    }
 }
 
 /// Runs the poll loop on `clock` and returns updates, stamped with game time, as they arrive.
@@ -30,7 +48,7 @@ pub fn start_polling(
                 live_client_url: &url,
                 lockfile: &no_client,
             },
-            &TableFile::new(NO_TABLE.into()),
+            no_files(),
             &no_advice(),
             &clock,
             move |update: LiveUpdate| {
@@ -65,7 +83,7 @@ pub fn start_watching(url: String, lockfile: &Path) -> mpsc::UnboundedReceiver<O
                 live_client_url: &url,
                 lockfile: &lockfile,
             },
-            &TableFile::new(NO_TABLE.into()),
+            no_files(),
             &no_advice(),
             &clock,
             move |update: LiveUpdate| {
@@ -104,7 +122,7 @@ pub fn start_playing_on(
                 live_client_url: &url,
                 lockfile: &lockfile,
             },
-            &table,
+            with_table(&table),
             &no_advice(),
             &clock,
             move |update: LiveUpdate| {
@@ -128,7 +146,7 @@ pub async fn between_games_over(bodies: Vec<Option<&str>>) -> Vec<bool> {
                 live_client_url: &url,
                 lockfile: Path::new("/nonexistent/lockfile"),
             },
-            &TableFile::new(NO_TABLE.into()),
+            no_files(),
             &no_advice(),
             &GameClock::starting_at(0.0),
             move |update: LiveUpdate| {

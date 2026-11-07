@@ -4,6 +4,7 @@
 MOCK_URL := http://127.0.0.1:2998/
 MOCK_LOCKFILE := /tmp/lollipop-mock-lockfile
 MOCK_TABLE := /tmp/lollipop-mock-benchmark-table.json
+MOCK_HISTORY := /tmp/lollipop-mock-history.sqlite
 
 help: ## List the commands
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -15,7 +16,7 @@ dev: ## Run the app against the real League client
 	pnpm tauri dev
 
 dev-mock: ## Run the app against scripts/mock-live-client.mjs, shown while this terminal is frontmost
-	node scripts/mock-live-client.mjs $(MOCK_LOCKFILE) $(MOCK_TABLE) & trap "kill $$!" EXIT; LOLLIPOP_LIVE_URL=$(MOCK_URL) LOLLIPOP_LOCKFILE=$(MOCK_LOCKFILE) LOLLIPOP_BENCHMARK_TABLE=$(MOCK_TABLE) LOLLIPOP_GAME_BUNDLE=$$__CFBundleIdentifier LOLLIPOP_OPENAI_URL=$(MOCK_URL) LOLLIPOP_OPENAI_KEY=sk-mock-dev0 pnpm tauri dev
+	node scripts/mock-live-client.mjs $(MOCK_LOCKFILE) $(MOCK_TABLE) & trap "kill $$!" EXIT; LOLLIPOP_LIVE_URL=$(MOCK_URL) LOLLIPOP_LOCKFILE=$(MOCK_LOCKFILE) LOLLIPOP_BENCHMARK_TABLE=$(MOCK_TABLE) LOLLIPOP_HISTORY=$(MOCK_HISTORY) LOLLIPOP_GAME_BUNDLE=$$__CFBundleIdentifier LOLLIPOP_OPENAI_URL=$(MOCK_URL) LOLLIPOP_OPENAI_KEY=sk-mock-dev0 pnpm tauri dev
 
 build: ## Build the release bundle
 	pnpm tauri build

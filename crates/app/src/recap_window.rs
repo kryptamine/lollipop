@@ -10,7 +10,7 @@ pub(crate) fn open(app: &AppHandle) -> tauri::Result<()> {
     }
     let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("recap.html".into()))
         .title("Recap")
-        .inner_size(640.0, 640.0)
+        .inner_size(640.0, 740.0)
         .resizable(false)
         .maximizable(false)
         .minimizable(false)

@@ -2,6 +2,7 @@
 :root {
   --you: #3d8bf0;
   --usual: #c27d1f;
+  --label: #e6e6e6;
 }
 
 .recap {
@@ -105,7 +106,7 @@
 }
 
 .death {
-  fill: #e6e6e6;
+  fill: var(--label);
   font-size: 10px;
 }
 
@@ -141,7 +142,8 @@
   color: #8d8d92;
 }
 
-.legend-slow::before {
+.legend-slow::before,
+.legend-bar::before {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -149,4 +151,29 @@
   background: rgb(255 255 255 / 12%);
   vertical-align: middle;
   content: '';
+}
+
+.trend-bar rect {
+  fill: var(--you);
+  opacity: 0.45;
+}
+
+.trend-bar.is-latest rect {
+  opacity: 1;
+}
+
+.trend-value {
+  fill: var(--label);
+  font-size: 10px;
+}
+
+.chart .tick-usual {
+  stroke: var(--usual);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.legend-bar::before {
+  border-radius: 2px;
+  background: var(--you);
 }

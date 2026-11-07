@@ -2,13 +2,13 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use lollipop_core::advice::{AdviceCall, Advisor, Language};
-use lollipop_core::delivery::TableFile;
 use lollipop_core::live::{poll, League, LiveGame, LiveUpdate, ShownAdvice};
 use serde_json::{json, Value};
 use tokio::sync::mpsc;
 
 use super::game_clock::GameClock;
 use super::hint_game::no_client;
+use super::polling::no_files;
 use super::server::serve;
 
 pub const KEY: &str = "sk-proj-Fake0123abcd";
@@ -126,7 +126,7 @@ impl LoadingGame {
                     live_client_url: &url,
                     lockfile: &lockfile,
                 },
-                &TableFile::new(NO_TABLE.into()),
+                no_files(),
                 &advisor,
                 &clock,
                 move |update: LiveUpdate| {

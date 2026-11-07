@@ -10,6 +10,7 @@ use super::recap_minute::RecapMinute;
 use super::shown_benchmarks::ShownBenchmarks;
 use super::snapshot::Snapshot;
 use super::stretch::Stretch;
+use super::trend_game::TrendGame;
 use crate::game_inputs::{GameInputs, Tier};
 
 // Fewer minutes seen, as in a remake or a game joined near its end, chart nothing
@@ -24,6 +25,8 @@ pub(super) struct RecapWatch {
     slow_farm: Vec<Stretch>,
     /// Where the CS pace went below, while it still is.
     slow_since: Option<f64>,
+    /// The first reading just past 10:00, `None` for a game joined after it.
+    at_ten: Option<TrendGame>,
     /// The last running poll, read when no poll sees `GameEnd`.
     last: Option<AllGameData>,
 }
@@ -35,6 +38,7 @@ impl RecapWatch {
             minutes: Vec::new(),
             slow_farm: Vec::new(),
             slow_since: None,
+            at_ten: None,
             last: None,
         }
     }
@@ -56,6 +60,9 @@ impl RecapWatch {
                 gold_benchmark: benchmarks.gold,
             });
         }
+        if self.at_ten.is_none() {
+            self.at_ten = TrendGame::read_at(game_time, snapshot.cs, benchmarks.cs);
+        }
         if cs_pace == Some(Marker::Below) {
             self.slow_since.get_or_insert(game_time);
         } else if let Some(from) = self.slow_since.take() {
@@ -74,12 +81,16 @@ impl RecapWatch {
         self.last.as_ref()
     }
 
+    pub(super) const fn at_ten(&self) -> Option<TrendGame> {
+        self.at_ten
+    }
+
     pub(super) fn tier(&self) -> Option<Tier> {
         self.inputs.ranked_tier()
     }
 
-    /// `None` for a game seen too little, or with no player in it. Its Lessons are left
-    /// for the caller to ask for.
+    /// `None` for a game seen too little, or with no player in it. Its Trend and Lessons
+    /// are left to the caller.
     pub(super) fn recap(&self, data: &AllGameData) -> Option<Recap> {
         let player = data.active_player()?;
         let length = data.game_time();
@@ -99,6 +110,7 @@ impl RecapWatch {
             minutes: self.minutes.clone(),
             deaths,
             slow_farm: self.slow_farm.iter().copied().chain(open).collect(),
+            trend: Vec::new(),
             lessons: Lessons::Asking,
         })
     }

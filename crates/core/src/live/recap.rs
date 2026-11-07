@@ -5,6 +5,7 @@ use super::outcome::Outcome;
 use super::recap_minute::RecapMinute;
 use super::scores::Scores;
 use super::stretch::Stretch;
+use super::trend_game::TrendGame;
 use crate::game_inputs::Role;
 
 /// How one game went against its Cell, minute by minute, made once it ends.
@@ -25,5 +26,7 @@ pub struct Recap {
     pub deaths: Vec<f64>,
     /// Where the CS pace Marker was below.
     pub slow_farm: Vec<Stretch>,
+    /// The last ten games on this champion, oldest first, this one last if it reached 10:00.
+    pub trend: Vec<TrendGame>,
     pub lessons: Lessons,
 }

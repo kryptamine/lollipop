@@ -108,6 +108,10 @@ _Avoid_: Heal table, tankiness score
 A pop-up shown shortly before an objective spawns.
 _Avoid_: Timer, alert, notification
 
+**Trend**:
+The player's CS at 10:00 over their last ten games on a champion, each against its own Benchmark, kept on the player's machine and shown in the Recap.
+_Avoid_: History, progress, stats
+
 **Turning point**:
 A moment that changes the game plan, such as an objective taken, an inhibitor down, an Ace or the first turret of the game.
 _Avoid_: Periodic, milestone

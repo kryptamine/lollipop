@@ -1,6 +1,7 @@
 import { useRecap } from './use-recap';
 import { LessonList } from './LessonList';
 import { RecapChart } from './RecapChart';
+import { TrendChart } from './TrendChart';
 import { RecapHeader } from './RecapHeader';
 import { csPoints, goldPoints } from './recap-points';
 
@@ -11,7 +12,7 @@ export const RecapWindow = () => {
     return <main class="recap-empty">The Recap shows here once a game ends.</main>;
   }
 
-  const { minutes, deaths, slowFarm, length, lessons } = recap;
+  const { champion, minutes, deaths, slowFarm, length, trend, lessons } = recap;
   const gold = goldPoints(minutes);
 
   return (
@@ -24,6 +25,7 @@ export const RecapWindow = () => {
         slowFarm={slowFarm}
         length={length}
       />
+      {trend.length > 1 && <TrendChart champion={champion} trend={trend} />}
       {gold.length > 0 && (
         <RecapChart
           title="Gold earned"

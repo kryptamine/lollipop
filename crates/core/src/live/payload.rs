@@ -323,11 +323,14 @@ impl Player {
     /// The name a Benchmark Cell goes by. `rawChampionName` carries Match-V5's id and,
     /// unlike `championName`, should not follow the client's language.
     pub(super) fn cell_champion(&self) -> Option<&str> {
-        let raw = self
-            .raw_champion_name
+        self.champion_id().or(self.champion_name.as_deref())
+    }
+
+    /// Match-V5's id, `None` when `rawChampionName` does not carry it.
+    pub(super) fn champion_id(&self) -> Option<&str> {
+        self.raw_champion_name
             .as_deref()
-            .and_then(|raw| raw.strip_prefix(RAW_CHAMPION_PREFIX));
-        raw.or(self.champion_name.as_deref())
+            .and_then(|raw| raw.strip_prefix(RAW_CHAMPION_PREFIX))
     }
 
     pub(super) fn item_ids(&self) -> Vec<u32> {
