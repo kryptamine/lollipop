@@ -1,13 +1,12 @@
 use std::time::Instant;
 
-use super::trigger::Trigger;
-
-/// What one Trigger asks OpenAI.
+/// What one Trigger, or a Recap, asks OpenAI.
 #[derive(Debug)]
 pub(crate) struct Question<'a> {
-    pub(crate) trigger: Trigger,
+    /// What the log names the asker by, such as a Trigger's id.
+    pub(crate) asker: &'static str,
     pub(crate) instructions: &'a str,
     pub(crate) input: &'a str,
-    /// When the Trigger drops a late answer.
+    /// When the asker drops a late answer.
     pub(crate) deadline: Instant,
 }

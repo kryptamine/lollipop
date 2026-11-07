@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use super::event_name::EventName;
 use super::gold_earned::ItemCounts;
+use super::outcome::Outcome;
 use super::team::Team;
 
 const RAW_CHAMPION_PREFIX: &str = "game_character_displayname_";
@@ -153,6 +154,9 @@ pub(super) struct Event {
     inhib_killed: Option<String>,
     #[serde(default, deserialize_with = "Team::deserialize_or_none")]
     acing_team: Option<Team>,
+    /// `Win` or `Lose`, on `GameEnd` only.
+    #[serde(rename = "Result")]
+    result: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -254,6 +258,15 @@ impl AllGameData {
         event.acing_team.or_else(|| self.killer_team(event))
     }
 
+    /// Every kill of `player`, by anything, oldest first.
+    pub(super) fn deaths_of<'a>(&'a self, player: &'a Player) -> impl Iterator<Item = &'a Event> {
+        self.events_named(EventName::ChampionKill).filter(|kill| {
+            kill.victim_name
+                .as_deref()
+                .is_some_and(|victim| player.goes_by(victim))
+        })
+    }
+
     /// `None` also for a name two players go by: a game name is not unique, and picking
     /// one of them could miscount the Elder rule or blame the wrong killer.
     pub(super) fn player_named(&self, name: &str) -> Option<&Player> {
@@ -288,6 +301,10 @@ impl Event {
 
     pub(super) fn dragon_type(&self) -> Option<&str> {
         self.dragon_type.as_deref()
+    }
+
+    pub(super) fn outcome(&self) -> Option<Outcome> {
+        Outcome::parse(self.result.as_deref()?)
     }
 }
 

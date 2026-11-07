@@ -8,6 +8,8 @@ use super::asked::Asked;
 use super::failure::Failure;
 use super::key_failure::KeyFailure;
 use super::language::Language;
+use super::lessons_answer::read_lessons;
+use super::lessons_off::LessonsOff;
 use super::openai::OpenAi;
 use super::question::Question;
 use super::request_guard::{Request, RequestGuard, REQUESTS_PER_GAME};
@@ -22,6 +24,7 @@ const RETRY_LEFT: Duration = Duration::from_secs(4);
 const UNREACHABLE: &str = "Advice unavailable: could not reach OpenAI";
 
 type CallFor = Arc<dyn Fn(Trigger) -> Option<AdviceCall> + Send + Sync>;
+type LessonsCall = Arc<dyn Fn() -> Result<AdviceCall, LessonsOff> + Send + Sync>;
 type Log = Arc<dyn Fn(&str) + Send + Sync>;
 type OnKeyFailure = Arc<dyn Fn(KeyFailure) + Send + Sync>;
 type LanguageNow = Arc<dyn Fn() -> Language + Send + Sync>;
@@ -32,6 +35,7 @@ type LanguageNow = Arc<dyn Fn() -> Language + Send + Sync>;
 pub struct Advisor {
     openai: OpenAi,
     call_for: CallFor,
+    lessons_call: LessonsCall,
     log: Log,
     on_key_failure: OnKeyFailure,
     language: LanguageNow,
@@ -46,6 +50,7 @@ impl Advisor {
         Self {
             openai: OpenAi::new(base_url),
             call_for: Arc::new(call_for),
+            lessons_call: Arc::new(|| Err(LessonsOff::NoKey)),
             log: Arc::new(|_| {}),
             on_key_failure: Arc::new(|_| {}),
             language: Arc::new(|| Language::English),
@@ -53,10 +58,21 @@ impl Advisor {
         }
     }
 
-    /// Each line names the Trigger, never the key, the prompt or the answer.
+    /// Each line names the Trigger or the Lessons, never the key, the prompt or the answer.
     #[must_use]
     pub fn logging_to(mut self, log: impl Fn(&str) + Send + Sync + 'static) -> Self {
         self.log = Arc::new(log);
+        self
+    }
+
+    /// Asked as each Recap is made, as `call_for` is for a Trigger. With none, no
+    /// Lessons are asked for.
+    #[must_use]
+    pub fn reviewing(
+        mut self,
+        lessons_call: impl Fn() -> Result<AdviceCall, LessonsOff> + Send + Sync + 'static,
+    ) -> Self {
+        self.lessons_call = Arc::new(lessons_call);
         self
     }
 
@@ -85,6 +101,13 @@ impl Advisor {
         (self.call_for)(trigger)
     }
 
+    pub(crate) fn lessons_call(&self) -> Result<AdviceCall, LessonsOff> {
+        if self.guard().key_failed() {
+            return Err(LessonsOff::KeyRefused);
+        }
+        (self.lessons_call)()
+    }
+
     /// Even the key OpenAI refused: a spent quota comes back once the project is paid.
     pub fn key_saved(&self) {
         self.guard().set_key_failed(false);
@@ -98,9 +121,43 @@ impl Advisor {
         (self.log)(line);
     }
 
-    /// One retry for a failure it may mend, if the deadline leaves time for it.
     pub(crate) async fn ask(&self, call: &AdviceCall, question: &Question<'_>) -> Asked {
         let request = ResponsesRequest::new(question.instructions, question.input);
+        match self.answer(call, question, &request, Answer::read).await {
+            Some(Ok(answer)) => Asked::Answered(answer),
+            Some(Err(failure)) => self.after(failure),
+            None => Asked::Nothing,
+        }
+    }
+
+    /// A Recap's Lessons, `None` when OpenAI failed, as the log says. A failure here
+    /// never spends the next game's one "could not reach OpenAI".
+    pub(crate) async fn review(
+        &self,
+        call: &AdviceCall,
+        question: &Question<'_>,
+    ) -> Option<Vec<String>> {
+        let request = ResponsesRequest::for_lessons(question.instructions, question.input);
+        match self.answer(call, question, &request, read_lessons).await? {
+            Ok(lessons) => Some(lessons),
+            Err(failure) => {
+                if let Some(key_failure) = failure.key_failure() {
+                    self.refuse_key(key_failure);
+                }
+                None
+            }
+        }
+    }
+
+    /// One retry for a failure it may mend, if the deadline leaves time for it. `None`
+    /// once the game's requests are spent.
+    async fn answer<T>(
+        &self,
+        call: &AdviceCall,
+        question: &Question<'_>,
+        request: &ResponsesRequest<'_>,
+        read: fn(&str) -> Result<T, Failure>,
+    ) -> Option<Result<T, Failure>> {
         let started = Instant::now();
         let mut retried = false;
         loop {
@@ -110,16 +167,16 @@ impl Advisor {
                 Request::CapReached => {
                     (self.log)(&format!(
                         "Advice {}: dropped, {REQUESTS_PER_GAME} OpenAI requests this game",
-                        question.trigger.id()
+                        question.asker
                     ));
-                    return Asked::Nothing;
+                    return None;
                 }
-                Request::Refused => return Asked::Nothing,
+                Request::Refused => return None,
             }
             let timeout =
                 CALL_TIMEOUT.min(question.deadline.saturating_duration_since(Instant::now()));
-            let failure = match self.attempt(call, &request, timeout).await {
-                Ok(answer) => return Asked::Answered(answer),
+            let failure = match self.attempt(call, request, timeout, read).await {
+                Ok(answer) => return Some(Ok(answer)),
                 Err(failure) => failure,
             };
             if let Some(wait) = retry_wait(failure, question.deadline).filter(|_| !retried) {
@@ -129,35 +186,40 @@ impl Advisor {
             }
             (self.log)(&format!(
                 "Advice {}: {failure} after {} ms, retried: {retried}",
-                question.trigger.id(),
+                question.asker,
                 started.elapsed().as_millis()
             ));
-            return self.after(failure);
+            return Some(Err(failure));
         }
     }
 
-    async fn attempt(
+    async fn attempt<T>(
         &self,
         call: &AdviceCall,
         request: &ResponsesRequest<'_>,
         timeout: Duration,
-    ) -> Result<Answer, Failure> {
+        read: fn(&str) -> Result<T, Failure>,
+    ) -> Result<T, Failure> {
         if timeout.is_zero() {
             return Err(Failure::Timeout);
         }
-        self.openai.attempt(&call.key, request, timeout).await
+        self.openai.attempt(&call.key, request, timeout, read).await
     }
 
     fn after(&self, failure: Failure) -> Asked {
         if let Some(key_failure) = failure.key_failure() {
-            self.guard().set_key_failed(true);
-            (self.on_key_failure)(key_failure);
+            self.refuse_key(key_failure);
             return Asked::Unavailable(key_failure.widget_text());
         }
         if failure.is_unreachable() && self.guard().say_unreachable() {
             return Asked::Unavailable(UNREACHABLE);
         }
         Asked::Nothing
+    }
+
+    fn refuse_key(&self, failure: KeyFailure) {
+        self.guard().set_key_failed(true);
+        (self.on_key_failure)(failure);
     }
 
     fn guard(&self) -> MutexGuard<'_, RequestGuard> {

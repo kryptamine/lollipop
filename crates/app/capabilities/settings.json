@@ -15,6 +15,8 @@
     "allow-read-openai-key-failure",
     "allow-save-openai-key",
     "allow-remove-openai-key",
-    "allow-open-openai-usage"
+    "allow-open-openai-usage",
+    "allow-set-recap-window",
+    "allow-set-lessons"
   ]
 }

@@ -5,6 +5,8 @@ import {
   readSwitches,
   setAdviceLanguage,
   setLaunchAtLogin,
+  setLessons,
+  setRecapWindow,
   setTrigger,
   setVoiceover,
   setWidget,
@@ -21,6 +23,8 @@ export type SwitchControls = {
   onLanguageChange: (language: AdviceLanguage) => void;
   onLaunchAtLoginChange: (isOn: boolean) => void;
   onVoiceoverChange: (isOn: boolean) => void;
+  onRecapWindowChange: (isOn: boolean) => void;
+  onLessonsChange: (isOn: boolean) => void;
 };
 
 // The switches as the app kept them, `undefined` until it has answered.
@@ -70,6 +74,12 @@ export const useSwitches = (): SwitchControls | undefined => {
     },
     onVoiceoverChange: (isOn) => {
       void show(setVoiceover(isOn));
+    },
+    onRecapWindowChange: (isOn) => {
+      void show(setRecapWindow(isOn));
+    },
+    onLessonsChange: (isOn) => {
+      void show(setLessons(isOn));
     },
   };
 };

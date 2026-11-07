@@ -57,6 +57,18 @@ pub(crate) fn set_voiceover(store: State<'_, SettingsStore>, is_on: bool) -> Swi
     store.read(Settings::switches)
 }
 
+#[tauri::command]
+pub(crate) fn set_recap_window(store: State<'_, SettingsStore>, is_on: bool) -> Switches {
+    store.change(|settings| settings.recap.window = is_on);
+    store.read(Settings::switches)
+}
+
+#[tauri::command]
+pub(crate) fn set_lessons(store: State<'_, SettingsStore>, is_on: bool) -> Switches {
+    store.change(|settings| settings.recap.lessons = is_on);
+    store.read(Settings::switches)
+}
+
 /// For the Advice language as kept now; the window asks again when it changes.
 #[tauri::command]
 pub(crate) fn read_voice_installed(voiceover: State<'_, Voiceover>) -> bool {

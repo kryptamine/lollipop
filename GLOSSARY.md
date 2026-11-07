@@ -57,6 +57,10 @@ _Avoid_: Recommended item, suggestion
 The enemy, or for the bottom lane the enemy pair, playing the same position as the active player.
 _Avoid_: Matchup, counterpart
 
+**Lesson**:
+One thing a model says the player should do differently next game, grounded in a Recap. A Recap has at most three, most costly first.
+_Avoid_: Takeaway, tip, insight
+
 **Marker**:
 The glyph beside a metric: a green or red triangle when the player is above or below its Benchmark by more than the Neutral zone, and nothing within it.
 _Avoid_: Arrow, indicator, delta
@@ -79,6 +83,10 @@ The patches whose matches a Benchmark table is built from.
 **Proposal**:
 What a Trigger's answer may change in the Build: the Next item, a Swap or an Elixir. Which ones it may propose depends on the Trigger.
 _Avoid_: Capability, build proposal
+
+**Recap**:
+How one game went against its Cell, minute by minute, with the player's deaths, the stretches of slow farm and its Lessons. It is made once the game ends and shown in a window of its own.
+_Avoid_: Post-game review, summary, report
 
 **Stale table**:
 A Benchmark table that cannot serve the patch of the game being played.

@@ -1,5 +1,6 @@
 use super::build_item::BuildItem;
 use super::live_game::LiveGame;
+use super::recap_news::RecapNews;
 use super::shown_swap::ShownSwap;
 
 /// What one poll saw.
@@ -16,4 +17,5 @@ pub struct LiveUpdate {
     /// League answers nothing and holds no game: a failed poll mid-match or the
     /// next game's loading screen is not between games.
     pub between_games: bool,
+    pub recap: RecapNews,
 }

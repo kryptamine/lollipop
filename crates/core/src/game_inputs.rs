@@ -2,6 +2,7 @@
 
 mod champ_select;
 mod client_inputs;
+mod client_phase;
 mod client_reading;
 mod connection;
 mod gameflow_session;
@@ -20,6 +21,7 @@ use connection::Connection;
 use lockfile::Lockfile;
 
 pub use client_inputs::ClientInputs;
+pub(crate) use client_phase::ClientPhase;
 pub use client_reading::ClientReading;
 pub(crate) use loading_patch::loading_patch;
 pub(crate) use loading_tier::loading_tier;
@@ -60,6 +62,20 @@ impl GameInputs {
             champion,
             role,
             client,
+        }
+    }
+}
+
+impl GameInputs {
+    /// The solo/duo tier, `None` when the client was not read or the player is unranked.
+    #[must_use]
+    pub const fn ranked_tier(&self) -> Option<Tier> {
+        match &self.client {
+            ClientInputs::Read(ClientReading {
+                tier: TierReading::Ranked(tier),
+                ..
+            }) => Some(*tier),
+            _ => None,
         }
     }
 }

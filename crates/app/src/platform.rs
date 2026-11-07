@@ -11,6 +11,6 @@ use fallback as os;
 use macos as os;
 
 pub(crate) use os::{
-    hide_app, keep_focus_off, keychain, order_in_hidden, run_as_accessory, set_shown, speak,
-    stop_speaking, system_locale, voice_installed, watch_frontmost,
+    hide_app, keep_focus_off, keychain, order_in_hidden, run_as_accessory, set_shown,
+    show_without_focus, speak, stop_speaking, system_locale, voice_installed, watch_frontmost,
 };

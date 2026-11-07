@@ -32,9 +32,9 @@ in part. This replaces the switches in the MVP's menu bar.
 
 | Tab | Rows |
 | --- | --- |
-| General | Launch at login |
+| General | Launch at login · After a game: Recap after a game |
 | Overlay | Marker strip, Timing hints, Build, Advice Widget |
-| Advice | OpenAI: API key · Advice: Language, Loading screen, Death, Turning points · Voiceover: Read Advice aloud |
+| Advice | OpenAI: API key · Advice: Language, Loading screen, Death, Turning points · Recap: Lessons after a game · Voiceover: Read Advice aloud |
 
 - **Advice Widget switch** is the only Advice on/off. Off: no OpenAI calls. It
   defaults on like every Widget, but is disabled with no key, subtitled "Add an
@@ -43,7 +43,8 @@ in part. This replaces the switches in the MVP's menu bar.
   "The Advice Widget is off. Turn it on in Overlay", the link switching tabs. The
   Advice and Voiceover groups grey out and stay visible; the key stays editable.
 - **Language:** system default, ru or en. Every Trigger uses it.
-- **Trigger switches:** three, all on by default.
+- **Trigger switches:** three, all on by default. "Lessons after a game" is no
+  Trigger: it only asks for a Recap's Lessons ([`recap.md`](recap.md)).
 - **Disabled reasons** show as the row's subtitle.
 
 ## OpenAI key
@@ -455,7 +456,7 @@ One pull request each, in this order of blocking:
 
 ## Out of scope
 
-- Champ select Advice and post-game review.
+- Champ select Advice. Post-game review is the Recap's: see [`recap.md`](recap.md).
 - Choosing the model, and providers other than OpenAI.
 - An OpenAI voice for Voiceover: its Speech models shut down 2027-01-06.
 - Researching Riot policy ([ADR 0013](../adr/0013-advice-accepts-riot-policy-risk.md)).

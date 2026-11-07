@@ -1,6 +1,7 @@
 //! What the player chose in the settings window, kept in a local file.
 
 mod advice_language;
+mod recap_settings;
 mod switches;
 mod widget;
 
@@ -10,9 +11,10 @@ use std::{fs, io};
 
 use serde::{Deserialize, Serialize};
 
-use crate::advice::{AdviceCall, Trigger, TRIGGERS};
+use crate::advice::{AdviceCall, LessonsOff, Trigger, TRIGGERS};
 
 pub use advice_language::AdviceLanguage;
+pub use recap_settings::RecapSettings;
 pub use switches::Switches;
 pub use widget::{Widget, ADVICE_WIDGET, BUILD_WIDGET, WIDGETS};
 
@@ -26,6 +28,7 @@ pub struct Settings {
     pub launch_at_login: bool,
     pub advice_language: AdviceLanguage,
     pub voiceover: bool,
+    pub recap: RecapSettings,
 }
 
 impl Settings {
@@ -90,6 +93,30 @@ impl Settings {
         })
     }
 
+    /// Why OpenAI stays uncalled for a Recap's Lessons, if it does.
+    ///
+    /// # Errors
+    /// The first reason that holds, the Recap window off before all others.
+    pub fn lessons_call(
+        &self,
+        key: Option<String>,
+        system_locale: Option<&str>,
+    ) -> Result<AdviceCall, LessonsOff> {
+        if !self.recap.window {
+            return Err(LessonsOff::RecapOff);
+        }
+        if !self.widget_on(ADVICE_WIDGET) {
+            return Err(LessonsOff::AdviceWidgetOff);
+        }
+        if !self.recap.lessons {
+            return Err(LessonsOff::SwitchedOff);
+        }
+        Ok(AdviceCall {
+            key: key.ok_or(LessonsOff::NoKey)?,
+            language: self.advice_language.language(system_locale),
+        })
+    }
+
     /// Voiceover reads only what the Advice Widget shows, so it needs the Widget on.
     #[must_use]
     pub fn reads_aloud(&self) -> bool {
@@ -122,6 +149,7 @@ impl Settings {
                 .collect(),
             advice_language: self.advice_language,
             voiceover: self.voiceover,
+            recap: self.recap,
         }
     }
 }
