@@ -432,7 +432,7 @@ Still open:
 
 ## Out of scope
 
-Wave and cannon Timing hints, despawn hints, monetization, Windows, post-match
-statistics, data about enemy players, user accounts, and options beyond the
-settings above. After the MVP, every option should become a setting, which will
+Wave and cannon Timing hints, despawn hints, monetization, Windows, data about
+enemy players, user accounts, and options beyond the settings above. Post-match
+statistics are the Recap's: see [`recap.md`](recap.md). After the MVP, every option should become a setting, which will
 need a window that takes focus.

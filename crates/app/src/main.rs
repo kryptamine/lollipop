@@ -2,12 +2,15 @@
 
 mod advice_source;
 mod key_save;
+mod last_recap;
 mod launch_at_login;
 mod menu_bar;
 mod openai_key;
 mod openai_key_commands;
 mod overlay;
 mod platform;
+mod recap_commands;
+mod recap_window;
 mod settings_commands;
 mod settings_store;
 mod settings_window;
@@ -18,6 +21,7 @@ mod voiceover;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use last_recap::LastRecap;
 use lollipop_core::delivery::TableFile;
 use lollipop_core::game_inputs::LOCKFILE_PATH;
 use lollipop_core::live::{poll, status_line, League, LiveUpdate, SystemClock, LIVE_CLIENT_URL};
@@ -57,6 +61,7 @@ async fn publish_live_client(
     let voiceover = app.state::<Voiceover>().inner().clone();
     let advisor = advice_source::advisor(app.clone(), store.clone(), key);
     app.manage(advisor.clone());
+    let last_recap = app.state::<LastRecap>().inner().clone();
     let mut shown_status = status_line(None);
     let mut was_running = false;
     let on_update = move |update: LiveUpdate| {
@@ -66,6 +71,7 @@ async fn publish_live_client(
             build_change,
             swap,
             between_games,
+            recap,
         } = update;
         let running = game.is_some();
         if running && !was_running {
@@ -85,6 +91,7 @@ async fn publish_live_client(
         let _ = app.emit("build", &build);
         let _ = app.emit("build-change", &build_change);
         let _ = app.emit("swap", &swap);
+        last_recap.show(recap);
         voiceover.show(
             game.as_ref().and_then(|game| game.advice.clone()),
             build_change,
@@ -132,6 +139,9 @@ fn main() {
             settings_commands::set_launch_at_login,
             settings_commands::set_voiceover,
             settings_commands::read_voice_installed,
+            settings_commands::set_recap_window,
+            settings_commands::set_lessons,
+            recap_commands::read_recap,
             openai_key_commands::read_openai_key,
             openai_key_commands::read_openai_key_failure,
             openai_key_commands::save_openai_key,
@@ -146,6 +156,7 @@ fn main() {
             let _ = launch_at_login::apply(app.handle(), launch_on_login);
             app.manage(store.clone());
             app.manage(OpenAiKey::open());
+            app.manage(LastRecap::new(app.handle().clone()));
             let status = menu_bar::install(app.handle())?;
             // A debug build would replace itself with the latest release.
             if !cfg!(debug_assertions) {

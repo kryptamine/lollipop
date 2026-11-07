@@ -1,3 +1,5 @@
+use serde::{Serialize, Serializer};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Role {
     Top,
@@ -30,5 +32,12 @@ impl Role {
             Self::Bottom => "Bot",
             Self::Support => "Support",
         }
+    }
+}
+
+/// As the view shows it, by its label.
+impl Serialize for Role {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.label())
     }
 }

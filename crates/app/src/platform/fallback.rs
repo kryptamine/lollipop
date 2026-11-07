@@ -25,6 +25,10 @@ pub(crate) fn set_shown(_: &WebviewWindow, _: bool) -> tauri::Result<()> {
     Ok(())
 }
 
+pub(crate) fn show_without_focus(window: &WebviewWindow) -> tauri::Result<()> {
+    window.show()
+}
+
 pub(crate) fn watch_frontmost(_: impl Fn(Option<String>) + 'static) {}
 
 pub(crate) fn system_locale() -> Option<String> {

@@ -9,6 +9,7 @@ pub mod item_game;
 pub mod loading_game;
 pub mod marker_game;
 pub mod polling;
+pub mod recap_game;
 pub mod recorded_game;
 pub mod scripted_game;
 pub mod server;

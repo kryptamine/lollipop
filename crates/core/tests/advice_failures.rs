@@ -54,9 +54,16 @@ impl Advised {
             Arc::clone(&log),
             Arc::clone(&key_failures),
         );
+        let lessons_key = Arc::clone(&saved);
         let advisor = Advisor::new(&openai.url, move |_| {
             Some(AdviceCall {
                 key: saved.lock().unwrap().clone(),
+                language: Language::Russian,
+            })
+        })
+        .reviewing(move || {
+            Ok(AdviceCall {
+                key: lessons_key.lock().unwrap().clone(),
                 language: Language::Russian,
             })
         })
@@ -219,6 +226,24 @@ async fn openai_unreachable_is_said_once_per_game() {
     assert!(shows_nothing(&advised.shown_in_game().await));
 
     advised.next_game().await;
+    advised.wait_for_log(3).await;
+    assert!(says(&advised.shown_in_game().await, UNREACHABLE));
+}
+
+// A Recap asks for its Lessons once the game is over, and their failure must not use
+// up the next game's one notice that OpenAI is unreachable.
+#[tokio::test]
+async fn a_failed_recap_leaves_the_next_game_its_unreachable_notice() {
+    let mut advised = Advised::replying(vec![Reply::Hangup]).await;
+    advised.wait_for_log(1).await;
+    advised.game.start_game_at(0.0);
+    // Five minutes of game, the least a Recap is made of.
+    shown_over(&mut advised.updates, 301).await;
+    advised.game.end_game();
+    advised.wait_for_log(2).await;
+    assert!(advised.log()[1].starts_with("Advice lessons: "));
+
+    advised.game.back_to_loading_screen();
     advised.wait_for_log(3).await;
     assert!(says(&advised.shown_in_game().await, UNREACHABLE));
 }

@@ -13,6 +13,9 @@ fn main() {
         "save_openai_key",
         "remove_openai_key",
         "open_openai_usage",
+        "set_recap_window",
+        "set_lessons",
+        "read_recap",
     ];
     let attributes = tauri_build::Attributes::new()
         .app_manifest(tauri_build::AppManifest::new().commands(commands));

@@ -115,7 +115,7 @@ impl AdviceAsk {
         let answer = PendingAnswer::spawn(async move {
             let input = input.await + &options;
             let question = Question {
-                trigger,
+                asker: trigger.id(),
                 instructions: &instructions,
                 input: &input,
                 deadline,

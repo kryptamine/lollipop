@@ -3,7 +3,6 @@ use std::time::Duration;
 use reqwest::header::RETRY_AFTER;
 use reqwest::StatusCode;
 
-use super::answer::Answer;
 use super::failure::Failure;
 use super::responses_request::ResponsesRequest;
 use super::USER_AGENT;
@@ -23,13 +22,14 @@ impl OpenAi {
         }
     }
 
-    /// One request, with no retry.
-    pub(super) async fn attempt(
+    /// One request, with no retry, its body read by `read`.
+    pub(super) async fn attempt<T>(
         &self,
         key: &str,
         request: &ResponsesRequest<'_>,
         timeout: Duration,
-    ) -> Result<Answer, Failure> {
+        read: fn(&str) -> Result<T, Failure>,
+    ) -> Result<T, Failure> {
         let response = self
             .http
             .post(format!("{}/v1/responses", self.base_url))
@@ -53,7 +53,7 @@ impl OpenAi {
         if !status.is_success() {
             return Err(Failure::Status(status.as_u16()));
         }
-        Answer::read(&response.text().await.map_err(|error| failure_of(&error))?)
+        read(&response.text().await.map_err(|error| failure_of(&error))?)
     }
 }
 

@@ -10,6 +10,7 @@ use super::game_facts::GameFacts;
 use super::game_hints::GameHints;
 use super::game_markers::GameMarkers;
 use super::game_notices::notices_of;
+use super::game_recap::GameRecap;
 use super::gold_earned::GoldEarned;
 use super::held_loading_screen::HeldLoadingScreen;
 use super::inputs_of_game::InputsOfGame;
@@ -61,30 +62,37 @@ pub async fn poll(
         hints: GameHints::default(),
         advice: GameAdvice::new(&http, league.lockfile, advisor),
         build: GameBuild::new(&http, league.lockfile, benchmark_table),
+        recap: GameRecap::new(advisor),
         notices: Arc::from([]),
     };
     loop {
         let data = fetch(&http, league.live_client_url).await;
         let language = advisor.language();
-        let update = match &data {
-            Some(data) => game.update(data, language).await,
-            None => None,
+        let update = if let Some(data) = &data {
+            game.update(data, language).await
+        } else {
+            game.recap.live_client_gone(&http, league.lockfile).await;
+            None
         };
         let between_games = data.is_none() && game.failed_poll_ends_game();
         if between_games {
             game.end_game();
         }
         let (build, build_change, swap) = game.build.shown(data.as_ref(), language);
+        let recap = game.recap.news().await;
         on_update(LiveUpdate {
             game: update,
             build,
             build_change,
             swap,
             between_games,
+            recap,
         });
-        // A failed poll does not end a game, so a game still held rules out a swap too.
-        if !data.is_some_and(|data| data.match_running()) && !game.inputs.holds_game() {
-            benchmark_table.swap_staged();
+        match data.filter(AllGameData::match_running) {
+            Some(running) => game.recap.keep(running),
+            // A failed poll does not end a game, so a game still held rules out a swap too.
+            None if !game.inputs.holds_game() => benchmark_table.swap_staged(),
+            None => {}
         }
         clock.sleep(POLL_INTERVAL).await;
     }
@@ -107,6 +115,7 @@ struct CurrentGame<'a> {
     hints: GameHints,
     advice: GameAdvice,
     build: GameBuild<'a>,
+    recap: GameRecap,
     notices: Arc<[Notice]>,
 }
 
@@ -139,7 +148,9 @@ impl CurrentGame<'_> {
         }
         if !data.match_running() {
             if data.game_ended() {
+                // First, so the Lessons count against the fresh budget end_game gives.
                 self.end_game();
+                self.recap.game_ended(data);
             }
             self.gold_earned.end_game();
             self.end_held_game();
@@ -161,6 +172,8 @@ impl CurrentGame<'_> {
                 .observe(data.game_time(), player.scores.creep_score),
         };
         let (markers, benchmarks) = self.markers.at(data.game_time(), &snapshot);
+        self.recap
+            .observe(data.game_time(), &snapshot, &benchmarks, markers.cs_pace);
         let facts = GameFacts {
             snapshot: &snapshot,
             benchmarks: &benchmarks,
@@ -207,6 +220,8 @@ impl CurrentGame<'_> {
         self.markers = GameMarkers::start(table, &inputs, player.cell_champion());
         self.cs_pace = CsPaceWatch::default();
         self.hints = GameHints::start(&inputs);
-        self.inputs.hold(game_time, inputs)
+        let inputs = self.inputs.hold(game_time, inputs);
+        self.recap.start(Arc::clone(&inputs));
+        inputs
     }
 }

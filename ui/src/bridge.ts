@@ -2,11 +2,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
-export type Scores = {
-  kills: number;
-  deaths: number;
-  assists: number;
-};
+import type { Scores } from './scores';
+import type { Recap } from './recap-types';
 
 export type Snapshot = {
   cs: number;
@@ -62,12 +59,19 @@ export type TriggerId = keyof TriggerSwitches;
 
 export type AdviceLanguage = 'system' | 'en' | 'ru';
 
+// Both on until the player turns them off.
+export type RecapSwitches = {
+  window: boolean;
+  lessons: boolean;
+};
+
 export type Switches = {
   launchAtLogin: boolean;
   widgets: WidgetSwitches;
   triggers: TriggerSwitches;
   adviceLanguage: AdviceLanguage;
   voiceover: boolean;
+  recap: RecapSwitches;
 };
 
 // What the Advice Widget shows; `timeLeft` runs from 1 down to 0 over its time on screen.
@@ -116,8 +120,18 @@ export const setLaunchAtLogin = (isOn: boolean): Promise<Switches> =>
 export const setVoiceover = (isOn: boolean): Promise<Switches> =>
   invoke<Switches>('set_voiceover', { isOn });
 
+export const setRecapWindow = (isOn: boolean): Promise<Switches> =>
+  invoke<Switches>('set_recap_window', { isOn });
+
+export const setLessons = (isOn: boolean): Promise<Switches> =>
+  invoke<Switches>('set_lessons', { isOn });
+
 // For the Advice language the app keeps now, so ask again once it changes.
 export const isVoiceInstalled = (): Promise<boolean> => invoke<boolean>('read_voice_installed');
+
+// The last game's Recap, null before any game ended in this run.
+export const readRecap = async (): Promise<Recap | undefined> =>
+  (await invoke<Recap | null>('read_recap')) ?? undefined;
 
 type SaveFailure = 'rejected' | 'unreachable' | 'notKept';
 
@@ -240,6 +254,14 @@ export const onOpenAiKeyFailure = (handler: (failure: GameKeyFailure) => void): 
 export const onWidgetSwitches = (handler: (switches: WidgetSwitches) => void): (() => void) =>
   stopWith(
     listen<WidgetSwitches>('widget-switches', ({ payload }) => {
+      handler(payload);
+    }),
+  );
+
+// Sent when a Recap is made, and again when its Lessons arrive.
+export const onRecap = (handler: (recap: Recap) => void): (() => void) =>
+  stopWith(
+    listen<Recap>('recap', ({ payload }) => {
       handler(payload);
     }),
   );

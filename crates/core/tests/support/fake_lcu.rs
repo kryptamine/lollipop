@@ -70,6 +70,19 @@ impl FakeLcu {
         routes.insert(path.to_string(), body.to_string());
     }
 
+    /// Sets a route, or with `None` removes it, from a closure the test hands elsewhere,
+    /// such as a fake server.
+    pub fn router(&self) -> impl Fn(&str, Option<&str>) + Send + Sync + 'static {
+        let routes = Arc::clone(&self.routes);
+        move |path, body| {
+            let mut routes = routes.lock().unwrap();
+            match body {
+                Some(body) => routes.insert(path.to_string(), body.to_string()),
+                None => routes.remove(path),
+            };
+        }
+    }
+
     pub fn remove(&self, path: &str) {
         self.routes.lock().unwrap().remove(path);
     }

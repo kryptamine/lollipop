@@ -9,7 +9,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use lollipop_core::advice::{AdviceCall, Language, Trigger, TRIGGERS};
+use lollipop_core::advice::{AdviceCall, Language, LessonsOff, Trigger, TRIGGERS};
 use lollipop_core::settings::{AdviceLanguage, Settings, ADVICE_WIDGET, BUILD_WIDGET, WIDGETS};
 use serde_json::json;
 use tempfile::TempDir;
@@ -135,6 +135,7 @@ fn the_settings_window_is_told_every_switch() {
             },
             "adviceLanguage": "system",
             "voiceover": false,
+            "recap": { "window": true, "lessons": true },
         })
     );
 }
@@ -257,6 +258,47 @@ fn voiceover_starts_off_and_survives_a_restart() {
     settings.voiceover = true;
     settings.save(&path).unwrap();
     assert!(Settings::load(&path).reads_aloud());
+}
+
+// A file from before the Recap has no such field, and a new setting starts on.
+#[test]
+fn the_recap_window_starts_on_and_survives_a_restart() {
+    let (_dir, path) = settings_file();
+    std::fs::write(&path, r#"{ "launchAtLogin": true }"#).unwrap();
+    let mut settings = Settings::load(&path);
+    assert!(settings.recap.window);
+
+    settings.recap.window = false;
+    settings.save(&path).unwrap();
+    assert!(!Settings::load(&path).recap.window);
+}
+
+// The Recap window names the first reason, and with the window off nobody would see them.
+#[test]
+fn lessons_say_why_they_are_not_asked_for() {
+    let key = || Some(KEY.to_string());
+    let mut settings = Settings::default();
+    assert!(settings.lessons_call(key(), None).is_ok());
+    assert_eq!(
+        settings.lessons_call(None, None).unwrap_err(),
+        LessonsOff::NoKey
+    );
+
+    settings.recap.lessons = false;
+    assert_eq!(
+        settings.lessons_call(key(), None).unwrap_err(),
+        LessonsOff::SwitchedOff
+    );
+    settings.set_widget("adviceWidget", false);
+    assert_eq!(
+        settings.lessons_call(key(), None).unwrap_err(),
+        LessonsOff::AdviceWidgetOff
+    );
+    settings.recap.window = false;
+    assert_eq!(
+        settings.lessons_call(key(), None).unwrap_err(),
+        LessonsOff::RecapOff
+    );
 }
 
 // Voiceover reads only what the Widget shows, so the Widget off silences it.

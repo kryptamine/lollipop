@@ -2,6 +2,7 @@ import { AdviceTab } from './AdviceTab';
 import { GeneralTab } from './GeneralTab';
 import { OverlayTab } from './OverlayTab';
 import { AdviceGroup } from './AdviceGroup';
+import { LessonsGroup } from './LessonsGroup';
 import { VoiceoverGroup } from './VoiceoverGroup';
 import type { SettingsTab } from './SettingsToolbar';
 import type { SwitchControls } from './use-switches';
@@ -16,36 +17,30 @@ type ShownTabProps = {
   onOverlayOpen: () => void;
 };
 
+// `controls` stays whole: the General tab is handed it whole.
 export const ShownTab = ({
   tab,
-  controls: {
-    switches,
-    onWidgetChange,
-    onTriggerChange,
-    onLanguageChange,
-    onLaunchAtLoginChange,
-    onVoiceoverChange,
-  },
+  controls,
   openAiKey,
   onUsageOpen,
   onOverlayOpen,
 }: ShownTabProps) => {
+  const { switches } = controls;
   const isVoiceInstalled = useVoiceInstalled(switches.adviceLanguage);
 
   if (tab === 'general') {
-    return (
-      <GeneralTab
-        launchAtLogin={switches.launchAtLogin}
-        onLaunchAtLoginChange={onLaunchAtLoginChange}
-      />
-    );
+    return <GeneralTab controls={controls} />;
   }
 
   const hasKey = openAiKey.saved !== undefined;
 
   if (tab === 'overlay') {
     return (
-      <OverlayTab widgets={switches.widgets} hasKey={hasKey} onWidgetChange={onWidgetChange} />
+      <OverlayTab
+        widgets={switches.widgets}
+        hasKey={hasKey}
+        onWidgetChange={controls.onWidgetChange}
+      />
     );
   }
 
@@ -63,14 +58,19 @@ export const ShownTab = ({
         isWidgetOn={isWidgetOn}
         language={switches.adviceLanguage}
         triggers={switches.triggers}
-        onLanguageChange={onLanguageChange}
-        onTriggerChange={onTriggerChange}
+        onLanguageChange={controls.onLanguageChange}
+        onTriggerChange={controls.onTriggerChange}
+      />
+      <LessonsGroup
+        isWidgetOn={isWidgetOn}
+        isOn={switches.recap.lessons}
+        onChange={controls.onLessonsChange}
       />
       <VoiceoverGroup
         isWidgetOn={isWidgetOn}
         isVoiceInstalled={isVoiceInstalled}
         isOn={switches.voiceover}
-        onChange={onVoiceoverChange}
+        onChange={controls.onVoiceoverChange}
       />
     </AdviceTab>
   );
